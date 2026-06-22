@@ -1,0 +1,13 @@
+node_modules
+.env
+server/.env
+*.log
+.DS_Store
+
+# Keep the prebuilt front-end (dist) IN the repo so Hostinger serves it
+# directly without needing to build on the server.
+# (dist is intentionally NOT ignored)
+
+# Runtime-uploaded images: keep the folder, ignore its contents
+server/uploads/*
+!server/uploads/.gitkeep

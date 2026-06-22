@@ -1,0 +1,13 @@
+# Sample reverse-proxy config for Hostinger (Apache) -> Node/Express on a port.
+# Place at the public_html root. Adjust the port to match server/.env PORT.
+RewriteEngine On
+
+# Serve the built front-end and proxy /api to the Node server.
+RewriteCond %{REQUEST_URI} ^/api/ [OR]
+RewriteCond %{REQUEST_URI} ^/$
+RewriteRule ^(.*)$ http://127.0.0.1:4000/$1 [P,L]
+
+# Fallback: let the Node server handle SPA routing for everything else.
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^(.*)$ http://127.0.0.1:4000/$1 [P,L]

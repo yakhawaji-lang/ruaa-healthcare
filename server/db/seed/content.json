@@ -1,0 +1,525 @@
+{
+  "settings": {
+    "name_ar": "رؤى للرعاية الصحية المنزلية",
+    "name_en": "RU-MD Home Healthcare",
+    "short_en": "RU-MD",
+    "tagline_ar": "رعاية صحية منزلية متكاملة",
+    "tagline_en": "Integrated home healthcare",
+    "phone": "055 599 0407",
+    "phone_intl": "+966555990407",
+    "whatsapp": "966555990407",
+    "email": "info@rumd.me",
+    "address_ar": "المنطقة الشرقية، الدمام، حي الريان، شارع عثمان بن عفان، مبنى فايزة، الدور الثاني، مكتب ٢٠٦",
+    "address_en": "Eastern Province, Dammam, Al Rayyan District, Othman Bin Affan Street, Faiza Building, 2nd Floor, Office 206",
+    "hours_ar": "الأحد - الخميس: 8:00 صباحًا - 4:00 مساءً",
+    "hours_en": "Sunday - Thursday: 8:00 a.m - 4:00 p.m",
+    "instagram": "https://www.instagram.com/rumd_sa/",
+    "twitter": "https://twitter.com/rumd_sa",
+    "founded": "2019"
+  },
+  "home": {
+    "hero_title_ar": "خدمات مرنة تناسب احتياجك الصحي",
+    "hero_title_en": "Flexible services to suit your health needs",
+    "hero_sub_ar": "رتبنا لك كل تفاصيل رعايتك الصحية، راحة البال جايتك للبيت",
+    "hero_sub_en": "We prepared every aspect of the care you need.",
+    "hero_badge_ar": "مقدم الرعاية الطبية المنزلية الأول بالمنطقة الشرقية",
+    "hero_badge_en": "The first home health care provider in the Eastern Province",
+    "cta_ar": "احجز موعدك",
+    "cta_en": "Book An Appointment",
+    "intro_ar": "تقدم رؤى مجموعة من خدمات الرعاية الصحية المنزلية لمختلف الفئات العمرية من حديثي الولادة وحتى كبار السن، يدًا بيد لتقديم أفضل خدمات الرعاية الطبية المنزلية.",
+    "intro_en": "RU-MD offers a range of home health care services for different age groups, from newborns to the elderly — hand in hand to provide the best home medical care services."
+  },
+  "about": {
+    "intro_ar": "بدأت شركة رؤى للخدمات الطبية بتقديم خدمات الطب المنزلي مع بداية عام 2019م، لتكون أول مقدم رعاية صحية مستقل ومعتمد في المنطقة الشرقية.",
+    "intro_en": "Roa'a Medical Services Company began providing home medicine services at the beginning of 2019, becoming the first independent, accredited home health care provider in the Eastern Province.",
+    "sections": [
+      {
+        "title_ar": "الرسالة",
+        "title_en": "Mission",
+        "body_ar": "تقديم خدمات الرعاية الصحية للمريض تحت سقف منزله وبين أفراد أسرته، والمحافظة على سلامته وخصوصيته وكرامته.",
+        "body_en": "Providing health care services to the patient under the roof of his home and among his family members, while preserving his safety, privacy and dignity.",
+        "icon": "target"
+      },
+      {
+        "title_ar": "الرؤية",
+        "title_en": "Vision",
+        "body_ar": "توفير أفضل خدمات الرعاية الصحية المنزلية في المملكة العربية السعودية وتحقيق أعلى معايير الجودة والتميز.",
+        "body_en": "To provide the best home health care services in the Kingdom of Saudi Arabia and achieve the highest standards of quality and excellence.",
+        "icon": "eye"
+      },
+      {
+        "title_ar": "الاعتماد",
+        "title_en": "Accreditation",
+        "body_ar": "نحن فخورون بأن نكون أول مقدم رعاية صحية مستقل ومعتمد في المنطقة الشرقية.",
+        "body_en": "We are proud to be the first standalone, accredited health care provider in the Eastern Province.",
+        "icon": "award"
+      }
+    ],
+    "values_title_ar": "القيم",
+    "values_title_en": "Our Values",
+    "values": [
+      {
+        "ar": "التميّز في تقديم أفضل الخدمات الصحية.",
+        "en": "Excellence in delivering the best health services."
+      },
+      {
+        "ar": "الحفاظ على أسرار وخصوصية المريض وذويه.",
+        "en": "Keeping the secrets and privacy of the patient and his relatives."
+      },
+      {
+        "ar": "الاهتمام بالعاملين وتنمية إبداعاتهم والعمل بروح التعاون كفريق واحد.",
+        "en": "Caring for staff, developing their creativity, and working in a spirit of cooperation as one team."
+      },
+      {
+        "ar": "غرس روح التعاون بين أفراد العائلة ومساعدة الأهل ومقدّم الخدمة على العناية بالمريض.",
+        "en": "Instilling a spirit of cooperation between family members and helping families and caregivers care for the patient."
+      }
+    ],
+    "why_title_ar": "لماذا رؤى؟",
+    "why_title_en": "Why RU-MD?",
+    "why": [
+      {
+        "title_ar": "الرعاية المنزلية تقلل التكاليف",
+        "title_en": "Home care reduces costs",
+        "body_ar": "نسبة كبيرة من الإنفاق السنوي على الرعاية الصحية يذهب لمجموعة من المرضى الذين يمكن رعايتهم منزليًا بكفاءة وتكلفة أقل.",
+        "body_en": "A large proportion of annual health care spending goes to patients who can be cared for at home efficiently and at lower cost."
+      },
+      {
+        "title_ar": "تعزيز دور الأسرة",
+        "title_en": "Strengthening the family's role",
+        "body_ar": "تضمن رؤى فعالية عملية انتقال الرعاية الصحية وتعزز دور الأسرة في رعاية المريض.",
+        "body_en": "RU-MD ensures the effectiveness of the care transition process and strengthens the family's role in patient care."
+      },
+      {
+        "title_ar": "إرضاء المريض والأسرة",
+        "title_en": "Satisfying the patient and family",
+        "body_ar": "يشعر غالبية الأشخاص براحة أكبر في بيئتهم الخاصة حيث يجدون الأمان والطمأنينة.",
+        "body_en": "The majority of people feel more comfortable in their own environment, where they find safety and reassurance."
+      }
+    ]
+  },
+  "services": [
+    {
+      "slug": "medical-supervision",
+      "icon": "stethoscope",
+      "title_ar": "الإشراف الطبي",
+      "title_en": "Medical Supervision",
+      "body_ar": [
+        "أن من أهم أولوياتنا سهولة حصول المرضى على الرعاية الطبية اللازمة، يقوم الأطباء المعالجون بزيارات منتظمة للإشراف على المرضى ذوي الحالات المعقدة والتنسيق مع متخصصين آخرين لتقديم الرعاية متعددة التخصصات.",
+        "ما الفرق الذي سيحدث بزيارة الطبيب في المنزل؟",
+        "• تقليل خطر التعرض للعدوى بعكس الوضع في المراكز الطبية والمستشفيات.",
+        "• الحصول على الرعاية الطبية في أوقات مناسبة ومريحة.",
+        "• ضمان الخصوصية أثناء الكشف.",
+        "• المتابعة الدقيقة لحالة المرضى و الإشراف للتأكد من إتمام المعالجات والخدمات الطبية على أفضل وجه ."
+      ],
+      "body_en": [
+        "One of our top priorities is the ease of access for patients to the necessary medical care. The attending physicians make regular visits to supervise patients with complex cases and coordinate with other specialists to provide multidisciplinary care.",
+        "What difference will the doctor home visit make?",
+        "• Reducing the risk of infection, unlike the situation in medical centers and hospitals.",
+        "• Obtaining medical care at appropriate and convenient times.",
+        "• Ensure privacy during disclosure.",
+        "• Careful follow-up of patients' condition and supervision to ensure that medical treatments and services are completed in the best way."
+      ],
+      "sort_order": 0
+    },
+    {
+      "slug": "healing-care",
+      "icon": "heart-pulse",
+      "title_ar": "الرعاية الشفائية",
+      "title_en": "Healing care",
+      "body_ar": [
+        "بمجرد خروج المرضى من المستشفى قد يحتاجون إلى رعاية إضافية في المنزل حتى يتم التعافي واستعادة الصحة. يقوم مقدمي خدمات الرعاية الشفائية بتقييم حالة المريض الصحية لدينا ومعالجة مختلف الأمراض والمشاكل الصحية مواصلين بذلك تقديم نفس الرعاية الطبية المهنية كما هو الحال في المستشفى.",
+        "تتضمن هذه الخدمة:",
+        "• متابعة المريض حتى تماثله للشفاء.",
+        "• الوقاية من الأمراض الأخرى.",
+        "• تثقيف وتدريب المريض وذويه.",
+        "• معرفة مختلف الأخطار الصحية المحيطة به."
+      ],
+      "body_en": [
+        "Once patients are discharged from the hospital, they may need additional care at home until they recover and regain health. Healing care providers assess our patient's health and treat various illnesses and health problems while continuing to provide the same professional medical care as in the hospital.",
+        "This service includes:",
+        "• Follow-up of the patient until his recovery.",
+        "• Prevention of other diseases.",
+        "• Educating and training the patient and his family.",
+        "• Knowing the various health hazards surrounding it."
+      ],
+      "sort_order": 1
+    },
+    {
+      "slug": "diagnostic-laboratory-tests",
+      "icon": "flask",
+      "title_ar": "فحوصات مخبرية تشخيصية",
+      "title_en": "Diagnostic laboratory tests",
+      "body_ar": [
+        "نؤمن بأن الكثير يسعى لتوفير الوقت، وأن هذه العملية تثير التوتر لدى البعض. في رؤى باتت هذه العملية أكثر سهولة وخصوصية. في هذه الخدمة نقوم بإجراء مجموعة كبيرة من الفحوصات التشخيصية للتعرف على الأمراض والمشكلات الصحية والجينية، والتعرف على مدى كفاءة عمل أعضاء الجسم في المنزل وبناء على الأوقات المناسبة للمريض.",
+        "وتشمل خدماتنا:",
+        "• فحوصات خصائص الدم، مثل: الحديد ومخزون الحديد.",
+        "• فحوصات الكلى، مثل: وظائف الكلى والبوتاسيوم.",
+        "• فحوصات الجهاز الهضمي، مثل: إنزيمات البنكرياس وتحليل البراز.",
+        "• فحوصات الالتهابات، مثل: تحليل كريات الدم وفحص ترسب كريات الدم.",
+        "• فحوصات الكبد، مثل: وظائف الكبد والألبومين.",
+        "• فحوصات الغدد، مثل: وظائف الغدة الدرقية والسكر.",
+        "• فحوصات القلب، مثل: الدهون والكوليسترول وإنزيمات القلب.",
+        "• فحوصات المفاصل والروماتيزم، مثل: اليريك أسيد والعامل الروماتويدي",
+        "• فحوصات المسالك البولية، مثل: فحص البروستات وفحص البول.",
+        "• وغيرها من الفحوصات ."
+      ],
+      "body_en": [
+        "We believe that many seek to save time, and that this process is stressful for some. In the visions, this process has become easier and more private. In this service, we perform a wide range of diagnostic tests to identify diseases and health and genetic problems, and to identify the efficiency of the body’s organs at home, based on the appropriate times for the patient.",
+        "Our services include:",
+        "• Blood characteristics tests, such as: iron and iron stores.",
+        "• Kidney tests, such as: kidney function and potassium.",
+        "• Digestive system tests, such as: pancreatic enzymes and stool analysis.",
+        "• Infection tests, such as: blood cell analysis and blood cell sedimentation test.",
+        "• Liver tests, such as: liver function and albumin.",
+        "• Glands tests, such as: thyroid function and sugar.",
+        "• Heart tests, such as: lipids, cholesterol and heart enzymes.",
+        "• Joints and rheumatism examinations, such as: uric acid and rheumatoid factor",
+        "• Urological examinations, such as: prostate examination and urine examination.",
+        "• And other examinations."
+      ],
+      "sort_order": 2
+    },
+    {
+      "slug": "chronic-disease-care",
+      "icon": "activity",
+      "title_ar": "رعاية الأمراض المزمنة",
+      "title_en": "Chronic disease care",
+      "body_ar": [
+        "يحتاج ذوي الأمراض المزمنة إلى رعاية صحية وطبية مستمرة وعلى قدر عالي من العناية، يقدم الأطباء من ذوي الاختصاص استراتيجية للتعامل مع الأمراض المزمنة (الضغط والسكري والربو والقلب وأمراض الشيخوخة) وتوفير الدعم والمتابعة لكافة المرضى الذين يعيشون تحديات يومية تزيد من صعوبة الحياة.",
+        "نؤمن في رؤى للرعاية الصحية المنزلية بأن احتياجات المرضى تختلف لذلك تم تصميم حزم وخدمات فردية مختلفة ليختار المريض أو ذويه الخدمة المناسبة له:",
+        "• متابعة طبيب شهرية – زيارة أسبوعية",
+        "• زيارة متكاملة (طبيب عام – تمريض – علاج طبيعي)",
+        "• تخطيط القلب",
+        "• مراقبة ضغط الدم لمدة 24 ساعة",
+        "• زيارة طبيب عام",
+        "• زيارة تمريض"
+      ],
+      "body_en": [
+        "People with chronic diseases need continuous health and medical care with a high level of care. Specialized doctors provide a strategy to deal with chronic diseases (pressure, diabetes, asthma, heart and geriatric diseases) and provide support and follow-up to all patients who live with daily challenges that increase the difficulty of life.",
+        "نؤمن في رؤى للرعاية الصحية المنزلية بأن احتياجات المرضى تختلف لذلك تم تصميم حزم وخدمات فردية مختلفة ليختار المريض أو ذويه الخدمة المناسبة له:",
+        "• Monthly doctor follow-up - weekly visit",
+        "• Integrated visit (general practitioner - nursing - physical therapy)",
+        "• ECG",
+        "• 24 hour blood pressure monitoring",
+        "• GP visit",
+        "• Nursing visit"
+      ],
+      "sort_order": 3
+    },
+    {
+      "slug": "medication-management",
+      "icon": "pill",
+      "title_ar": "إدارة الأدوية",
+      "title_en": "Medication management",
+      "body_ar": [
+        "تعتمد عملية تحسن حالة المريض وتماثله للشفاء على عدة جوانب من ضمنها و أهمها هي تناول الأدوية حسب الطريقة التي يحددها الطبيب وبشكل منتظم؛ وذلك لضمان الالتزام بخطة العلاج.",
+        "في هذه الخدمة يسعى مركز رؤى للرعاية الصحية المنزلية على تحقيق مجموعة من الأهداف، وهي :",
+        "• تثقيف المريض وذويه في كيفية حفظ الأدوية، وكيفية التخلص منها في حالة انتهاء صلاحيتها.",
+        "• ضمان تناول الجرعة الموصوفة بشكل صحيح وفي الوقت المناسب، وبيان العوامل التي تساعد على الالتزام بتناولها.",
+        "• مراقبة مدى فعالية الأدوية والرد على تساؤلات المريض بشأن طريقة تناول الأدوية.",
+        "• اعطاء وصفه طبية من الطبيب المختص."
+      ],
+      "body_en": [
+        "The process of improving the patient's condition and recovery depends on several aspects, including the most important of which is taking medications according to the method prescribed by the doctor and on a regular basis; This is to ensure adherence to the treatment plan.",
+        "In this service, Roaa Home Health Care Center seeks to achieve a set of goals, namely:",
+        "• Educating the patient and his family on how to save medicines, and how to dispose of them in the event of their expiry date.",
+        "• Ensuring that the prescribed dose is taken correctly and at the right time, and stating the factors that help to adhere to it.",
+        "• Monitoring the effectiveness of medications and responding to the patient's questions regarding the method of taking medications.",
+        "• Give a prescription from the doctor"
+      ],
+      "sort_order": 4
+    },
+    {
+      "slug": "nutritional-care",
+      "icon": "apple",
+      "title_ar": "الرعاية الغذائية",
+      "title_en": "Nutritional care",
+      "body_ar": [
+        "يختص دور أخصائي التغذية في المساهمة في منع حالات سوء التغذية ومعالجتها وتحسين الوضع الغذائي والصحي وجودة الحياة للمريض. تبدأ الرعاية الغذائية بعد أن يجري الطبيب فحصا شاملا يقرر خلاله نوعية الأغذية التي يجب تناولها، ثم يأتي دور أخصائي التغذية بعمل تقييم غذائي وصحي شامل ابتداء من:",
+        "• كيفية الحصول على الأغذية الجيدة.",
+        "• طريقة تحضيرها وإعدادها.",
+        "• وصولا إلى المضغ والبلع.",
+        "ويتم شرح خطوات الرعاية الغذائية للأسرة حيث إن المرضى من فئة كبار السن يمرون عادة بمجموعة من التغيرات الفسيولوجية المرتبطة بهذه الفئة والتي تجعل من الصعب الحصول على الاحتياجات الغذائية . يقوم الدعم الغذائي للمرضى المقدم من أخصائي التغذية ذوي المعرفة في حالات التغذية الأنبوبية مثلا بالتقليل من فرص المضاعفات والتحسين من النتائج. كما إن دور أخصائي التغذية في معالجة مريض بالرعاية الصحية المنزلية لا يقتصر على متابعة تأثير الغذاء على الوضع الصحي فقط، بل أيضا تقديم التثقيف الصحي والغذائي لزيادة الالتزام والمتابعة من قبل الأسرة"
+      ],
+      "body_en": [
+        "The role of a dietician is to contribute to preventing and treating cases of malnutrition and improving the nutritional and health status and quality of life of the patient. Nutritional care begins after the doctor conducts a comprehensive examination during which he decides the type of food to be eaten, Then the role of the nutritionist comes to make a comprehensive nutritional and health assessment, starting with:",
+        "• How to get good food.",
+        "• Method of preparation and preparation.",
+        "• Right down to chewing and swallowing.",
+        "The steps of nutritional care for the family are explained, as elderly patients usually go through a set of physiological changes associated with this category, which makes it difficult to obtain nutritional needs. Nutritional support for patients provided by a dietician who is knowledgeable in cases of tube feeding, for example, reduces the chances of complications and improves outcomes. The role of the dietician in treating a patient with home health care is not limited to following up on the impact of food on the health status only, but also providing health and nutritional education to increase commitment and follow-up by the family."
+      ],
+      "sort_order": 5
+    },
+    {
+      "slug": "pain-treatment",
+      "icon": "hand-heart",
+      "title_ar": "علاج الألم",
+      "title_en": "Pain treatment",
+      "body_ar": [
+        "يعمل ذوي الخبرة في رؤى على تقديم العلاج ومساعدة المرضى على ممارسة حياتهم وأنشطتهم اليومية بشكل طبيعي لمساعدتهم في التغلب على الآثار البدنية والنفسية للألم.",
+        "يعاني الأشخاص من أنواع كثيرة ومختلفة من الألم المزمن والحالات المرضية. وتتضمن الحالات التي يتم علاجها:",
+        "• آلام الظهر والرقبة والعمود الفقري .",
+        "• آلام البطن المزمنة.",
+        "• آلام الأعصاب والعضلات والأطراف .",
+        "• الإرهاق المزمن.",
+        "• الصداع .",
+        "• عرق النساء .",
+        "• آلام الأورام السرطانية المختلفة .",
+        "• آلام الأطراف الناتجة عن السكري .",
+        "• ألم الجزء العلوي أو السفلي من الجسم، مثل ألم جدار الصدر أو الفك أو الوجه أو الحوض أو المفاصل.",
+        "• معالجة آلام ما بعد العمليات الجراحية .",
+        "• الآلام التي لا تستجيب للعلاجات الجراحية"
+      ],
+      "body_en": [
+        "Our experienced professionals work to provide treatment and help patients go about their daily lives and activities normally to help them overcome the physical and psychological effects of pain.",
+        "People suffer from many different types of chronic pain and disease conditions. Conditions that are treated include:",
+        "• Back, neck and spine pain.",
+        "• Chronic abdominal pain.",
+        "• Nerve, muscle and extremity pain.",
+        "• Chronic fatigue.",
+        "• Headache.",
+        "• sciatica .",
+        "• The pain of various cancerous tumors.",
+        "• Pain in the extremities caused by diabetes.",
+        "• Pain in the upper or lower part of the body, such as pain in the chest wall, jaw, face, pelvis, or joints.",
+        "• Post-operative pain management.",
+        "• Pain that does not respond to surgical treatments"
+      ],
+      "sort_order": 6
+    },
+    {
+      "slug": "palliative-care",
+      "icon": "ribbon",
+      "title_ar": "الرعاية التلطيفية",
+      "title_en": "Palliative care",
+      "body_ar": [
+        "يعاني بعض المرضى من الأمراض المستعصية، في رؤى نركز على التعامل مع الأعراض و تحسين جودة الحياة.",
+        "تُعد الرعاية التلطيفية هي الرعاية الطبية المتخصصة التي تركز على تخفيف الألم والأعراض الأخرى للأمراض المستعصية، وهذا بقطع النظر عن التشخيص أو مرحلة المرض. وتهدف فرق الرعاية التلطيفية في مركز رؤى إلى تحسين جودة الحياة لكل من المرضى وأسرهم. و يتم تقديم هذا النوع من الرعاية جنباً إلى جنب مع الرعاية الشفائية أو غيرها من طرق العلاج المختلفة.",
+        "لمن يتم تقديم هذه الخدمة؟",
+        "توفر الرعاية التلطيفية للأفراد من كافة الأعمار المصابين بمرض خطير أو يهدد الحياة. مثل :",
+        "• السرطان.",
+        "• اضطرابات نخاع العظم والدم التي تحتاج إلى زراعة الخلايا الجذعية.",
+        "• القلب.",
+        "• التليف الكيسي.",
+        "• الخرف.",
+        "• نقص المناعة المكتسب.",
+        "• المرحلة النهائية من مرض الكبد.",
+        "• الفشل الكلوي.",
+        "• الفشل الكبدي و التشمع.",
+        "• المصابين بأمراض الرئة.",
+        "• باركنسون.",
+        "• السكتة الدماغية."
+      ],
+      "body_en": [
+        "Some patients suffer from incurable diseases, in our visions we focus on managing symptoms and improving quality of life.",
+        "Palliative care is specialized medical care that focuses on relieving pain and other symptoms of incurable disease, regardless of diagnosis or stage of disease. The palliative care teams at Roaa Center aim to improve the quality of life for both patients and their families. This type of care is provided along with curative care or various other treatment modalities.",
+        "To whom is this service provided?",
+        "Palliative care is provided to people of all ages with serious or life-threatening illness. Such as :",
+        "• cancer.",
+        "• Bone marrow and blood disorders that require stem cell transplantation.",
+        "• the heart.",
+        "• Cystic fibrosis.",
+        "• Dementia.",
+        "• Acquired immunodeficiency.",
+        "• End stage of liver disease.",
+        "• Kidney failure.",
+        "• Liver failure and cirrhosis.",
+        "• People with lung disease.",
+        "• Parkinson's.",
+        "Stroke."
+      ],
+      "sort_order": 7
+    },
+    {
+      "slug": "patient-and-family-education",
+      "icon": "book-open",
+      "title_ar": "تثقيف المريض والأسرة",
+      "title_en": "Patient and family education",
+      "body_ar": [
+        "نوفر للمرضى وأفراد أسرهم معلومات ونصائح حول الحالات المرضية بما يساعد المرضى وذويهم على اتخاذ القرارات المتعلقة بصحتهم عن علم وإدراك من خلال المعلومات المتعلقة بحالتهم الصحية؛ وذلك من أجل تطوير النتائج الطبية وتعزيز رضا المرضى .",
+        "وتكمن أهمية التثقيف فيما يلي:",
+        "• الفهم الأفضل للحالات الطبية.",
+        "• القضاء على المفاهيم الخاطئة عن الصحة والأمراض.",
+        "• توجيه المرضى وأسرهم لاتباع نمط حياة صحي للحد من آثار الأمراض المزمنة، مثل: السمنة، والسكري، والضغط.",
+        "• تعزيز مسؤولية الفرد للحفاظ على صحته و الهدوء في أوقات الخطر."
+      ],
+      "body_en": [
+        "We provide patients and their family members with information and advice about medical conditions to help patients and their families make informed and informed decisions about their health through information related to their health condition; This is in order to improve clinical outcomes and enhance patient satisfaction.",
+        "The importance of education lies in the following:",
+        "• Better understanding of medical conditions.",
+        "• Eliminate misconceptions about health and diseases.",
+        "• Directing patients and their families to follow a healthy lifestyle to reduce the effects of chronic diseases, such as: obesity, diabetes, and stress.",
+        "• Strengthening the individual's responsibility to maintain his health and calm in times of danger."
+      ],
+      "sort_order": 8
+    },
+    {
+      "slug": "physical-and-occupational-therapy-and-rehabilitation",
+      "icon": "dumbbell",
+      "title_ar": "العلاج الطبيعي والوظيفي وإعادة التأهيل",
+      "title_en": "Physical and occupational therapy and rehabilitation",
+      "body_ar": [
+        "نساعد المرضى بعد المرض أو الإصابة في العودة إلى حياتهم الطبيعية أو شبه الطبيعية، ونهدف في هذه الخدمة إلى الاستفادة من خبرات فريقنا متعدد التخصصات في علاج المرضى ابتداء من الإصابات الرياضية وآلام أسفل الظهر والإصابات العصبية، مثل: إصابات الدماغ والحبل الشوكي وغيرها من الأمراض الأخرى. فبحسب الحالة يقوم الأخصائيون لدينا بتصميم خطة علاجية تناسب الاحتياجات الفردية للمرضى، وقد يتلقى المريض علاج طبيعي أو إدراكي أو مهني أو علاج صعوبة النطق وغيره.",
+        "وتشمل خدماتنا:",
+        "• توفير برامج تمارين شخصية للمساعدة في تحسين الحركة والمرونة والقوة.",
+        "• علاج متكامل لالتهاب المفاصل.",
+        "• علاج إصابات العضلات والأربطة الحادة والمزمنة.",
+        "• علاج ألم العضلات المزمن.",
+        "• علاج مشاكل العمود الفقري بما فيها آلام أسفل الظهر وآلام الرقبة.",
+        "• الإصابات الرياضية مثل تمزق الأربطة وتمزق الغضروف الهلالي للركبة.",
+        "• إعادة التأهيل ما قبل وبعد العمليات الجراحية.",
+        "• إعادة التأهيل بعد السكتة الدماغية وإصابات النخاع الشوكي والأعصاب.",
+        "• علاج مشاكل التوازن والمشي.",
+        "• علاج شلل وضعف عضلات الوجه.",
+        "• إعادة تأهيل الشلل الدماغي والاعتلالات الخُلقية.",
+        "• إعادة التأهيل ما بعد عمليات تغيير المفاصل.",
+        "• علاج إصابات اليد."
+      ],
+      "body_en": [
+        "We help patients after illness or injury to return to their normal or semi-normal lives. In this service, we aim to benefit from the expertise of our multidisciplinary team in treating patients from sports injuries, lower back pain and neurological injuries, such as: brain and spinal cord injuries and other diseases. . Depending on the case, our specialists design a treatment plan that suits the individual needs of patients, and the patient may receive physical, cognitive, occupational, speech therapy, and others.",
+        "Our services include:",
+        "• Provide personalized exercise programs to help improve mobility, flexibility and strength.",
+        "• An integrated treatment for arthritis.",
+        "• Treatment of acute and chronic muscle and ligament injuries.",
+        "• Treatment of chronic muscle pain.",
+        "• Treatment of spinal problems, including lower back pain and neck pain.",
+        "• Sports injuries such as ligament tears and meniscus tearing of the knee.",
+        "• Pre- and post-operative rehabilitation.",
+        "• Rehabilitation after stroke and spinal cord and nerve injuries.",
+        "• Treatment of balance and walking problems.",
+        "• Treatment of paralysis and weakness of the facial muscles.",
+        "• Rehabilitation of cerebral palsy and congenital disorders.",
+        "• Rehabilitation after joint replacement operations.",
+        "• Hand injuries treatment."
+      ],
+      "sort_order": 9
+    },
+    {
+      "slug": "integrated-nursing-services",
+      "icon": "syringe",
+      "title_ar": "خدمات تمريضية متكاملة",
+      "title_en": "Integrated Nursing Services",
+      "body_ar": [
+        "أن محور خدماتنا هو المريض والأسرة، نلتزم بتقديم أفضل النتائج من خلال توفير أعلى مستويات الجودة في رعاية المرضى ، فبواسطة أخصائيات تمريض على مستوى عالٍ من التدريب والأمانة تتوفر خدمات التمريض الممتدة لمساعدة المرضى الذين يعانون من مشاكل تحتاج إلى رعاية طبية مستمرة بهدف توفير الجهد على المرضى وتوفير بيئة مريحة لهم.",
+        "وتشمل الخدمات التمريضية:",
+        "خدمات سريعة:",
+        "• إجراء الفحوصات اللازمة وأخذ المؤشرات الحيوية",
+        "• تركيب المحاليل وإجراء الحقن العضلية والوريدية.",
+        "• إعطاء الأدوية في مواعيدها وفقا لتعليمات الطبيب.",
+        "خدمات الرعاية:",
+        "• تقديم خدمات الرعاية لكبار السن.",
+        "• تقديم خدمات الرعاية لأصحاب الأمراض المزمنة.",
+        "• مساعدة المرضى على التنقل والحركة والالتزام بعمل تمارين رياضية وتمارين لتنشيط الدورة الدموية.",
+        "• التأكد من تغذية المريض في الوقت المجدول وسلامة أنبوب التغذية في الحالات الأخرى.",
+        "• الحرص على النظافة الشخصية للمريض (استحمام، غسل الشعر، نظافة الملابس).",
+        "• مساعدة المريض في الدخول إلى دورة المياه وإعطائه حقنة شرجية إذا استدعت الحاجة.",
+        "خدمات أخرى:",
+        "• العناية بالحروق والجروح العميقة.",
+        "• العناية الخاصة بمرضى السكري (قدم السكري).",
+        "• تركيب وفك القسطرة البولية."
+      ],
+      "body_en": [
+        "The focus of our services is the patient and the family, we are committed to providing the best results by providing the highest quality of patient care, through highly trained and honest female nurses, extended nursing services are available to help patients with problems that need continuous medical care in order to save effort on patients and provide a comfortable environment for them.",
+        "Nursing services include:",
+        "Quick Services:",
+        "• Carrying out the necessary tests and taking vital signs",
+        "• Installing solutions and performing intramuscular and intravenous injections.",
+        "• Giving medicines on time according to the doctor's instructions.",
+        "care services:",
+        "• Providing care services for the elderly.",
+        "• Providing care services for people with chronic diseases.",
+        "• Helping patients with mobility and commitment to doing exercises and exercises to stimulate blood circulation.",
+        "• Ensure that the patient is fed at the scheduled time and that the feeding tube is safe in other cases.",
+        "• Take care of the patient's personal hygiene (bathing, washing hair, cleaning clothes).",
+        "• Helping the patient to enter the restroom and giving him an enema if needed.",
+        "Other services:",
+        "• Care of burns and deep wounds.",
+        "• Special care for diabetics (diabetic foot).",
+        "• Installing and removing urinary catheters."
+      ],
+      "sort_order": 10
+    },
+    {
+      "slug": "wound-burn-and-bed-ulcer-care",
+      "icon": "bandage",
+      "title_ar": "رعاية الجروح والحروق والقرح السريرية",
+      "title_en": "Wound, burn and bed ulcer care",
+      "body_ar": [
+        "نهدف لتقديم الرعاية اللازمة والمساعدة بإبقاء الجروح والحروق والقرح نظيفة ومحمية؛ مما يمنع تلوثها ويساعد على التئامها بشكل أمثل، ومتابعتها من قبل الأطباء المتخصصين.",
+        "وتشمل خدمة رعاية التقرحات السريرية:",
+        "• تخفيف الضغط على المناطق العظمية.",
+        "• إزالة الأنسجة الميتة.",
+        "• استخدام ضمادات الجروح.",
+        "• المحافظة على الجرح نظيفا ورطبا ليلتئم سريعا .",
+        "• رعاية قرح الأطراف السفلية (القرح الوريدية والقرح الشريانية والقرح المختلطة) .",
+        "• تجنب حدوث جروح وتجنب الاحتكاك و توفير اجراءات وقائية لمنع قرح الفراش.",
+        "• البحث عن الأسباب الأخرى الكامنة التي قد تسبب تدهور هذه التقرحات أو تحول دون التماثل للشفاء.",
+        "حالات الجروح والحروق التي يتم رعايتها:",
+        "• الجروح الناتجة عن الخراجات.",
+        "• الجروح الناتجة عن تمزق وتهتك الجلد.",
+        "• الجروح الناتجة عن الحروق.",
+        "• الجروح الناتجة عن تطعيم الجلد.",
+        "• جروح العمليات بما في ذلك إزالة الدبابيس والمشابك الجراحية.",
+        "• علاج القدم السكري.",
+        "• علاج الفغرة.",
+        "• فحص سلامة الجلد.",
+        "• التثقيف بشأن منتجات علاج الجروح والحروق."
+      ],
+      "body_en": [
+        "We aim to provide the necessary care and assistance in keeping cuts, burns and ulcers clean and protected; Which prevents contamination and helps to heal optimally, and follow-up by specialist doctors.",
+        "Bed ulcer care service includes:",
+        "• Reducing pressure on bony areas.",
+        "• Removal of dead tissue.",
+        "• Use wound dressings.",
+        "• Keeping the wound clean and moist so that it heals quickly.",
+        "• Care of lower extremity ulcers (venous ulcers, arterial ulcers and mixed ulcers).",
+        "• Avoid the occurrence of wounds and avoid friction and provide preventive measures to prevent bedsores.",
+        "• Look for other underlying causes that may cause these ulcers to worsen or prevent healing.",
+        "Treated wounds and burns:",
+        "• Wounds caused by abscesses.",
+        "• Wounds resulting from tearing and laceration of the skin.",
+        "• Wounds resulting from burns.",
+        "• Wounds resulting from skin grafting.",
+        "• Surgical wounds including removal of surgical staples and clips.",
+        "• Treatment of diabetic foot.",
+        "• Stoma treatment.",
+        "• Skin integrity check.",
+        "• Education about wound and burn treatment products."
+      ],
+      "sort_order": 11
+    },
+    {
+      "slug": "immunization-and-basic-vaccinations",
+      "icon": "shield-check",
+      "title_ar": "التحصين والتطعيمات الأساسية",
+      "title_en": "Immunization and basic vaccinations",
+      "body_ar": [
+        "لأن الوقاية خير من العلاج ووقاية مجتمعنا جزء من مسؤوليتنا، يوفر فريقنا التطعيمات الأساسية واللقاحات الموسمية للأطفال والكبار منزليا ، مع مراعاة الإجراءات الاحترازية والتدابير الوقائية التي توصي بها الدولة.",
+        "وتشمل هذه الخدمة على:",
+        "• التذكير بالمواعيد.",
+        "• التثقيف بهذا الجانب و ما يمكن حدوثه بعد تلقي الجرعة."
+      ],
+      "body_en": [
+        "Because prevention is better than treatment and the protection of our society is part of our responsibility, our team provides basic and seasonal vaccinations for children and adults at home, taking into account the precautionary measures and preventive measures recommended by the state.",
+        "This service includes:",
+        "• Reminders of appointments.",
+        "• Education in this aspect and what can happen after receiving the dose."
+      ],
+      "sort_order": 12
+    },
+    {
+      "slug": "respiratory-care",
+      "icon": "lungs",
+      "title_ar": "العناية التنفسية",
+      "title_en": "Respiratory care",
+      "body_ar": [
+        "يعمل أخصائيونا التنفسيون مباشرة مع مرضانا من التقييم للمتابعة. كجزء من خطة الرعاية الخاصة بهم سيقوم معالجونا التنفسيون بإجراء تقييم فردي ، ومن ثم النصح بمعدات تناسب احتياجاتهم الخاصة ومتابعة ذلك مع مرضانا والتقييم المستمر، يقوم أخصائيونا التنفسيون بتعليمك لضمان الثقة والسلامة في الاستخدام والرعاية لجميع أجهزة التنفس."
+      ],
+      "body_en": [
+        "يعمل أخصائيونا التنفسيون مباشرة مع مرضانا من التقييم للمتابعة. كجزء من خطة الرعاية الخاصة بهم سيقوم معالجونا التنفسيون بإجراء تقييم فردي ، ومن ثم النصح بمعدات تناسب احتياجاتهم الخاصة ومتابعة ذلك مع مرضانا والتقييم المستمر، يقوم أخصائيونا التنفسيون بتعليمك لضمان الثقة والسلامة في الاستخدام والرعاية لجميع أجهزة التنفس."
+      ],
+      "sort_order": 13
+    }
+  ]
+}
