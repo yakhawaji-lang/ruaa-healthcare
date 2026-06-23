@@ -107,8 +107,9 @@
 
 .admin-content { padding: 28px; flex: 1; }
 
-/* ===== Mobile app (PWA) promo card ===== */
-.app-card { display: flex; gap: 18px; align-items: flex-start; background: linear-gradient(120deg, #0b3556 0%, #1f7d92 100%); color: #fff; border-radius: 16px; padding: 22px 24px; margin-bottom: 24px; box-shadow: var(--shadow-sm); }
+/* ===== Mobile app (PWA) promo card — only shown on phones/tablets ===== */
+.app-card { display: none; gap: 18px; align-items: flex-start; background: linear-gradient(120deg, #0b3556 0%, #1f7d92 100%); color: #fff; border-radius: 16px; padding: 22px 24px; margin: 26px 0 8px; box-shadow: var(--shadow-sm); }
+@media (max-width: 1024px) { .app-card { display: flex; } }
 .app-card-icon { width: 54px; height: 54px; flex-shrink: 0; border-radius: 14px; background: rgba(255,255,255,0.16); display: grid; place-items: center; color: #fff; }
 .app-card-main { flex: 1; min-width: 0; }
 .app-card-main h3 { font-size: 1.15rem; margin-bottom: 4px; }

@@ -3,24 +3,21 @@ import { Smartphone, Download, BellRing, CheckCircle2 } from 'lucide-react';
 import { useLang } from '../i18n.jsx';
 import { getPushStatus, enablePush, disablePush } from '../notifications/push.js';
 
-// APK is uploaded to the site under /downloads/ — see deploy notes.
-const APK_URL = '/downloads/ruaa-admin.apk';
-
 const T = {
   ar: {
     title: 'تطبيق رؤى للجوال',
     subtitle: 'ثبّت لوحة التحكم كتطبيق على جوالك واستقبل كل إشعارات النظام فورًا — حتى عند إغلاق التطبيق.',
     install: 'تثبيت التطبيق', installed: 'التطبيق مثبّت',
-    install_hint: 'للتثبيت: افتح القائمة في المتصفح ثم «إضافة إلى الشاشة الرئيسية».',
-    download_apk: 'تحميل APK', enable_notifs: 'تفعيل إشعارات الجوال',
+    install_hint: 'لتثبيت التطبيق يدويًا: افتح قائمة المتصفح (⋮) ثم اختر «تثبيت التطبيق» أو «إضافة إلى الشاشة الرئيسية».',
+    enable_notifs: 'تفعيل إشعارات الجوال',
     notifs_on: 'الإشعارات مفعّلة', notifs_denied: 'الإشعارات محظورة', working: 'جارٍ...',
   },
   en: {
     title: 'RU-MD mobile app',
     subtitle: 'Install the dashboard as an app on your phone and receive all system notifications instantly — even when the app is closed.',
     install: 'Install app', installed: 'App installed',
-    install_hint: 'To install: open the browser menu, then “Add to Home screen”.',
-    download_apk: 'Download APK', enable_notifs: 'Enable phone notifications',
+    install_hint: 'To install manually: open the browser menu (⋮) and choose “Install app” or “Add to Home screen”.',
+    enable_notifs: 'Enable phone notifications',
     notifs_on: 'Notifications on', notifs_denied: 'Notifications blocked', working: 'Working...',
   },
 };
@@ -30,6 +27,7 @@ export default function AppInstallCard() {
   const tt = T[lang];
   const [deferred, setDeferred] = useState(null);
   const [installed, setInstalled] = useState(false);
+  const [showHint, setShowHint] = useState(false);
   const [pushState, setPushState] = useState('off');
   const [busy, setBusy] = useState(false);
 
@@ -48,10 +46,13 @@ export default function AppInstallCard() {
   }, []);
 
   const install = async () => {
-    if (!deferred) return;
-    deferred.prompt();
-    try { await deferred.userChoice; } catch { /* ignore */ }
-    setDeferred(null);
+    if (deferred) {
+      deferred.prompt();
+      try { await deferred.userChoice; } catch { /* ignore */ }
+      setDeferred(null);
+    } else {
+      setShowHint(true); // browser didn't offer the auto prompt → show manual steps
+    }
   };
 
   const togglePush = async () => {
@@ -70,18 +71,16 @@ export default function AppInstallCard() {
         <div className="app-card-actions">
           {installed ? (
             <span className="app-installed"><CheckCircle2 size={16} /> {tt.installed}</span>
-          ) : deferred ? (
-            <button className="btn btn-primary btn-sm" onClick={install}><Download size={16} /> {tt.install}</button>
           ) : (
-            <span className="app-hint">{tt.install_hint}</span>
+            <button type="button" className="btn btn-white btn-sm" onClick={install}><Download size={16} /> {tt.install}</button>
           )}
-          <a className="btn btn-outline btn-sm" href={APK_URL} download><Download size={16} /> {tt.download_apk}</a>
           {pushState !== 'unsupported' && (
             <button type="button" className={`btn btn-sm ${pushState === 'on' ? 'btn-ghost' : 'btn-outline'}`} onClick={togglePush} disabled={busy}>
               <BellRing size={16} /> {busy ? tt.working : pushState === 'on' ? tt.notifs_on : pushState === 'denied' ? tt.notifs_denied : tt.enable_notifs}
             </button>
           )}
         </div>
+        {!installed && showHint && <p className="app-hint">{tt.install_hint}</p>}
       </div>
     </div>
   );

@@ -54,7 +54,6 @@ export default function Dashboard() {
   return (
     <div className="dash">
       <h1 className="page-title">{tt.dashboard}</h1>
-      <AppInstallCard />
       <div className="stat-grid">
         {cards.map((c) => (
           <Link key={c.label} to={c.to} className="stat-card">
@@ -97,6 +96,9 @@ export default function Dashboard() {
           </table>
         ) : <p className="empty">{tt.no_messages}</p>}
       </div>
+
+      {/* Mobile app promo — shown only on phones/tablets (see admin.css) */}
+      <AppInstallCard />
     </div>
   );
 }
