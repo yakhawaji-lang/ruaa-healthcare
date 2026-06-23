@@ -73,8 +73,9 @@ export default function AppInstallCard() {
             <span className="app-hint">{tt.install_hint}</span>
           )}
           {pushState !== 'unsupported' && (
-            <button type="button" className={`btn btn-sm ${pushState === 'on' ? 'btn-ghost' : 'btn-outline'}`} onClick={togglePush} disabled={busy}>
-              <BellRing size={16} /> {busy ? tt.working : pushState === 'on' ? tt.notifs_on : pushState === 'denied' ? tt.notifs_denied : tt.enable_notifs}
+            <button type="button" className={`btn btn-sm app-notif ${pushState === 'on' ? 'is-on' : ''}`} onClick={togglePush} disabled={busy}>
+              {pushState === 'on' ? <CheckCircle2 size={16} /> : <BellRing size={16} />}
+              {busy ? tt.working : pushState === 'on' ? tt.notifs_on : pushState === 'denied' ? tt.notifs_denied : tt.enable_notifs}
             </button>
           )}
         </div>

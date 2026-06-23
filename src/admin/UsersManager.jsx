@@ -257,6 +257,37 @@ function UserModal({ mode, user, tt, lang, onClose, onDone }) {
                   </tbody>
                 </table>
               </div>
+
+              {/* Mobile-friendly stacked layout (shown only on phones via CSS) */}
+              <div className="perm-mobile">
+                {PERM_GROUPS.map((g) => (
+                  <Fragment key={g.en}>
+                    <div className="perm-m-group">{lang === 'en' ? g.en : g.ar}</div>
+                    {g.pages.map((p) => {
+                      const pp = perms.pages[p.key] || {};
+                      const hasAny = p.actions.some((a) => pp[a]);
+                      const allOn = p.actions.every((a) => pp[a]);
+                      return (
+                        <div key={p.key} className={`perm-m-card ${hasAny ? 'has' : ''}`}>
+                          <div className="perm-m-head">
+                            <span className="perm-m-name"><p.icon size={15} /> {lang === 'en' ? p.en : p.ar}</span>
+                            <label className="perm-m-all">
+                              <input type="checkbox" checked={allOn} onChange={() => toggleAllForPage(p)} /> {tt.a_all}
+                            </label>
+                          </div>
+                          <div className="perm-m-actions">
+                            {ACTIONS.filter((a) => p.actions.includes(a)).map((a) => (
+                              <label key={a} className={`perm-chip ${pp[a] ? 'on' : ''}`}>
+                                <input type="checkbox" checked={!!pp[a]} onChange={() => toggleAct(p.key, a)} /> {tt['a_' + a]}
+                              </label>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </Fragment>
+                ))}
+              </div>
             </>
           )}
         </div>
