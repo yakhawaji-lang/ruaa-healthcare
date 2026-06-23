@@ -4,6 +4,9 @@ server/.env
 *.log
 .DS_Store
 
+# stray nested repo accidentally added — keep out of the project repo
+/Ruaa/
+
 # Keep the prebuilt front-end (dist) IN the repo so Hostinger serves it
 # directly without needing to build on the server.
 # (dist is intentionally NOT ignored)
