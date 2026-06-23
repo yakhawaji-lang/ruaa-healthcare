@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Plus, X, Trash2, Power, KeyRound, Pencil, Check } from 'lucide-react';
+import { Plus, X, Trash2, Power, KeyRound, Pencil, Check, Users2, UserPlus } from 'lucide-react';
 import { AdminAPI } from '../storage/api.js';
 import { useLang } from '../i18n.jsx';
 import { isSaudiMobile, digits10 } from '../validation.js';
@@ -43,6 +43,7 @@ const T = {
     email_login: 'البريد الإلكتروني (للدخول)',
     phone: 'الجوال',
     phone_invalid: 'رقم الجوال يجب أن يكون 10 أرقام ويبدأ بـ 05.',
+    members: 'المستخدمون',
     password: 'كلمة المرور',
     password_ph: '6 أحرف على الأقل',
     cancel: 'إلغاء',
@@ -86,6 +87,7 @@ const T = {
     email_login: 'Email (for login)',
     phone: 'Phone',
     phone_invalid: 'Mobile number must be 10 digits starting with 05.',
+    members: 'Members',
     password: 'Password',
     password_ph: 'At least 6 characters',
     cancel: 'Cancel',
@@ -100,6 +102,7 @@ export default function InsuranceCompaniesManager() {
   const [open, setOpen] = useState(false);
   const [pwUser, setPwUser] = useState(null);
   const [editUser, setEditUser] = useState(null);
+  const [membersUser, setMembersUser] = useState(null);
 
   const load = () => AdminAPI.insurers().then(setList);
   useEffect(() => { load(); }, []);
@@ -129,6 +132,7 @@ export default function InsuranceCompaniesManager() {
                   <td dir="ltr">{u.phone || '—'}</td>
                   <td>{u.is_active ? <span className="badge ok">{tt.active}</span> : <span className="badge off">{tt.suspended}</span>}</td>
                   <td className="row-actions">
+                    <button onClick={() => setMembersUser(u)} title={tt.members}><Users2 size={16} /></button>
                     <button onClick={() => setEditUser(u)} title={tt.edit}><Pencil size={16} /></button>
                     <button onClick={() => setPwUser(u)} title={tt.reset_password}><KeyRound size={16} /></button>
                     <button onClick={() => toggle(u)} title={tt.toggle}><Power size={16} /></button>
@@ -144,6 +148,89 @@ export default function InsuranceCompaniesManager() {
       {open && <InsurerModal onClose={() => setOpen(false)} onDone={() => { setOpen(false); load(); }} />}
       {pwUser && <PasswordModal user={pwUser} onClose={() => setPwUser(null)} />}
       {editUser && <EditInsurerModal user={editUser} onClose={() => setEditUser(null)} onDone={() => { setEditUser(null); load(); }} />}
+      {membersUser && <MembersModal company={membersUser} onClose={() => setMembersUser(null)} />}
+    </div>
+  );
+}
+
+function MembersModal({ company, onClose }) {
+  const { lang } = useLang();
+  const L = lang === 'en' ? {
+    title: 'Members of', subtitle: 'These accounts log in and share the same company cases.',
+    name: 'Name', email: 'Email (login)', phone: 'Phone', password: 'Password', password_ph: 'At least 6 characters',
+    add: 'Add member', no_members: 'No additional members yet.', active: 'Active', suspended: 'Suspended',
+    toggle: 'Activate / Suspend', delete: 'Delete', confirm_delete: 'Delete this member?', close: 'Close',
+    required: 'Please complete the required fields', email_taken: 'Email already in use', phone_invalid: 'Mobile number must be 10 digits starting with 05.', failed: 'Could not save',
+  } : {
+    title: 'مستخدمو', subtitle: 'هذه الحسابات تسجّل الدخول وتتشارك نفس حالات الشركة.',
+    name: 'الاسم', email: 'البريد (للدخول)', phone: 'الجوال', password: 'كلمة المرور', password_ph: '6 أحرف على الأقل',
+    add: 'إضافة مستخدم', no_members: 'لا يوجد مستخدمون إضافيون بعد.', active: 'مُفعّل', suspended: 'موقوف',
+    toggle: 'تفعيل/إيقاف', delete: 'حذف', confirm_delete: 'حذف هذا المستخدم؟', close: 'إغلاق',
+    required: 'أكمل الحقول المطلوبة', email_taken: 'البريد مستخدم', phone_invalid: 'رقم الجوال يجب أن يكون 10 أرقام ويبدأ بـ 05.', failed: 'تعذّر الحفظ',
+  };
+  const [members, setMembers] = useState([]);
+  const [f, setF] = useState({ name: '', email: '', phone: '', password: '' });
+  const [error, setError] = useState('');
+  const [busy, setBusy] = useState(false);
+  const load = () => AdminAPI.insurerMembers(company.id).then(setMembers).catch(() => {});
+  useEffect(() => { load(); }, []);
+
+  const add = async () => {
+    if (!f.name || !f.email || !f.password) { setError(L.required); return; }
+    if (f.phone && !isSaudiMobile(f.phone)) { setError(L.phone_invalid); return; }
+    setBusy(true); setError('');
+    try {
+      await AdminAPI.createInsurerMember(company.id, f);
+      setF({ name: '', email: '', phone: '', password: '' }); load();
+    } catch (e) {
+      setError(e?.response?.data?.error === 'email_taken' ? L.email_taken : L.failed);
+    } finally { setBusy(false); }
+  };
+  const toggle = async (m) => { await AdminAPI.setInsurerActive(m.id, !m.is_active); load(); };
+  const remove = async (m) => { if (confirm(L.confirm_delete)) { await AdminAPI.deleteInsurer(m.id); load(); } };
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal" onClick={(e) => e.stopPropagation()}>
+        <div className="modal-head"><h2>{L.title} {company.company_name || company.name}</h2><button onClick={onClose}><X size={20} /></button></div>
+        <div className="modal-body">
+          <p className="page-hint" style={{ marginTop: 0 }}>{L.subtitle}</p>
+          {error && <div className="form-alert error">{error}</div>}
+
+          {members.length > 0 && (
+            <table className="admin-table" style={{ marginBottom: 18 }}>
+              <tbody>
+                {members.map((m) => (
+                  <tr key={m.id}>
+                    <td>{m.name}<br /><small dir="ltr" className="muted">{m.email}</small></td>
+                    <td>{m.is_active ? <span className="badge ok">{L.active}</span> : <span className="badge off">{L.suspended}</span>}</td>
+                    <td className="row-actions">
+                      <button onClick={() => toggle(m)} title={L.toggle}><Power size={16} /></button>
+                      <button onClick={() => remove(m)} className="danger" title={L.delete}><Trash2 size={16} /></button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+          {members.length === 0 && <p className="empty" style={{ padding: '14px 0' }}>{L.no_members}</p>}
+
+          <div className="admin-update-box">
+            <div className="field-row">
+              <div className="field"><label>{L.name}</label><input value={f.name} onChange={(e) => setF((p) => ({ ...p, name: e.target.value }))} /></div>
+              <div className="field"><label>{L.email}</label><input type="email" dir="ltr" value={f.email} onChange={(e) => setF((p) => ({ ...p, email: e.target.value }))} /></div>
+            </div>
+            <div className="field-row">
+              <div className="field"><label>{L.phone}</label><input dir="ltr" inputMode="numeric" maxLength={10} placeholder="05XXXXXXXX" value={f.phone} onChange={(e) => setF((p) => ({ ...p, phone: digits10(e.target.value) }))} /></div>
+              <div className="field"><label>{L.password}</label><input type="text" dir="ltr" value={f.password} onChange={(e) => setF((p) => ({ ...p, password: e.target.value }))} placeholder={L.password_ph} /></div>
+            </div>
+            <button className="btn btn-primary btn-sm" onClick={add} disabled={busy}><UserPlus size={15} /> {busy ? '...' : L.add}</button>
+          </div>
+        </div>
+        <div className="modal-foot">
+          <button className="btn btn-ghost" onClick={onClose}>{L.close}</button>
+        </div>
+      </div>
     </div>
   );
 }

@@ -12,6 +12,15 @@ const router = Router();
 const limiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 50 });
 const refCode = (prefix, id) => `${prefix}-${new Date().getFullYear()}-${String(id).padStart(5, '0')}`;
 
+// Insurance sub-users (members) share their parent company's cases & services.
+// Resolve the "company root" id for the current request (self if no parent).
+async function companyId(req) {
+  if (req._cid != null) return req._cid;
+  const u = await Users.byId(req.user.uid);
+  req._cid = (u && u.parent_user_id) || req.user.uid;
+  return req._cid;
+}
+
 /* ---------------- Auth ---------------- */
 // Registration is for visitors only (insurance accounts are created by admin).
 router.post('/register', limiter, async (req, res) => {
@@ -82,13 +91,13 @@ router.get('/visits', requireUser, async (req, res) => {
 });
 // All visits across the insurance company's own cases (for their portal calendar)
 router.get('/case-visits', requireUser, requireRole('insurance'), async (req, res) => {
-  res.json(await Visits.byInsurer(req.user.uid));
+  res.json(await Visits.byInsurer(await companyId(req)));
 });
 
 /* ---------------- Aggregated correspondence feed (read-only) ---------------- */
 router.get('/messages', requireUser, async (req, res) => {
   const feed = req.user.role === 'insurance'
-    ? await Threads.feedForCases(req.user.uid)
+    ? await Threads.feedForCases(await companyId(req))
     : await Threads.feedForRequests(req.user.uid);
   res.json(feed);
 });
@@ -157,7 +166,7 @@ router.post('/cases', requireUser, requireRole('insurance'), async (req, res) =>
   if (!b.patient_name) return res.status(400).json({ error: 'patient_name_required' });
   const r = await InsuranceCases.create({
     ref: 'TMP-' + Date.now() + Math.floor(Math.random() * 1000),
-    user_id: req.user.uid,
+    user_id: await companyId(req),
     hospital_name: b.hospital_name, patient_name: b.patient_name, national_id: b.national_id,
     mobile: b.mobile, city: b.city, dob: b.dob, diagnosis: b.diagnosis,
     requested_service: b.requested_service, status: 'submitted',
@@ -171,18 +180,18 @@ router.post('/cases', requireUser, requireRole('insurance'), async (req, res) =>
 });
 
 router.get('/cases', requireUser, requireRole('insurance'), async (req, res) => {
-  res.json(await InsuranceCases.listByUser(req.user.uid));
+  res.json(await InsuranceCases.listByUser(await companyId(req)));
 });
 
 // Services this insurance company is allowed to request (contracted).
 // If none configured by admin, all published services are returned (back-compat).
 router.get('/my-services', requireUser, requireRole('insurance'), async (req, res) => {
-  const [ids, all] = await Promise.all([InsurerServices.list(req.user.uid), Services.listPublicIds()]);
+  const [ids, all] = await Promise.all([InsurerServices.list(await companyId(req)), Services.listPublicIds()]);
   res.json(ids.length ? all.filter((s) => ids.includes(s.id)) : all);
 });
 
 router.get('/cases/:id', requireUser, requireRole('insurance'), async (req, res) => {
-  const c = await InsuranceCases.byIdForUser(req.params.id, req.user.uid);
+  const c = await InsuranceCases.byIdForUser(req.params.id, await companyId(req));
   if (!c) return res.status(404).json({ error: 'not_found' });
   const [events, visits, messages, attachments] = await Promise.all([
     RequestEvents.list('insurance_case', c.id),
@@ -195,7 +204,7 @@ router.get('/cases/:id', requireUser, requireRole('insurance'), async (req, res)
 });
 
 router.put('/cases/:id', requireUser, requireRole('insurance'), async (req, res) => {
-  const c = await InsuranceCases.byIdForUser(req.params.id, req.user.uid);
+  const c = await InsuranceCases.byIdForUser(req.params.id, await companyId(req));
   if (!c) return res.status(404).json({ error: 'not_found' });
   if (['completed', 'rejected', 'cancelled'].includes(c.status)) return res.status(409).json({ error: 'case_closed' });
   const b = req.body || {};
@@ -211,7 +220,7 @@ router.put('/cases/:id', requireUser, requireRole('insurance'), async (req, res)
 });
 
 router.post('/cases/:id/messages', requireUser, requireRole('insurance'), async (req, res) => {
-  const c = await InsuranceCases.byIdForUser(req.params.id, req.user.uid);
+  const c = await InsuranceCases.byIdForUser(req.params.id, await companyId(req));
   if (!c) return res.status(404).json({ error: 'not_found' });
   const b = req.body || {};
   if (!b.body?.trim() && !b.attachment_url) return res.status(400).json({ error: 'empty' });

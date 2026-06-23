@@ -111,12 +111,15 @@ export const Users = {
   byPhone: (phone) =>
     query("SELECT * FROM users WHERE phone = ? AND deleted_at IS NULL ORDER BY id DESC LIMIT 1", [phone]).then((r) => r[0] || null),
   byId: (id) =>
-    query('SELECT id, role, name, company_name, email, phone, is_active FROM users WHERE id = ? AND deleted_at IS NULL LIMIT 1', [id]).then((r) => r[0] || null),
+    query('SELECT id, role, parent_user_id, name, company_name, email, phone, is_active FROM users WHERE id = ? AND deleted_at IS NULL LIMIT 1', [id]).then((r) => r[0] || null),
   create: (u, hash) =>
-    query('INSERT INTO users (role, name, company_name, email, phone, password_hash) VALUES (?,?,?,?,?,?)',
-      [u.role || 'visitor', u.name, u.company_name || null, u.email, u.phone || null, hash]),
+    query('INSERT INTO users (role, parent_user_id, name, company_name, email, phone, password_hash) VALUES (?,?,?,?,?,?,?)',
+      [u.role || 'visitor', u.parent_user_id || null, u.name, u.company_name || null, u.email, u.phone || null, hash]),
   listByRole: (role) =>
-    query('SELECT id, role, name, company_name, email, phone, is_active, created_at FROM users WHERE role = ? AND deleted_at IS NULL ORDER BY created_at DESC', [role]),
+    query('SELECT id, role, name, company_name, email, phone, is_active, created_at FROM users WHERE role = ? AND parent_user_id IS NULL AND deleted_at IS NULL ORDER BY created_at DESC', [role]),
+  // members (sub-users) under a parent insurance company account
+  subUsers: (parentId) =>
+    query('SELECT id, role, name, company_name, email, phone, is_active, created_at FROM users WHERE parent_user_id = ? AND deleted_at IS NULL ORDER BY created_at DESC', [parentId]),
   setActive: (id, active) => query('UPDATE users SET is_active = ? WHERE id = ?', [active ? 1 : 0, id]),
   updateAccount: (id, f) => query('UPDATE users SET name=?, email=?, phone=? WHERE id=?', [f.name, f.email, f.phone || null, id]),
   updateInsurer: (id, f) => query('UPDATE users SET company_name=?, name=?, email=?, phone=? WHERE id=?', [f.company_name || null, f.name, f.email, f.phone || null, id]),

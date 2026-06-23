@@ -471,6 +471,26 @@ router.delete('/insurers/:id', async (req, res) => {
   res.json({ ok: true });
 });
 
+/* ---- Members (sub-users) under an insurance company ---- */
+// All members share the parent company's cases & contracted services.
+router.get('/insurers/:id/members', async (req, res) => res.json(await Users.subUsers(req.params.id)));
+router.post('/insurers/:id/members', async (req, res) => {
+  const b = req.body || {};
+  if (!b.name || !b.email || !b.password) return res.status(400).json({ error: 'missing_fields' });
+  if (String(b.password).length < 6) return res.status(400).json({ error: 'weak_password' });
+  const parent = await Users.byId(req.params.id);
+  if (!parent || parent.role !== 'insurance') return res.status(404).json({ error: 'company_not_found' });
+  const email = String(b.email).toLowerCase().trim();
+  if (await Users.byEmail(email)) return res.status(409).json({ error: 'email_taken' });
+  const hash = await bcrypt.hash(b.password, 10);
+  const r = await Users.create({
+    role: 'insurance', parent_user_id: parent.id,
+    name: b.name, company_name: parent.company_name, email, phone: b.phone,
+  }, hash);
+  await Audit.log(req.admin.id, 'create', 'insurer_member', r.insertId);
+  res.status(201).json({ id: r.insertId });
+});
+
 /* ---- Client (visitor) accounts ---- */
 router.get('/clients', async (req, res) => res.json(await Users.listByRole('visitor')));
 router.post('/clients', async (req, res) => {

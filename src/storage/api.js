@@ -138,6 +138,8 @@ export const AdminAPI = {
   insurerServices: (id) => api.get(`/admin/insurers/${id}/services`).then((r) => r.data),
   setInsurerServices: (id, serviceIds) => api.put(`/admin/insurers/${id}/services`, { service_ids: serviceIds }).then((r) => r.data),
   deleteInsurer: (id) => api.delete(`/admin/insurers/${id}`).then((r) => r.data),
+  insurerMembers: (id) => api.get(`/admin/insurers/${id}/members`).then((r) => r.data),
+  createInsurerMember: (id, data) => api.post(`/admin/insurers/${id}/members`, data).then((r) => r.data),
   // visits + patient profile
   createVisit: (data) => api.post('/admin/visits', data).then((r) => r.data),
   updateVisit: (id, data) => api.put(`/admin/visits/${id}`, data).then((r) => r.data),
