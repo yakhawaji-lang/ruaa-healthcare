@@ -421,3 +421,28 @@
 .cal-dcard-main strong { color: var(--navy); font-size: 1rem; }
 .cal-dcard-meta { display: flex; flex-wrap: wrap; gap: 14px; color: var(--muted); font-size: .85rem; }
 .cal-dcard-meta span { display: inline-flex; align-items: center; gap: 5px; }
+
+/* ---- New/Edit user modal + permission matrix on phones (≤640px) ---- */
+@media (max-width: 640px) {
+  /* name/email already stack via .field-row; tighten the full-access box */
+  .perm-super { margin: 14px 0 8px; padding: 11px 13px; font-size: 0.92rem; }
+
+  /* title + quick-action buttons stack and go full width */
+  .perm-section-head { flex-direction: column; align-items: stretch; gap: 8px; }
+  .perm-toolbar { width: 100%; }
+  .perm-mini { flex: 1; justify-content: center; padding: 9px 10px; }
+
+  /* compact, horizontally-scrollable matrix with a pinned page column */
+  .perm-table { min-width: 420px; }
+  .perm-table th, .perm-table td { padding: 8px 6px; font-size: 0.78rem; }
+  .perm-table thead th:first-child,
+  .perm-table td.perm-page {
+    position: sticky; inset-inline-start: 0; z-index: 2; background: #fff;
+    border-inline-end: 1px solid var(--line);
+  }
+  .perm-table thead th:first-child { background: #f3f7f9; z-index: 3; }
+  .perm-row.has td.perm-page { background: #f7fcfd; }
+  .perm-table .perm-page { gap: 6px; }
+  .perm-table .perm-page svg { display: none; } /* reclaim width on tiny screens */
+  .perm-table input[type="checkbox"] { width: 19px; height: 19px; } /* easier tap targets */
+}
