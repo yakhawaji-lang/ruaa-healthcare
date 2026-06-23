@@ -227,6 +227,21 @@
 .vs-date-chip { display: inline-flex; align-items: center; gap: 7px; background: var(--teal-light); color: var(--teal-dark); border: 1px solid var(--teal); border-radius: 999px; padding: 6px 8px 6px 12px; font-size: 0.84rem; font-weight: 700; }
 .vs-date-chip button { display: inline-flex; align-items: center; justify-content: center; width: 19px; height: 19px; border: none; border-radius: 50%; background: rgba(11,53,86,0.12); color: var(--teal-dark); cursor: pointer; }
 .vs-date-chip button:hover { background: #f2c9c4; color: #c0392b; }
+/* inline multi-select calendar */
+.mdc { border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; background: #fff; }
+.mdc-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+.mdc-head strong { color: var(--navy); font-size: 0.98rem; }
+.mdc-nav { width: 32px; height: 32px; border: 1px solid var(--line); background: #fff; border-radius: 8px; display: grid; place-items: center; cursor: pointer; color: var(--navy); }
+.mdc-nav:hover { border-color: var(--teal); color: var(--teal-dark); background: var(--teal-light); }
+.mdc-wd { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; margin-bottom: 4px; }
+.mdc-wd span { text-align: center; font-size: 0.7rem; font-weight: 700; color: var(--muted); padding: 2px 0; }
+.mdc-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+.mdc-empty { aspect-ratio: 1; }
+.mdc-day { aspect-ratio: 1; border: 1px solid transparent; border-radius: 9px; background: #f5f9fa; color: var(--navy); font-family: inherit; font-weight: 700; font-size: 0.86rem; cursor: pointer; transition: all 0.12s; }
+.mdc-day:hover:not(:disabled) { background: var(--teal-light); border-color: var(--teal); }
+.mdc-day.today { border-color: var(--teal); }
+.mdc-day.sel { background: var(--navy); color: #fff; border-color: var(--navy); }
+.mdc-day:disabled { color: #c2ccd2; background: #fafbfc; cursor: default; }
 .vs-list { display: grid; gap: 8px; }
 .vs-row { display: flex; align-items: center; gap: 14px; background: #fff; border: 1px solid var(--line); border-radius: 11px; padding: 12px 14px; flex-wrap: wrap; }
 .vs-when { min-width: 110px; }

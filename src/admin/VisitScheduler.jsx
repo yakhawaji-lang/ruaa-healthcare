@@ -4,7 +4,7 @@ import { AdminAPI } from '../storage/api.js';
 import { VISIT_STATUSES, visitStatusLabel, visitStatusColor, fmtDate,
   VISIT_TYPES_BI, CLINICIAN_ROLES_BI, normBiList, normStaffList, biLabel } from '../account/status.js';
 import { useLang } from '../i18n.jsx';
-import DobInput from '../components/DobInput.jsx';
+import MultiDateCalendar from './MultiDateCalendar.jsx';
 
 const parseJSON = (s) => { try { return JSON.parse(s); } catch { return null; } };
 
@@ -36,7 +36,6 @@ export default function VisitScheduler({ refType, refId, visits = [], onChange }
   const [adding, setAdding] = useState(false);
   const [f, setF] = useState(blank);
   const [dates, setDates] = useState([]); // multiple visit days
-  const [pick, setPick] = useState('');
   const [busy, setBusy] = useState(false);
   const [vTypes, setVTypes] = useState(VISIT_TYPES_BI);
   const [vRoles, setVRoles] = useState(CLINICIAN_ROLES_BI);
@@ -67,8 +66,7 @@ export default function VisitScheduler({ refType, refId, visits = [], onChange }
   const roleLabel = (v) => { const it = vRoles.find((x) => x.ar === v || x.en === v); return it ? biLabel(it, lang) : v; };
   const nameLabel = (v) => { const s = vStaff.find((x) => x.name_ar === v || x.name_en === v); return s ? biLabel({ ar: s.name_ar, en: s.name_en }, lang) : v; };
 
-  const addDate = () => { if (pick && !dates.includes(pick)) setDates((d) => [...d, pick].sort()); setPick(''); };
-  const removeDate = (d) => setDates((arr) => arr.filter((x) => x !== d));
+  const toggleDate = (d) => setDates((arr) => (arr.includes(d) ? arr.filter((x) => x !== d) : [...arr, d].sort()));
 
   const add = async () => {
     if (dates.length === 0) return;
@@ -76,7 +74,7 @@ export default function VisitScheduler({ refType, refId, visits = [], onChange }
     try {
       // create one visit per selected day (shared time / clinician / notes)
       for (const d of dates) await AdminAPI.createVisit({ ref_type: refType, ref_id: refId, ...f, visit_date: d });
-      setF(blank); setDates([]); setPick(''); setAdding(false); onChange();
+      setF(blank); setDates([]); setAdding(false); onChange();
     } finally { setBusy(false); }
   };
   const setStatus = async (v, status) => { await AdminAPI.updateVisit(v.id, { ...v, status }); onChange(); };
@@ -91,20 +89,6 @@ export default function VisitScheduler({ refType, refId, visits = [], onChange }
 
       {adding && (
         <div className="vs-form">
-          <div className="field">
-            <label>{tt.dates}</label>
-            <div className="vs-date-add">
-              <DobInput iso value={pick} onChange={setPick} />
-              <button type="button" className="btn btn-outline btn-sm" onClick={addDate} disabled={!pick}><Plus size={15} /> {tt.add_day}</button>
-            </div>
-            {dates.length > 0 && (
-              <div className="vs-date-chips">
-                {dates.map((d) => (
-                  <span key={d} className="vs-date-chip" dir="ltr">{fmtDate(d)}<button type="button" onClick={() => removeDate(d)} aria-label="remove"><X size={12} /></button></span>
-                ))}
-              </div>
-            )}
-          </div>
           <div className="field"><label>{tt.time}</label><input type="time" dir="ltr" value={f.visit_time} onChange={set('visit_time')} /></div>
           <div className="field-row">
             <div className="field"><label>{tt.visit_type}</label>
@@ -123,8 +107,22 @@ export default function VisitScheduler({ refType, refId, visits = [], onChange }
             )}
           </div>
           <div className="field"><label>{tt.notes}</label><input value={f.notes} onChange={set('notes')} placeholder={tt.notes_ph} /></div>
+
+          {/* Calendar at the bottom — tap days to select more than one */}
+          <div className="field">
+            <label>{tt.dates}{dates.length > 0 ? ` (${dates.length})` : ''}</label>
+            <MultiDateCalendar selected={dates} onToggle={toggleDate} lang={lang} />
+            {dates.length > 0 && (
+              <div className="vs-date-chips">
+                {dates.map((d) => (
+                  <span key={d} className="vs-date-chip" dir="ltr">{fmtDate(d)}<button type="button" onClick={() => toggleDate(d)} aria-label="remove"><X size={12} /></button></span>
+                ))}
+              </div>
+            )}
+          </div>
+
           <div className="vs-form-actions">
-            <button className="btn btn-ghost btn-sm" onClick={() => { setAdding(false); setF(blank); setDates([]); setPick(''); }}>{tt.cancel}</button>
+            <button className="btn btn-ghost btn-sm" onClick={() => { setAdding(false); setF(blank); setDates([]); }}>{tt.cancel}</button>
             <button className="btn btn-primary btn-sm" onClick={add} disabled={busy || dates.length === 0} title={dates.length === 0 ? tt.need_day : undefined}>{busy ? '...' : tt.add_visit}</button>
           </div>
         </div>
