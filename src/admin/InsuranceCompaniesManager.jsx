@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Plus, X, Trash2, Power, KeyRound, Pencil, Check } from 'lucide-react';
 import { AdminAPI } from '../storage/api.js';
 import { useLang } from '../i18n.jsx';
+import { isSaudiMobile, digits10 } from '../validation.js';
 
 const T = {
   ar: {
@@ -41,6 +42,7 @@ const T = {
     company_name: 'اسم الشركة',
     email_login: 'البريد الإلكتروني (للدخول)',
     phone: 'الجوال',
+    phone_invalid: 'رقم الجوال يجب أن يكون 10 أرقام ويبدأ بـ 05.',
     password: 'كلمة المرور',
     password_ph: '6 أحرف على الأقل',
     cancel: 'إلغاء',
@@ -83,6 +85,7 @@ const T = {
     company_name: 'Company name',
     email_login: 'Email (for login)',
     phone: 'Phone',
+    phone_invalid: 'Mobile number must be 10 digits starting with 05.',
     password: 'Password',
     password_ph: 'At least 6 characters',
     cancel: 'Cancel',
@@ -164,6 +167,7 @@ function EditInsurerModal({ user, onClose, onDone }) {
 
   const save = async () => {
     if (!f.company_name || !f.email) { setError(tt.complete_required); return; }
+    if (f.phone && !isSaudiMobile(f.phone)) { setError(tt.phone_invalid); return; }
     setBusy(true); setError('');
     try {
       await AdminAPI.updateInsurer(user.id, f);
@@ -183,7 +187,7 @@ function EditInsurerModal({ user, onClose, onDone }) {
           <div className="field"><label>{tt.company_name}</label><input value={f.company_name} onChange={set('company_name')} /></div>
           <div className="field-row">
             <div className="field"><label>{tt.email_login}</label><input type="email" dir="ltr" value={f.email} onChange={set('email')} /></div>
-            <div className="field"><label>{tt.phone}</label><input dir="ltr" value={f.phone} onChange={set('phone')} /></div>
+            <div className="field"><label>{tt.phone}</label><input dir="ltr" inputMode="numeric" maxLength={10} placeholder="05XXXXXXXX" value={f.phone} onChange={(e) => setF((p) => ({ ...p, phone: digits10(e.target.value) }))} /></div>
           </div>
 
           <div className="ed-section" style={{ marginTop: 6 }}>{tt.services_section}</div>
@@ -271,6 +275,7 @@ function InsurerModal({ onClose, onDone }) {
 
   const save = async () => {
     if (!f.company_name || !f.email || !f.password) { setError(tt.complete_required); return; }
+    if (f.phone && !isSaudiMobile(f.phone)) { setError(tt.phone_invalid); return; }
     setBusy(true); setError('');
     try { await AdminAPI.createInsurer(f); onDone(); }
     catch (e) { setError(e?.response?.data?.error === 'email_taken' ? tt.email_taken : tt.create_failed); }
@@ -286,7 +291,7 @@ function InsurerModal({ onClose, onDone }) {
           <div className="field"><label>{tt.company_name}</label><input value={f.company_name} onChange={set('company_name')} /></div>
           <div className="field-row">
             <div className="field"><label>{tt.email_login}</label><input type="email" dir="ltr" value={f.email} onChange={set('email')} /></div>
-            <div className="field"><label>{tt.phone}</label><input dir="ltr" value={f.phone} onChange={set('phone')} /></div>
+            <div className="field"><label>{tt.phone}</label><input dir="ltr" inputMode="numeric" maxLength={10} placeholder="05XXXXXXXX" value={f.phone} onChange={(e) => setF((p) => ({ ...p, phone: digits10(e.target.value) }))} /></div>
           </div>
           <div className="field"><label>{tt.password}</label><input type="text" dir="ltr" value={f.password} onChange={set('password')} placeholder={tt.password_ph} /></div>
         </div>

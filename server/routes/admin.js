@@ -49,7 +49,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const uploadsDir = path.join(__dirname, '..', 'uploads');
 const parseJSON = (v, fb) => { try { return v ? JSON.parse(v) : fb; } catch { return fb; } };
 const STATUS_LABELS = {
-  pending: 'تم الاستلام', reviewing: 'قيد المراجعة', approved: 'تمت الموافقة',
+  pending: 'تم الاستلام', reviewing: 'قيد المراجعة', approved: 'تم التواصل',
   scheduled: 'تم جدولة الزيارة', visit_scheduled: 'تم جدولة الزيارة', in_progress: 'قيد التنفيذ',
   completed: 'مكتمل', cancelled: 'ملغي', rejected: 'مرفوض', submitted: 'تم الاستلام',
 };

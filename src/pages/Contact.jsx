@@ -4,6 +4,7 @@ import { useLang } from '../i18n.jsx';
 import { useSite } from '../App.jsx';
 import { useSettings } from '../useSettings.js';
 import { PublicAPI } from '../storage/api.js';
+import { isSaudiMobile, digits10, phoneError } from '../validation.js';
 
 export default function Contact() {
   const { t, lang, pick } = useLang();
@@ -11,11 +12,14 @@ export default function Contact() {
   const { s } = useSettings();
   const [form, setForm] = useState({ name: '', phone: '', email: '', service: '', body: '' });
   const [status, setStatus] = useState(null); // null | 'sending' | 'ok' | 'error'
+  const [phoneErr, setPhoneErr] = useState('');
 
   const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
+  const setPhone = (e) => { setForm((f) => ({ ...f, phone: digits10(e.target.value) })); setPhoneErr(''); };
 
   const submit = async (e) => {
     e.preventDefault();
+    if (!isSaudiMobile(form.phone)) { setPhoneErr(phoneError(lang)); return; }
     setStatus('sending');
     try {
       await PublicAPI.sendMessage({ ...form, kind: 'appointment', lang });
@@ -63,7 +67,8 @@ export default function Contact() {
             <div className="field-row">
               <div className="field">
                 <label>{t('form_phone')}</label>
-                <input value={form.phone} onChange={set('phone')} dir="ltr" inputMode="tel" required />
+                <input value={form.phone} onChange={setPhone} dir="ltr" inputMode="numeric" maxLength={10} placeholder="05XXXXXXXX" required />
+                {phoneErr && <small style={{ color: '#c0392b' }}>{phoneErr}</small>}
               </div>
               <div className="field">
                 <label>{t('form_email')}</label>

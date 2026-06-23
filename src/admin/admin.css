@@ -220,6 +220,13 @@
 .vs-form { background: #f8fbfb; border: 1px solid var(--line); border-radius: 12px; padding: 16px; margin-bottom: 14px; }
 .vs-form .field { margin-bottom: 10px; }
 .vs-form-actions { display: flex; justify-content: flex-end; gap: 8px; }
+/* multi-day visit picker */
+.vs-date-add { display: flex; gap: 8px; align-items: stretch; flex-wrap: wrap; }
+.vs-date-add > :first-child { flex: 1; min-width: 200px; }
+.vs-date-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.vs-date-chip { display: inline-flex; align-items: center; gap: 7px; background: var(--teal-light); color: var(--teal-dark); border: 1px solid var(--teal); border-radius: 999px; padding: 6px 8px 6px 12px; font-size: 0.84rem; font-weight: 700; }
+.vs-date-chip button { display: inline-flex; align-items: center; justify-content: center; width: 19px; height: 19px; border: none; border-radius: 50%; background: rgba(11,53,86,0.12); color: var(--teal-dark); cursor: pointer; }
+.vs-date-chip button:hover { background: #f2c9c4; color: #c0392b; }
 .vs-list { display: grid; gap: 8px; }
 .vs-row { display: flex; align-items: center; gap: 14px; background: #fff; border: 1px solid var(--line); border-radius: 11px; padding: 12px 14px; flex-wrap: wrap; }
 .vs-when { min-width: 110px; }

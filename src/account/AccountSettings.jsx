@@ -4,6 +4,7 @@ import { AccountAPI } from '../storage/api.js';
 import { useAccount } from './AccountContext.jsx';
 import LocationMap from './LocationMap.jsx';
 import { useLang } from '../i18n.jsx';
+import { isSaudiMobile, digits10, phoneError } from '../validation.js';
 
 const T = {
   ar: {
@@ -140,6 +141,7 @@ function AccountEditor({ user, profile, onUser, onClose, onSaved }) {
   const pickFromMap = (la, ln) => setLoc((p) => ({ ...p, latitude: la.toFixed(6), longitude: ln.toFixed(6) }));
 
   const save = async () => {
+    if (!isSaudiMobile(f.phone)) { setError(phoneError(lang)); return; }
     setBusy(true); setError('');
     try {
       const r = await AccountAPI.updateMe({ name: f.name, email: f.email, phone: f.phone, password: f.password || undefined });
@@ -165,7 +167,7 @@ function AccountEditor({ user, profile, onUser, onClose, onSaved }) {
           <div className="field"><label>{tt.name}</label><input value={f.name} onChange={set('name')} /></div>
           <div className="field-row">
             <div className="field"><label>{tt.email_label}</label><input dir="ltr" value={f.email} onChange={set('email')} /></div>
-            <div className="field"><label>{tt.phone_label}</label><input dir="ltr" inputMode="tel" value={f.phone} onChange={set('phone')} /></div>
+            <div className="field"><label>{tt.phone_label}</label><input dir="ltr" inputMode="numeric" maxLength={10} placeholder="05XXXXXXXX" value={f.phone} onChange={(e) => setF((p) => ({ ...p, phone: digits10(e.target.value) }))} /></div>
           </div>
           <div className="field"><label>{tt.new_password} <small className="muted">{tt.leave_empty}</small></label>
             <input type="password" dir="ltr" value={f.password} onChange={set('password')} placeholder="••••••" /></div>

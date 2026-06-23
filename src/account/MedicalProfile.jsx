@@ -3,6 +3,7 @@ import { HeartPulse, Pencil, X, Save } from 'lucide-react';
 import { AccountAPI } from '../storage/api.js';
 import { useLang } from '../i18n.jsx';
 import DobInput from '../components/DobInput.jsx';
+import { digits10 } from '../validation.js';
 
 const FIELDS = [
   ['gender', 'gender', 'select'], ['dob', 'dob', 'text'], ['blood_type', 'blood_type', 'select-blood'],
@@ -96,7 +97,7 @@ function ProfileEditor({ data, onClose, onSaved }) {
           </div>
           <div className="field-row">
             <div className="field"><label>{tt.emergency_name}</label><input value={f.emergency_name || ''} onChange={set('emergency_name')} /></div>
-            <div className="field"><label>{tt.emergency_phone}</label><input dir="ltr" value={f.emergency_phone || ''} onChange={set('emergency_phone')} /></div>
+            <div className="field"><label>{tt.emergency_phone}</label><input dir="ltr" inputMode="numeric" maxLength={10} placeholder="05XXXXXXXX" value={f.emergency_phone || ''} onChange={(e) => setF((p) => ({ ...p, emergency_phone: digits10(e.target.value) }))} /></div>
           </div>
         </div>
         <div className="modal-foot">

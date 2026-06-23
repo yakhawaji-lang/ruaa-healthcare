@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { CalendarPlus, Trash2, Check, X, UserRound, Stethoscope, Clock } from 'lucide-react';
+import { CalendarPlus, Trash2, Check, X, UserRound, Stethoscope, Clock, Plus } from 'lucide-react';
 import { AdminAPI } from '../storage/api.js';
 import { VISIT_STATUSES, visitStatusLabel, visitStatusColor, fmtDate,
   VISIT_TYPES_BI, CLINICIAN_ROLES_BI, normBiList, normStaffList, biLabel } from '../account/status.js';
@@ -11,7 +11,7 @@ const parseJSON = (s) => { try { return JSON.parse(s); } catch { return null; } 
 const T = {
   ar: {
     confirm_delete: 'حذف الزيارة؟', home_visits: 'الزيارات المنزلية', schedule_visit: 'جدولة زيارة',
-    date: 'التاريخ', time: 'الوقت', visit_type: 'نوع الزيارة', clinician_role: 'تخصص الكادر',
+    date: 'التاريخ', time: 'الوقت', dates: 'أيام الزيارة', add_day: 'إضافة يوم', need_day: 'اختر يومًا واحدًا على الأقل', visit_type: 'نوع الزيارة', clinician_role: 'تخصص الكادر',
     clinician_name: 'اسم الكادر الطبي', clinician_name_ph: 'مثال: أ. سارة العتيبي', select_name: 'اختر الاسم',
     notes: 'ملاحظات الزيارة', notes_ph: 'تفاصيل إضافية عن الزيارة (اختياري)', cancel: 'إلغاء', add_visit: 'إضافة الزيارة',
     no_visits: 'لا توجد زيارات. أضف أول زيارة منزلية.',
@@ -19,7 +19,7 @@ const T = {
   },
   en: {
     confirm_delete: 'Delete the visit?', home_visits: 'Home Visits', schedule_visit: 'Schedule visit',
-    date: 'Date', time: 'Time', visit_type: 'Visit type', clinician_role: 'Clinician specialty',
+    date: 'Date', time: 'Time', dates: 'Visit days', add_day: 'Add day', need_day: 'Select at least one day', visit_type: 'Visit type', clinician_role: 'Clinician specialty',
     clinician_name: 'Clinician name', clinician_name_ph: 'e.g. Ms. Sarah Al-Otaibi', select_name: 'Select name',
     notes: 'Visit notes', notes_ph: 'Extra details about the visit (optional)', cancel: 'Cancel', add_visit: 'Add visit',
     no_visits: 'No visits. Add the first home visit.',
@@ -27,7 +27,7 @@ const T = {
   },
 };
 
-const blank = { visit_date: '', visit_time: '', clinician_name: '', clinician_role: 'ممرض/ة', visit_type: 'زيارة منزلية', notes: '' };
+const blank = { visit_time: '', clinician_name: '', clinician_role: 'ممرض/ة', visit_type: 'زيارة منزلية', notes: '' };
 
 // Schedule & manage home visits linked to a service request / insurance case.
 export default function VisitScheduler({ refType, refId, visits = [], onChange }) {
@@ -35,6 +35,8 @@ export default function VisitScheduler({ refType, refId, visits = [], onChange }
   const tt = T[lang];
   const [adding, setAdding] = useState(false);
   const [f, setF] = useState(blank);
+  const [dates, setDates] = useState([]); // multiple visit days
+  const [pick, setPick] = useState('');
   const [busy, setBusy] = useState(false);
   const [vTypes, setVTypes] = useState(VISIT_TYPES_BI);
   const [vRoles, setVRoles] = useState(CLINICIAN_ROLES_BI);
@@ -65,10 +67,17 @@ export default function VisitScheduler({ refType, refId, visits = [], onChange }
   const roleLabel = (v) => { const it = vRoles.find((x) => x.ar === v || x.en === v); return it ? biLabel(it, lang) : v; };
   const nameLabel = (v) => { const s = vStaff.find((x) => x.name_ar === v || x.name_en === v); return s ? biLabel({ ar: s.name_ar, en: s.name_en }, lang) : v; };
 
+  const addDate = () => { if (pick && !dates.includes(pick)) setDates((d) => [...d, pick].sort()); setPick(''); };
+  const removeDate = (d) => setDates((arr) => arr.filter((x) => x !== d));
+
   const add = async () => {
+    if (dates.length === 0) return;
     setBusy(true);
-    try { await AdminAPI.createVisit({ ref_type: refType, ref_id: refId, ...f }); setF(blank); setAdding(false); onChange(); }
-    finally { setBusy(false); }
+    try {
+      // create one visit per selected day (shared time / clinician / notes)
+      for (const d of dates) await AdminAPI.createVisit({ ref_type: refType, ref_id: refId, ...f, visit_date: d });
+      setF(blank); setDates([]); setPick(''); setAdding(false); onChange();
+    } finally { setBusy(false); }
   };
   const setStatus = async (v, status) => { await AdminAPI.updateVisit(v.id, { ...v, status }); onChange(); };
   const remove = async (id) => { if (confirm(tt.confirm_delete)) { await AdminAPI.deleteVisit(id); onChange(); } };
@@ -82,10 +91,21 @@ export default function VisitScheduler({ refType, refId, visits = [], onChange }
 
       {adding && (
         <div className="vs-form">
-          <div className="field-row">
-            <div className="field"><label>{tt.date}</label><DobInput iso value={f.visit_date} onChange={(v) => setF((p) => ({ ...p, visit_date: v }))} /></div>
-            <div className="field"><label>{tt.time}</label><input type="time" dir="ltr" value={f.visit_time} onChange={set('visit_time')} /></div>
+          <div className="field">
+            <label>{tt.dates}</label>
+            <div className="vs-date-add">
+              <DobInput iso value={pick} onChange={setPick} />
+              <button type="button" className="btn btn-outline btn-sm" onClick={addDate} disabled={!pick}><Plus size={15} /> {tt.add_day}</button>
+            </div>
+            {dates.length > 0 && (
+              <div className="vs-date-chips">
+                {dates.map((d) => (
+                  <span key={d} className="vs-date-chip" dir="ltr">{fmtDate(d)}<button type="button" onClick={() => removeDate(d)} aria-label="remove"><X size={12} /></button></span>
+                ))}
+              </div>
+            )}
           </div>
+          <div className="field"><label>{tt.time}</label><input type="time" dir="ltr" value={f.visit_time} onChange={set('visit_time')} /></div>
           <div className="field-row">
             <div className="field"><label>{tt.visit_type}</label>
               <select value={f.visit_type} onChange={set('visit_type')}>{biOptions(vTypes, f.visit_type).map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}</select></div>
@@ -104,8 +124,8 @@ export default function VisitScheduler({ refType, refId, visits = [], onChange }
           </div>
           <div className="field"><label>{tt.notes}</label><input value={f.notes} onChange={set('notes')} placeholder={tt.notes_ph} /></div>
           <div className="vs-form-actions">
-            <button className="btn btn-ghost btn-sm" onClick={() => { setAdding(false); setF(blank); }}>{tt.cancel}</button>
-            <button className="btn btn-primary btn-sm" onClick={add} disabled={busy}>{busy ? '...' : tt.add_visit}</button>
+            <button className="btn btn-ghost btn-sm" onClick={() => { setAdding(false); setF(blank); setDates([]); setPick(''); }}>{tt.cancel}</button>
+            <button className="btn btn-primary btn-sm" onClick={add} disabled={busy || dates.length === 0} title={dates.length === 0 ? tt.need_day : undefined}>{busy ? '...' : tt.add_visit}</button>
           </div>
         </div>
       )}

@@ -5,6 +5,7 @@ import { AccountAPI } from '../storage/api.js';
 import { useAccount } from './AccountContext.jsx';
 import { useLang } from '../i18n.jsx';
 import Logo from '../components/Logo.jsx';
+import { isSaudiMobile, digits10, phoneError } from '../validation.js';
 
 const T = {
   ar: {
@@ -49,6 +50,7 @@ export default function AccountRegister() {
 
   const submit = async (e) => {
     e.preventDefault();
+    if (!isSaudiMobile(f.phone)) { setError(phoneError(lang)); return; }
     if (f.password.length < 6) { setError(tt.pw_too_short); return; }
     setBusy(true); setError('');
     try {
@@ -73,7 +75,7 @@ export default function AccountRegister() {
           <div className="field"><label>{tt.email}</label>
             <input type="email" dir="ltr" value={f.email} onChange={set('email')} required /></div>
           <div className="field"><label>{tt.phone}</label>
-            <input dir="ltr" inputMode="tel" value={f.phone} onChange={set('phone')} /></div>
+            <input dir="ltr" inputMode="numeric" maxLength={10} placeholder="05XXXXXXXX" value={f.phone} onChange={(e) => setF((p) => ({ ...p, phone: digits10(e.target.value) }))} required /></div>
           <div className="field"><label>{tt.password}</label>
             <input type="password" dir="ltr" value={f.password} onChange={set('password')} required /></div>
           <button className="btn btn-primary btn-lg auth-btn" disabled={busy}>

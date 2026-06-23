@@ -3,7 +3,7 @@ export const STATUS = {
   pending:        { ar: 'تم الاستلام',       en: 'Received',        color: '#1f7d92' },
   submitted:      { ar: 'تم الاستلام',       en: 'Received',        color: '#1f7d92' },
   reviewing:      { ar: 'قيد المراجعة',      en: 'Under review',    color: '#e08a3c' },
-  approved:       { ar: 'تمت الموافقة',      en: 'Approved',        color: '#2e8b57' },
+  approved:       { ar: 'تم التواصل',        en: 'Contacted',       color: '#2e8b57' },
   scheduled:      { ar: 'تم جدولة الزيارة',  en: 'Visit scheduled', color: '#3b82f6' },
   visit_scheduled:{ ar: 'تم جدولة الزيارة',  en: 'Visit scheduled', color: '#3b82f6' },
   in_progress:    { ar: 'قيد التنفيذ',       en: 'In progress',     color: '#8b5cf6' },

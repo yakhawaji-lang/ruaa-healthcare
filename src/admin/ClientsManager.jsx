@@ -3,6 +3,7 @@ import { Plus, X, Trash2, Power, KeyRound, Pencil } from 'lucide-react';
 import { AdminAPI } from '../storage/api.js';
 import { useAdminAuth } from './AdminApp.jsx';
 import { useLang } from '../i18n.jsx';
+import { isSaudiMobile, digits10 } from '../validation.js';
 
 const T = {
   ar: {
@@ -12,6 +13,7 @@ const T = {
     active: 'مُفعّل', suspended: 'موقوف', edit: 'تعديل', reset_password: 'تغيير كلمة المرور', toggle: 'تفعيل/إيقاف', delete: 'حذف',
     confirm_delete: 'حذف حساب العميل؟',
     name: 'الاسم', email: 'البريد الإلكتروني', phone: 'الجوال', password: 'كلمة المرور', password_ph: '6 أحرف على الأقل',
+    phone_invalid: 'رقم الجوال يجب أن يكون 10 أرقام ويبدأ بـ 05.',
     cancel: 'إلغاء', create: 'إنشاء الحساب', save: 'حفظ',
     new_user: 'حساب عميل جديد', edit_user: 'تعديل حساب العميل',
     new_password: 'كلمة المرور الجديدة', pw_done: 'تم تحديث كلمة المرور', pw_modal: 'تغيير كلمة المرور',
@@ -24,6 +26,7 @@ const T = {
     active: 'Active', suspended: 'Suspended', edit: 'Edit', reset_password: 'Change password', toggle: 'Activate / Suspend', delete: 'Delete',
     confirm_delete: 'Delete this client account?',
     name: 'Name', email: 'Email', phone: 'Phone', password: 'Password', password_ph: 'At least 6 characters',
+    phone_invalid: 'Mobile number must be 10 digits starting with 05.',
     cancel: 'Cancel', create: 'Create account', save: 'Save',
     new_user: 'New client account', edit_user: 'Edit client account',
     new_password: 'New password', pw_done: 'Password updated', pw_modal: 'Change password',
@@ -97,6 +100,7 @@ function ClientModal({ mode, user, tt, onClose, onDone }) {
   const set = (k) => (e) => setF((p) => ({ ...p, [k]: e.target.value }));
   const save = async () => {
     if (!f.name || !f.email || (!isEdit && !f.password)) { setError(tt.required); return; }
+    if (!isSaudiMobile(f.phone)) { setError(tt.phone_invalid); return; }
     setBusy(true); setError('');
     try {
       if (isEdit) await AdminAPI.updateClient(user.id, { name: f.name, email: f.email, phone: f.phone });
@@ -116,7 +120,7 @@ function ClientModal({ mode, user, tt, onClose, onDone }) {
           <div className="field"><label>{tt.name}</label><input value={f.name} onChange={set('name')} /></div>
           <div className="field-row">
             <div className="field"><label>{tt.email}</label><input type="email" dir="ltr" value={f.email} onChange={set('email')} /></div>
-            <div className="field"><label>{tt.phone}</label><input dir="ltr" value={f.phone} onChange={set('phone')} /></div>
+            <div className="field"><label>{tt.phone}</label><input dir="ltr" inputMode="numeric" maxLength={10} placeholder="05XXXXXXXX" value={f.phone} onChange={(e) => setF((p) => ({ ...p, phone: digits10(e.target.value) }))} /></div>
           </div>
           {!isEdit && <div className="field"><label>{tt.password}</label><input type="text" dir="ltr" value={f.password} onChange={set('password')} placeholder={tt.password_ph} /></div>}
         </div>
