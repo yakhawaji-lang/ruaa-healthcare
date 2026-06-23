@@ -27,7 +27,6 @@ export default function AppInstallCard() {
   const tt = T[lang];
   const [deferred, setDeferred] = useState(null);
   const [installed, setInstalled] = useState(false);
-  const [showHint, setShowHint] = useState(false);
   const [pushState, setPushState] = useState('off');
   const [busy, setBusy] = useState(false);
 
@@ -46,13 +45,10 @@ export default function AppInstallCard() {
   }, []);
 
   const install = async () => {
-    if (deferred) {
-      deferred.prompt();
-      try { await deferred.userChoice; } catch { /* ignore */ }
-      setDeferred(null);
-    } else {
-      setShowHint(true); // browser didn't offer the auto prompt → show manual steps
-    }
+    if (!deferred) return;
+    deferred.prompt();
+    try { await deferred.userChoice; } catch { /* ignore */ }
+    setDeferred(null);
   };
 
   const togglePush = async () => {
@@ -71,8 +67,10 @@ export default function AppInstallCard() {
         <div className="app-card-actions">
           {installed ? (
             <span className="app-installed"><CheckCircle2 size={16} /> {tt.installed}</span>
-          ) : (
+          ) : deferred ? (
             <button type="button" className="btn btn-white btn-sm" onClick={install}><Download size={16} /> {tt.install}</button>
+          ) : (
+            <span className="app-hint">{tt.install_hint}</span>
           )}
           {pushState !== 'unsupported' && (
             <button type="button" className={`btn btn-sm ${pushState === 'on' ? 'btn-ghost' : 'btn-outline'}`} onClick={togglePush} disabled={busy}>
@@ -80,7 +78,6 @@ export default function AppInstallCard() {
             </button>
           )}
         </div>
-        {!installed && showHint && <p className="app-hint">{tt.install_hint}</p>}
       </div>
     </div>
   );
