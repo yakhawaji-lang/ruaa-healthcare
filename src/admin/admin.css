@@ -33,7 +33,12 @@
 
 .admin-main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
 .admin-topbar { background: #fff; padding: 14px 28px; border-bottom: 1px solid var(--line); display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.admin-topbar-start { display: flex; align-items: center; gap: 12px; min-width: 0; }
 .admin-welcome { font-weight: 600; color: var(--navy); }
+/* mobile drawer controls — hidden on desktop, shown in the phones media query */
+.admin-burger { display: none; background: none; border: none; cursor: pointer; color: var(--navy); padding: 4px; }
+.admin-drawer-close { display: none; margin-inline-start: auto; background: none; border: none; color: #cfe2e6; cursor: pointer; padding: 4px; }
+.admin-backdrop { display: none; }
 
 /* ===== Notifications bell ===== */
 .notif { position: relative; }
@@ -280,6 +285,63 @@
   .setting-row { grid-template-columns: 1fr; }
   .cal-grid { grid-auto-rows: minmax(72px, auto); }
   .cal-week { grid-template-columns: 1fr; }
+}
+
+/* ---- Admin: phones — off-canvas drawer + fluid content (≤640px) ---- */
+@media (max-width: 640px) {
+  /* Sidebar becomes a slide-in drawer */
+  .admin-burger { display: inline-flex; align-items: center; }
+  .admin-drawer-close { display: inline-flex; align-items: center; }
+  .admin-backdrop { display: block; position: fixed; inset: 0; background: rgba(8,39,64,0.5); z-index: 110; }
+  .admin-sidebar {
+    position: fixed; inset-block: 0; inset-inline-start: 0; z-index: 120;
+    width: 256px; height: 100vh; box-shadow: 0 0 44px rgba(0,0,0,0.34);
+    transform: translateX(-110%); transition: transform 0.28s ease;
+  }
+  [dir="rtl"] .admin-sidebar { transform: translateX(110%); }
+  .admin-sidebar.open { transform: translateX(0); }
+  /* restore full labels inside the open drawer (override the 820px icon-only rule) */
+  .admin-brand span, .admin-nav span, .admin-nav-group-title { display: inline; }
+  .view-site, .logout-btn { display: flex; }
+  .logout-btn span, .view-site span { display: inline; }
+
+  /* Content + topbar spacing */
+  .admin-content { padding: 16px 14px; }
+  .admin-topbar { padding: 10px 14px; gap: 10px; }
+  .admin-welcome { font-size: 0.86rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .page-title { font-size: 1.25rem; margin-bottom: 16px; }
+  .page-head { flex-wrap: wrap; gap: 10px; }
+  .section-h2 { font-size: 1.1rem; }
+
+  /* Stat cards single column */
+  .stat-grid { grid-template-columns: 1fr; gap: 12px; }
+  .stat-card { padding: 16px; }
+
+  /* Tables scroll horizontally inside their panel instead of breaking the page */
+  .panel { padding: 16px; }
+  .panel, .perm-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .admin-table { min-width: 540px; }
+
+  /* Modals go full-screen for usable forms */
+  .modal-overlay { padding: 0; }
+  .modal { max-width: 100%; max-height: 100vh; height: 100vh; border-radius: 0; }
+  .modal-body { padding: 18px; }
+  .modal-foot { padding: 14px 18px; }
+  .modal-foot .btn { flex: 1; justify-content: center; }
+  .field-row { grid-template-columns: 1fr; }
+  .wide-modal { max-width: 100%; }
+
+  /* Calendar: month & weekday grids scroll horizontally inside their own box */
+  .cal-toolbar { gap: 8px; }
+  .cal-month { overflow-x: auto; -webkit-overflow-scrolling: touch; padding-bottom: 4px; }
+  .cal-wd-row, .cal-grid { min-width: 560px; }
+
+  /* Image upload + visit rows stack */
+  .img-upload-row { flex-direction: column; }
+  .img-preview { width: 100%; min-width: 0; }
+  .vs-row { gap: 8px; }
+  .vs-form-actions .btn { flex: 1; justify-content: center; }
+  .slides-grid { grid-template-columns: 1fr; }
 }
 
 /* ---------------- User management permissions ---------------- */

@@ -1,5 +1,6 @@
+import { useState } from 'react';
 import { NavLink, Link } from 'react-router-dom';
-import { LayoutDashboard, Images, Stethoscope, ClipboardList, ShieldPlus, Building2, Handshake, FileText, Mail, Settings, LogOut, ExternalLink, Globe, CalendarDays, Users2, UserRound } from 'lucide-react';
+import { LayoutDashboard, Images, Stethoscope, ClipboardList, ShieldPlus, Building2, Handshake, FileText, Mail, Settings, LogOut, ExternalLink, Globe, CalendarDays, Users2, UserRound, Menu, X } from 'lucide-react';
 import { useAdminAuth } from './AdminApp.jsx';
 import { useLang } from '../i18n.jsx';
 import Logo from '../components/Logo.jsx';
@@ -41,11 +42,16 @@ export default function AdminLayout({ children }) {
   const { admin, logout, can } = useAdminAuth();
   const { lang, dir, toggle } = useLang();
   const tt = T[lang];
+  const [navOpen, setNavOpen] = useState(false);
   const visible = (n) => (n.superOnly ? admin?.is_super : (admin?.is_super || can(n.page, 'view')));
   return (
     <div className="admin-shell" dir={dir}>
-      <aside className="admin-sidebar">
-        <div className="admin-brand"><Logo size={38} /><span>رؤى</span></div>
+      {navOpen && <div className="admin-backdrop" onClick={() => setNavOpen(false)} />}
+      <aside className={`admin-sidebar ${navOpen ? 'open' : ''}`}>
+        <div className="admin-brand">
+          <Logo size={38} /><span>رؤى</span>
+          <button className="admin-drawer-close" onClick={() => setNavOpen(false)} aria-label="close menu"><X size={20} /></button>
+        </div>
         <nav className="admin-nav">
           {GROUPS.map((g, gi) => {
             const items = g.items.filter(visible);
@@ -54,7 +60,7 @@ export default function AdminLayout({ children }) {
               <div key={gi} className="admin-nav-group">
                 {g.ar && <div className="admin-nav-group-title">{lang === 'en' ? g.en : g.ar}</div>}
                 {items.map((n) => (
-                  <NavLink key={n.to} to={n.to} end={n.end}
+                  <NavLink key={n.to} to={n.to} end={n.end} onClick={() => setNavOpen(false)}
                     className={({ isActive }) => (isActive ? 'active' : '')}>
                     <n.icon size={19} /> <span>{lang === 'en' ? n.en : n.ar}</span>
                   </NavLink>
@@ -70,7 +76,10 @@ export default function AdminLayout({ children }) {
       </aside>
       <div className="admin-main">
         <header className="admin-topbar">
-          <span className="admin-welcome">{tt.welcome}، {admin?.name}</span>
+          <div className="admin-topbar-start">
+            <button className="admin-burger" onClick={() => setNavOpen(true)} aria-label="menu"><Menu size={22} /></button>
+            <span className="admin-welcome">{tt.welcome}، {admin?.name}</span>
+          </div>
           <div className="admin-topbar-actions" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             <button className="lang-btn" onClick={toggle} aria-label="language">
               <Globe size={16} /> {lang === 'ar' ? 'EN' : 'ع'}
