@@ -1,24 +1,42 @@
-import { useEffect, useState } from 'react';
-import { Plus, X, Trash2, Power, KeyRound, Pencil, ShieldCheck } from 'lucide-react';
+import { useEffect, useState, Fragment } from 'react';
+import { Plus, X, Trash2, Power, KeyRound, Pencil, ShieldCheck,
+  LayoutDashboard, ClipboardList, ShieldPlus, CalendarDays, Mail,
+  UserRound, Building2, Stethoscope, Images, Handshake, FileText, Settings,
+  CheckCheck, Eraser } from 'lucide-react';
 import { AdminAPI } from '../storage/api.js';
 import { useAdminAuth } from './AdminApp.jsx';
 import { useLang } from '../i18n.jsx';
 
-// pages and which actions each supports
-const PAGES = [
-  { key: 'dashboard', ar: 'لوحة التحكم', en: 'Dashboard', actions: ['view'] },
-  { key: 'requests', ar: 'طلبات الخدمات', en: 'Service Requests', actions: ['view', 'edit', 'delete'] },
-  { key: 'cases', ar: 'حالات التأمين', en: 'Insurance Cases', actions: ['view', 'edit', 'delete'] },
-  { key: 'visits', ar: 'تقويم الزيارات', en: 'Visits Calendar', actions: ['view'] },
-  { key: 'insurers', ar: 'شركات التأمين', en: 'Insurance Companies', actions: ['view', 'create', 'edit', 'delete'] },
-  { key: 'clients', ar: 'حسابات العملاء', en: 'Client Accounts', actions: ['view', 'create', 'edit', 'delete'] },
-  { key: 'hero', ar: 'السلايدر', en: 'Slider', actions: ['view', 'create', 'edit', 'delete'] },
-  { key: 'partners', ar: 'الشركاء', en: 'Partners', actions: ['view', 'create', 'edit', 'delete'] },
-  { key: 'services', ar: 'الخدمات', en: 'Services', actions: ['view', 'create', 'edit', 'delete'] },
-  { key: 'pages', ar: 'الصفحات', en: 'Pages', actions: ['view', 'edit'] },
-  { key: 'messages', ar: 'الرسائل', en: 'Messages', actions: ['view', 'delete'] },
-  { key: 'settings', ar: 'الإعدادات', en: 'Settings', actions: ['view', 'edit'] },
+// Permission matrix — grouped to mirror the admin sidebar so every
+// controllable page is represented. The `actions` for each page match the
+// server-side guard exactly (server/routes/admin.js):
+//   GET=view, POST=create, PUT/PATCH=edit, DELETE=delete.
+// (User Management itself is super-admin only and is intentionally not listed.)
+const PERM_GROUPS = [
+  { ar: 'عام', en: 'General', pages: [
+    { key: 'dashboard', ar: 'لوحة التحكم', en: 'Dashboard', icon: LayoutDashboard, actions: ['view'] },
+  ] },
+  { ar: 'العمليات', en: 'Operations', pages: [
+    { key: 'requests', ar: 'طلبات الخدمات', en: 'Service Requests', icon: ClipboardList, actions: ['view', 'create', 'edit', 'delete'] },
+    { key: 'cases', ar: 'حالات التأمين', en: 'Insurance Cases', icon: ShieldPlus, actions: ['view', 'create', 'edit', 'delete'] },
+    { key: 'visits', ar: 'تقويم الزيارات', en: 'Visits Calendar', icon: CalendarDays, actions: ['view', 'create', 'edit', 'delete'] },
+    { key: 'messages', ar: 'الرسائل', en: 'Messages', icon: Mail, actions: ['view', 'edit', 'delete'] },
+  ] },
+  { ar: 'الحسابات', en: 'Accounts', pages: [
+    { key: 'clients', ar: 'حسابات العملاء', en: 'Client Accounts', icon: UserRound, actions: ['view', 'create', 'edit', 'delete'] },
+    { key: 'insurers', ar: 'شركات التأمين', en: 'Insurance Companies', icon: Building2, actions: ['view', 'create', 'edit', 'delete'] },
+  ] },
+  { ar: 'محتوى الموقع', en: 'Website Content', pages: [
+    { key: 'services', ar: 'الخدمات', en: 'Services', icon: Stethoscope, actions: ['view', 'create', 'edit', 'delete'] },
+    { key: 'hero', ar: 'السلايدر', en: 'Slider', icon: Images, actions: ['view', 'create', 'edit', 'delete'] },
+    { key: 'partners', ar: 'الشركاء', en: 'Partners', icon: Handshake, actions: ['view', 'create', 'edit', 'delete'] },
+    { key: 'pages', ar: 'الصفحات', en: 'Pages', icon: FileText, actions: ['view', 'edit'] },
+  ] },
+  { ar: 'النظام', en: 'System', pages: [
+    { key: 'settings', ar: 'الإعدادات', en: 'Settings', icon: Settings, actions: ['view', 'edit'] },
+  ] },
 ];
+const PAGES = PERM_GROUPS.flatMap((g) => g.pages);
 const ACTIONS = ['view', 'create', 'edit', 'delete'];
 
 const T = {
@@ -30,8 +48,9 @@ const T = {
     edit: 'تعديل', reset_password: 'تغيير كلمة المرور', toggle: 'تفعيل/إيقاف', delete: 'حذف',
     confirm_delete: 'حذف هذا المستخدم؟', name: 'الاسم', email: 'البريد الإلكتروني', password: 'كلمة المرور',
     password_ph: '6 أحرف على الأقل', full_access: 'صلاحية كاملة (مدير عام)',
-    permissions: 'الصلاحيات التفصيلية', page: 'الصفحة',
-    a_view: 'عرض', a_create: 'إضافة', a_edit: 'تعديل', a_delete: 'حذف',
+    permissions: 'الصلاحيات التفصيلية', perm_hint: 'حدّد ما يمكن لهذا الموظف رؤيته والقيام به في كل قسم.', page: 'الصفحة',
+    a_view: 'عرض', a_create: 'إضافة', a_edit: 'تعديل', a_delete: 'حذف', a_all: 'الكل',
+    grant_all: 'منح كل الصلاحيات', clear_all: 'مسح الكل',
     cancel: 'إلغاء', create: 'إنشاء', save: 'حفظ',
     new_password: 'كلمة المرور الجديدة', pw_done: 'تم تحديث كلمة المرور', pw_modal: 'تغيير كلمة المرور',
     new_user: 'مستخدم جديد', edit_user: 'تعديل المستخدم',
@@ -46,8 +65,9 @@ const T = {
     edit: 'Edit', reset_password: 'Change password', toggle: 'Activate / Suspend', delete: 'Delete',
     confirm_delete: 'Delete this user?', name: 'Name', email: 'Email', password: 'Password',
     password_ph: 'At least 6 characters', full_access: 'Full access (super admin)',
-    permissions: 'Detailed permissions', page: 'Page',
-    a_view: 'View', a_create: 'Create', a_edit: 'Edit', a_delete: 'Delete',
+    permissions: 'Detailed permissions', perm_hint: 'Choose what this staff member can see and do in each section.', page: 'Page',
+    a_view: 'View', a_create: 'Create', a_edit: 'Edit', a_delete: 'Delete', a_all: 'All',
+    grant_all: 'Grant everything', clear_all: 'Clear all',
     cancel: 'Cancel', create: 'Create', save: 'Save',
     new_password: 'New password', pw_done: 'Password updated', pw_modal: 'Change password',
     new_user: 'New user', edit_user: 'Edit user',
@@ -134,9 +154,26 @@ function UserModal({ mode, user, tt, lang, onClose, onDone }) {
   const toggleAct = (page, action) => setPerms((pr) => {
     const cur = { ...(pr.pages[page] || {}) };
     cur[action] = !cur[action];
+    // turning off "view" removes the whole page (can't act on a page you can't see)
+    if (action === 'view' && !cur.view) return { ...pr, pages: { ...pr.pages, [page]: {} } };
     if (action !== 'view' && cur[action]) cur.view = true; // any action implies view
     return { ...pr, pages: { ...pr.pages, [page]: cur } };
   });
+
+  // toggle every available action for one page on/off
+  const toggleAllForPage = (p) => setPerms((pr) => {
+    const allOn = p.actions.every((a) => pr.pages[p.key]?.[a]);
+    const next = {};
+    if (!allOn) p.actions.forEach((a) => { next[a] = true; });
+    return { ...pr, pages: { ...pr.pages, [p.key]: next } };
+  });
+
+  const grantAll = () => setPerms(() => {
+    const pages = {};
+    PAGES.forEach((p) => { const o = {}; p.actions.forEach((a) => { o[a] = true; }); pages[p.key] = o; });
+    return { pages };
+  });
+  const clearAll = () => setPerms(emptyPerms());
 
   const save = async () => {
     if (!f.name || !f.email || (!isEdit && !f.password)) { setError(tt.required); return; }
@@ -172,22 +209,50 @@ function UserModal({ mode, user, tt, lang, onClose, onDone }) {
 
           {!isSuper && (
             <>
-              <div className="ed-section">{tt.permissions}</div>
+              <div className="perm-section-head">
+                <div>
+                  <div className="ed-section" style={{ border: 'none', padding: 0, margin: 0 }}>{tt.permissions}</div>
+                  <p className="perm-hint">{tt.perm_hint}</p>
+                </div>
+                <div className="perm-toolbar">
+                  <button type="button" className="perm-mini" onClick={grantAll}><CheckCheck size={14} /> {tt.grant_all}</button>
+                  <button type="button" className="perm-mini" onClick={clearAll}><Eraser size={14} /> {tt.clear_all}</button>
+                </div>
+              </div>
               <div className="perm-table-wrap">
                 <table className="perm-table">
-                  <thead><tr><th>{tt.page}</th>{ACTIONS.map((a) => <th key={a}>{tt['a_' + a]}</th>)}</tr></thead>
+                  <thead>
+                    <tr>
+                      <th className="perm-page-h">{tt.page}</th>
+                      <th>{tt.a_all}</th>
+                      {ACTIONS.map((a) => <th key={a}>{tt['a_' + a]}</th>)}
+                    </tr>
+                  </thead>
                   <tbody>
-                    {PAGES.map((p) => (
-                      <tr key={p.key}>
-                        <td className="perm-page">{lang === 'en' ? p.en : p.ar}</td>
-                        {ACTIONS.map((a) => (
-                          <td key={a} className="perm-cell">
-                            {p.actions.includes(a)
-                              ? <input type="checkbox" checked={!!perms.pages[p.key]?.[a]} onChange={() => toggleAct(p.key, a)} />
-                              : <span className="perm-na">—</span>}
-                          </td>
-                        ))}
-                      </tr>
+                    {PERM_GROUPS.map((g) => (
+                      <Fragment key={g.en}>
+                        <tr className="perm-group-row"><td colSpan={ACTIONS.length + 2}>{lang === 'en' ? g.en : g.ar}</td></tr>
+                        {g.pages.map((p) => {
+                          const pp = perms.pages[p.key] || {};
+                          const hasAny = p.actions.some((a) => pp[a]);
+                          const allOn = p.actions.every((a) => pp[a]);
+                          return (
+                            <tr key={p.key} className={`perm-row ${hasAny ? 'has' : ''}`}>
+                              <td className="perm-page"><p.icon size={15} /> {lang === 'en' ? p.en : p.ar}</td>
+                              <td className="perm-cell">
+                                <input type="checkbox" className="perm-all-cb" checked={allOn} onChange={() => toggleAllForPage(p)} />
+                              </td>
+                              {ACTIONS.map((a) => (
+                                <td key={a} className="perm-cell">
+                                  {p.actions.includes(a)
+                                    ? <input type="checkbox" checked={!!pp[a]} onChange={() => toggleAct(p.key, a)} />
+                                    : <span className="perm-na">—</span>}
+                                </td>
+                              ))}
+                            </tr>
+                          );
+                        })}
+                      </Fragment>
                     ))}
                   </tbody>
                 </table>
