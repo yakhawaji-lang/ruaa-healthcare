@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { CalendarPlus, Trash2, Check, X, UserRound, Stethoscope, Clock, Plus } from 'lucide-react';
+import { CalendarPlus, Trash2, Check, X, UserRound, Stethoscope, Clock, Pencil } from 'lucide-react';
 import { AdminAPI } from '../storage/api.js';
 import { VISIT_STATUSES, visitStatusLabel, visitStatusColor, fmtDate,
   VISIT_TYPES_BI, CLINICIAN_ROLES_BI, normBiList, normStaffList, biLabel } from '../account/status.js';
@@ -15,7 +15,7 @@ const T = {
     clinician_name: 'اسم الكادر الطبي', clinician_name_ph: 'مثال: أ. سارة العتيبي', select_name: 'اختر الاسم',
     notes: 'ملاحظات الزيارة', notes_ph: 'تفاصيل إضافية عن الزيارة (اختياري)', cancel: 'إلغاء', add_visit: 'إضافة الزيارة',
     no_visits: 'لا توجد زيارات. أضف أول زيارة منزلية.',
-    complete: 'إتمام', cancel_visit: 'إلغاء', delete: 'حذف',
+    complete: 'إتمام', cancel_visit: 'إلغاء', delete: 'حذف', edit: 'تعديل', save: 'حفظ التعديل', edit_visit: 'تعديل الزيارة',
   },
   en: {
     confirm_delete: 'Delete the visit?', home_visits: 'Home Visits', schedule_visit: 'Schedule visit',
@@ -23,7 +23,7 @@ const T = {
     clinician_name: 'Clinician name', clinician_name_ph: 'e.g. Ms. Sarah Al-Otaibi', select_name: 'Select name',
     notes: 'Visit notes', notes_ph: 'Extra details about the visit (optional)', cancel: 'Cancel', add_visit: 'Add visit',
     no_visits: 'No visits. Add the first home visit.',
-    complete: 'Complete', cancel_visit: 'Cancel', delete: 'Delete',
+    complete: 'Complete', cancel_visit: 'Cancel', delete: 'Delete', edit: 'Edit', save: 'Save changes', edit_visit: 'Edit visit',
   },
 };
 
@@ -36,6 +36,7 @@ export default function VisitScheduler({ refType, refId, visits = [], onChange }
   const [adding, setAdding] = useState(false);
   const [f, setF] = useState(blank);
   const [dates, setDates] = useState([]); // multiple visit days
+  const [editing, setEditing] = useState(null); // visit being edited, or null
   const [busy, setBusy] = useState(false);
   const [vTypes, setVTypes] = useState(VISIT_TYPES_BI);
   const [vRoles, setVRoles] = useState(CLINICIAN_ROLES_BI);
@@ -66,15 +67,31 @@ export default function VisitScheduler({ refType, refId, visits = [], onChange }
   const roleLabel = (v) => { const it = vRoles.find((x) => x.ar === v || x.en === v); return it ? biLabel(it, lang) : v; };
   const nameLabel = (v) => { const s = vStaff.find((x) => x.name_ar === v || x.name_en === v); return s ? biLabel({ ar: s.name_ar, en: s.name_en }, lang) : v; };
 
-  const toggleDate = (d) => setDates((arr) => (arr.includes(d) ? arr.filter((x) => x !== d) : [...arr, d].sort()));
+  // edit mode picks a single day; add mode toggles multiple
+  const toggleDate = (d) => {
+    if (editing) { setDates([d]); return; }
+    setDates((arr) => (arr.includes(d) ? arr.filter((x) => x !== d) : [...arr, d].sort()));
+  };
+
+  const startEdit = (v) => {
+    setEditing(v);
+    setF({ visit_time: v.visit_time || '', clinician_name: v.clinician_name || '', clinician_role: v.clinician_role || 'ممرض/ة', visit_type: v.visit_type || 'زيارة منزلية', notes: v.notes || '' });
+    setDates(v.visit_date ? [v.visit_date] : []);
+    setAdding(true);
+  };
+  const closeForm = () => { setAdding(false); setF(blank); setDates([]); setEditing(null); };
 
   const add = async () => {
     if (dates.length === 0) return;
     setBusy(true);
     try {
-      // create one visit per selected day (shared time / clinician / notes)
-      for (const d of dates) await AdminAPI.createVisit({ ref_type: refType, ref_id: refId, ...f, visit_date: d });
-      setF(blank); setDates([]); setAdding(false); onChange();
+      if (editing) {
+        await AdminAPI.updateVisit(editing.id, { ...editing, ...f, visit_date: dates[0] });
+      } else {
+        // create one visit per selected day (shared time / clinician / notes)
+        for (const d of dates) await AdminAPI.createVisit({ ref_type: refType, ref_id: refId, ...f, visit_date: d });
+      }
+      closeForm(); onChange();
     } finally { setBusy(false); }
   };
   const setStatus = async (v, status) => { await AdminAPI.updateVisit(v.id, { ...v, status }); onChange(); };
@@ -110,7 +127,7 @@ export default function VisitScheduler({ refType, refId, visits = [], onChange }
 
           {/* Calendar at the bottom — tap days to select more than one */}
           <div className="field">
-            <label>{tt.dates}{dates.length > 0 ? ` (${dates.length})` : ''}</label>
+            <label>{editing ? tt.date : `${tt.dates}${dates.length > 0 ? ` (${dates.length})` : ''}`}</label>
             <MultiDateCalendar selected={dates} onToggle={toggleDate} lang={lang} />
             {dates.length > 0 && (
               <div className="vs-date-chips">
@@ -122,8 +139,8 @@ export default function VisitScheduler({ refType, refId, visits = [], onChange }
           </div>
 
           <div className="vs-form-actions">
-            <button className="btn btn-ghost btn-sm" onClick={() => { setAdding(false); setF(blank); setDates([]); }}>{tt.cancel}</button>
-            <button className="btn btn-primary btn-sm" onClick={add} disabled={busy || dates.length === 0} title={dates.length === 0 ? tt.need_day : undefined}>{busy ? '...' : tt.add_visit}</button>
+            <button className="btn btn-ghost btn-sm" onClick={closeForm}>{tt.cancel}</button>
+            <button className="btn btn-primary btn-sm" onClick={add} disabled={busy || dates.length === 0} title={dates.length === 0 ? tt.need_day : undefined}>{busy ? '...' : (editing ? tt.save : tt.add_visit)}</button>
           </div>
         </div>
       )}
@@ -144,6 +161,7 @@ export default function VisitScheduler({ refType, refId, visits = [], onChange }
               </div>
               <div className="vs-row-actions">
                 <span className="status-pill" style={{ color: c, background: c + '1e' }}>{visitStatusLabel(v.status, lang)}</span>
+                <button title={tt.edit} onClick={() => startEdit(v)}><Pencil size={15} /></button>
                 {v.status === 'scheduled' && <button title={tt.complete} className="vs-done" onClick={() => setStatus(v, 'completed')}><Check size={15} /></button>}
                 {v.status === 'scheduled' && <button title={tt.cancel_visit} className="vs-cancel" onClick={() => setStatus(v, 'cancelled')}><X size={15} /></button>}
                 <button title={tt.delete} className="danger" onClick={() => remove(v.id)}><Trash2 size={15} /></button>
