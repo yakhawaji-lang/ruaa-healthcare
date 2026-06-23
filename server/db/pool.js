@@ -39,17 +39,24 @@ export function getPool() {
 // Used by the migration runner: connects without selecting a database and
 // creates it (utf8mb4 for full Arabic + emoji support) if missing.
 export async function ensureDatabase() {
-  const conn = await mysql.createConnection({
-    host: DB_HOST,
-    port: Number(DB_PORT),
-    user: DB_USER,
-    password: DB_PASSWORD,
-    multipleStatements: true,
-  });
-  await conn.query(
-    `CREATE DATABASE IF NOT EXISTS \`${DB_NAME}\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;`
-  );
-  await conn.end();
+  // On local/dev (e.g. XAMPP) we can create the database. On shared hosting
+  // (Hostinger) the database is pre-created in the panel and the user usually
+  // lacks CREATE DATABASE privilege — so we ignore any error here.
+  try {
+    const conn = await mysql.createConnection({
+      host: DB_HOST,
+      port: Number(DB_PORT),
+      user: DB_USER,
+      password: DB_PASSWORD,
+      multipleStatements: true,
+    });
+    await conn.query(
+      `CREATE DATABASE IF NOT EXISTS \`${DB_NAME}\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;`
+    );
+    await conn.end();
+  } catch (e) {
+    console.warn('ensureDatabase skipped (DB likely pre-created):', e.code || e.message);
+  }
 }
 
 // Thin query helper. Returns rows for SELECT, the result header otherwise.

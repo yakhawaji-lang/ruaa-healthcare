@@ -135,9 +135,9 @@ async function seed() {
     console.log(`= admin exists: ${email}`);
   }
 
-  // ---- Demo insurance company account (for testing the insurance portal) ----
+  // ---- Demo insurance company account (testing only — skipped in production) ----
   const demoEmail = 'insurer@demo.com';
-  if (!(await Users.byEmail(demoEmail))) {
+  if (process.env.NODE_ENV !== 'production' && !(await Users.byEmail(demoEmail))) {
     const hash = await bcrypt.hash('Insurer@12345', 10);
     await Users.create({ role: 'insurance', name: 'شركة تأمين تجريبية', company_name: 'Demo Insurance Co.', email: demoEmail, phone: '' }, hash);
     console.log(`+ demo insurer: ${demoEmail} / Insurer@12345`);
