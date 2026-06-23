@@ -5,7 +5,8 @@ echo ==================================================
 echo   RU-MD update: build front-end, commit, push
 echo ==================================================
 echo.
-echo [1/3] Building front-end (vite)...
+echo [1/3] Installing deps + building front-end (vite)...
+call npm install
 call npm run build
 if errorlevel 1 (
   echo.
