@@ -355,4 +355,24 @@
   .track-step span { font-size: 0.68rem; }
   .portal-head { flex-direction: column; gap: 12px; align-items: flex-start; }
   .bubble { max-width: 88%; }
+
+  /* phone refinements */
+  .portal { padding: 16px 0 48px; }
+  .portal-actions { width: 100%; }
+  .portal-actions .btn { flex: 1; justify-content: center; }
+  .auth-card { padding: 26px 22px; }
+  .auth-page { padding: 20px 14px; }
+  .req-row { flex-direction: column; align-items: flex-start; gap: 10px; }
+  .req-row-end { width: 100%; justify-content: space-between; }
+  .detail-card { padding: 20px; }
+  .detail-card-head { flex-direction: column; }
+  .detail-card-head h2 { font-size: 1.15rem; }
+  .svc-custom-row, .paste-row { flex-direction: column; }
+  .acct-map, .loc-map { height: 240px; }
+  .thread-msgs, .corr-feed { max-height: 62vh; }
+  .track-timeline { padding: 18px 16px; }
+}
+@media (max-width: 380px) {
+  .svc-order-grid { grid-template-columns: 1fr; }
+  .track-step span { font-size: 0.62rem; max-width: 60px; }
 }
