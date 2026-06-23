@@ -30,3 +30,10 @@ ReactDOM.createRoot(document.getElementById('root')).render(
     </LangProvider>
   </React.StrictMode>
 );
+
+// --- PWA service worker (enables installable app + Web Push notifications) ---
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').catch(() => {});
+  });
+}

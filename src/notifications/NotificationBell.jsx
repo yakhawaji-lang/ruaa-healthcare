@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Bell, Check, Settings2, Volume2, Play, ClipboardList, ShieldPlus, MessagesSquare, CalendarDays, RefreshCw, Trash2 } from 'lucide-react';
+import { Bell, BellRing, Check, Settings2, Volume2, Play, ClipboardList, ShieldPlus, MessagesSquare, CalendarDays, RefreshCw, Trash2, Smartphone } from 'lucide-react';
 import { AdminAPI, AccountAPI } from '../storage/api.js';
 import { SOUNDS, NOTIF_TYPES, getPrefs, setPrefs, getTypePrefs, setTypePref, getTypeSounds, setTypeSound, playSound, playIfEnabled } from './sound.js';
+import { getPushStatus, enablePush, disablePush } from './push.js';
 import { fmtDateTime } from '../account/status.js';
 import { useLang } from '../i18n.jsx';
 
@@ -21,6 +22,10 @@ const T = {
     types_and_sounds: 'أنواع الإشعارات والأصوات', test_sound: 'تجربة الصوت',
     general_sound: 'الصوت العام', enable_notif_sound: 'تفعيل صوت الإشعارات',
     default_sound: 'الصوت الافتراضي', volume: 'مستوى الصوت',
+    phone_notifs: 'إشعارات الجوال', phone_notifs_hint: 'استقبل كل إشعارات النظام على جوالك حتى عند إغلاق التطبيق.',
+    pn_enable: 'تفعيل إشعارات الجوال', pn_enabled: 'مفعّلة على هذا الجهاز', pn_disable: 'إيقاف',
+    pn_denied: 'محظورة من المتصفح — فعّل الإشعارات لهذا الموقع من إعدادات المتصفح.',
+    pn_unsupported: 'غير مدعومة على هذا المتصفح.', pn_working: 'جارٍ...',
   },
   en: {
     notifications: 'Notifications', notifications_aria: 'Notifications',
@@ -29,6 +34,10 @@ const T = {
     types_and_sounds: 'Notification types & sounds', test_sound: 'Test sound',
     general_sound: 'General sound', enable_notif_sound: 'Enable notification sound',
     default_sound: 'Default sound', volume: 'Volume',
+    phone_notifs: 'Phone notifications', phone_notifs_hint: 'Receive all system notifications on your phone, even when the app is closed.',
+    pn_enable: 'Enable phone notifications', pn_enabled: 'Enabled on this device', pn_disable: 'Turn off',
+    pn_denied: 'Blocked by the browser — enable notifications for this site in browser settings.',
+    pn_unsupported: 'Not supported on this browser.', pn_working: 'Working...',
   },
 };
 
@@ -98,7 +107,7 @@ export default function NotificationBell({ kind = 'admin' }) {
             </div>
           </div>
 
-          {settings && <NotifSettings tp={tp} onToggleType={toggleType} typeLabels={typeLabels} tt={tt} />}
+          {settings && <NotifSettings tp={tp} onToggleType={toggleType} typeLabels={typeLabels} tt={tt} kind={kind} />}
 
           {/* type filter tabs */}
           <div className="notif-tabs">
@@ -133,13 +142,40 @@ export default function NotificationBell({ kind = 'admin' }) {
   );
 }
 
-function NotifSettings({ tp, onToggleType, typeLabels, tt }) {
+function NotifSettings({ tp, onToggleType, typeLabels, tt, kind }) {
   const [p, setP] = useState(getPrefs());
   const [ts, setTs] = useState(getTypeSounds());
+  const [pushState, setPushState] = useState('off'); // off|on|denied|unsupported
+  const [pBusy, setPBusy] = useState(false);
   const update = (patch) => { const next = { ...p, ...patch }; setP(next); setPrefs(patch); };
   const changeSound = (k, val) => { setTypeSound(k, val); setTs(getTypeSounds()); playSound(val); };
+
+  useEffect(() => { if (kind === 'admin') getPushStatus().then(setPushState); }, [kind]);
+  const togglePush = async () => {
+    setPBusy(true);
+    try { setPushState(pushState === 'on' ? await disablePush() : await enablePush()); }
+    catch (e) { setPushState(e.message === 'denied' ? 'denied' : await getPushStatus()); }
+    finally { setPBusy(false); }
+  };
+
   return (
     <div className="notif-settings">
+      {kind === 'admin' && (
+        <div className="ns-push">
+          <div className="ns-section"><Smartphone size={14} /> {tt.phone_notifs}</div>
+          <p className="ns-push-hint">{tt.phone_notifs_hint}</p>
+          {pushState === 'unsupported' ? (
+            <p className="ns-push-msg">{tt.pn_unsupported}</p>
+          ) : pushState === 'denied' ? (
+            <p className="ns-push-msg err">{tt.pn_denied}</p>
+          ) : (
+            <button type="button" className={`ns-push-btn ${pushState === 'on' ? 'on' : ''}`} disabled={pBusy} onClick={togglePush}>
+              <BellRing size={15} />
+              {pBusy ? tt.pn_working : pushState === 'on' ? `${tt.pn_enabled} — ${tt.pn_disable}` : tt.pn_enable}
+            </button>
+          )}
+        </div>
+      )}
       <div className="ns-section">{tt.types_and_sounds}</div>
       <div className="ns-types">
         {Object.keys(NOTIF_TYPES).map((k) => {

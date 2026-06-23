@@ -20,6 +20,8 @@ app.use(express.json({ limit: '12mb' })); // allow base64 image uploads
 
 // Runtime-uploaded images (admin), persisted outside the build output.
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+// Downloadable app file (APK) — kept outside dist so rebuilds don't remove it.
+app.use('/downloads', express.static(path.join(__dirname, 'downloads')));
 
 const origins = (process.env.CORS_ORIGIN || 'http://localhost:5173')
   .split(',')

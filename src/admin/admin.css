@@ -70,6 +70,16 @@
 .ns-row input[type=range] { width: 150px; accent-color: var(--teal); }
 .ns-test { display: inline-flex; align-items: center; justify-content: center; gap: 7px; background: var(--teal-light); color: var(--teal-dark); border: none; padding: 9px; border-radius: 10px; font-weight: 700; cursor: pointer; font-family: inherit; }
 .ns-test:hover { background: #d8eef1; }
+/* phone (web push) toggle inside notification settings */
+.ns-push { padding-bottom: 12px; margin-bottom: 12px; border-bottom: 1px solid var(--line); }
+.ns-push .ns-section { display: inline-flex; align-items: center; gap: 6px; }
+.ns-push-hint { color: var(--muted); font-size: 0.78rem; margin: 4px 0 10px; line-height: 1.55; }
+.ns-push-msg { font-size: 0.8rem; color: var(--muted); }
+.ns-push-msg.err { color: #c0392b; }
+.ns-push-btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 11px; border-radius: 11px; border: 1.5px solid var(--teal); background: var(--teal-light); color: var(--teal-dark); font-weight: 800; font-family: inherit; cursor: pointer; transition: all 0.15s; }
+.ns-push-btn:hover:not(:disabled) { background: #d8eef1; }
+.ns-push-btn.on { background: #e4f8ee; border-color: #2e8b57; color: #138a5b; }
+.ns-push-btn:disabled { opacity: 0.6; cursor: default; }
 /* type filter tabs */
 .notif-tabs { display: flex; flex-wrap: wrap; gap: 6px; padding: 11px 14px; border-bottom: 1px solid var(--line); background: #fbfdfd; }
 .notif-tabs button { white-space: nowrap; border: 1px solid var(--line); background: #fff; color: var(--muted); font-family: inherit; font-size: 0.76rem; font-weight: 700; padding: 5px 11px; border-radius: 999px; cursor: pointer; transition: all 0.14s; }
@@ -96,6 +106,24 @@
 .patient-acct b { color: var(--teal-dark); }
 
 .admin-content { padding: 28px; flex: 1; }
+
+/* ===== Mobile app (PWA) promo card ===== */
+.app-card { display: flex; gap: 18px; align-items: flex-start; background: linear-gradient(120deg, #0b3556 0%, #1f7d92 100%); color: #fff; border-radius: 16px; padding: 22px 24px; margin-bottom: 24px; box-shadow: var(--shadow-sm); }
+.app-card-icon { width: 54px; height: 54px; flex-shrink: 0; border-radius: 14px; background: rgba(255,255,255,0.16); display: grid; place-items: center; color: #fff; }
+.app-card-main { flex: 1; min-width: 0; }
+.app-card-main h3 { font-size: 1.15rem; margin-bottom: 4px; }
+.app-card-main p { opacity: 0.92; font-size: 0.9rem; line-height: 1.6; margin-bottom: 14px; max-width: 640px; }
+.app-card-actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.app-card-actions .btn-white { background: #fff; color: var(--navy); }
+.app-card-actions .btn-outline { border-color: rgba(255,255,255,0.6); color: #fff; }
+.app-card-actions .btn-outline:hover { background: rgba(255,255,255,0.14); color: #fff; }
+.app-card-actions .btn-ghost { background: rgba(255,255,255,0.18); color: #fff; border-color: transparent; }
+.app-installed { display: inline-flex; align-items: center; gap: 7px; font-weight: 800; color: #d6f5e6; }
+.app-hint { font-size: 0.82rem; opacity: 0.85; }
+@media (max-width: 640px) {
+  .app-card { flex-direction: column; gap: 12px; padding: 18px; }
+  .app-card-actions .btn { flex: 1; justify-content: center; }
+}
 
 .page-title { color: var(--navy); font-size: 1.5rem; margin-bottom: 22px; }
 .page-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 22px; }

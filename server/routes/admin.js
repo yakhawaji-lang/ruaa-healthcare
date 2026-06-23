@@ -5,8 +5,9 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import bcrypt from 'bcryptjs';
-import { Settings, Pages, Services, Messages, HeroSlides, Partners, Users, ServiceRequests, InsuranceCases, RequestEvents, Patients, Visits, Threads, Attachments, Analytics, Notifications, Audit, InsurerServices, Admins, isSuperAdmin, parsePerms } from '../db/queries.js';
+import { Settings, Pages, Services, Messages, HeroSlides, Partners, Users, ServiceRequests, InsuranceCases, RequestEvents, Patients, Visits, Threads, Attachments, Analytics, Notifications, Audit, InsurerServices, Admins, PushSubs, isSuperAdmin, parsePerms } from '../db/queries.js';
 import { saveDataUrl } from '../upload.js';
+import { publicKey as vapidPublicKey } from '../push.js';
 
 const router = Router();
 
@@ -28,7 +29,7 @@ router.use(async (req, res, next) => {
     req.adminFull = a;
     req.isSuper = sup;
     const p = req.path;
-    if (p.startsWith('/upload') || p.startsWith('/notifications')) return next(); // shared
+    if (p.startsWith('/upload') || p.startsWith('/notifications') || p.startsWith('/push')) return next(); // shared (any active admin)
     if (p.startsWith('/admins')) {                        // user management = super only
       if (!sup) return res.status(403).json({ error: 'forbidden' });
       return next();
@@ -53,6 +54,23 @@ const STATUS_LABELS = {
   completed: 'مكتمل', cancelled: 'ملغي', rejected: 'مرفوض', submitted: 'تم الاستلام',
 };
 const statusLabel = (s) => STATUS_LABELS[s] || s || 'تحديث';
+
+/* ---- Web Push (PWA phone notifications) — any active admin ---- */
+router.get('/push/key', (req, res) => res.json({ key: vapidPublicKey() }));
+router.post('/push/subscribe', async (req, res) => {
+  const s = req.body || {};
+  if (!s.endpoint || !s.keys || !s.keys.p256dh || !s.keys.auth) return res.status(400).json({ error: 'invalid_subscription' });
+  await PushSubs.add({
+    recipient_type: 'admin', recipient_id: req.admin.id,
+    endpoint: s.endpoint, p256dh: s.keys.p256dh, auth: s.keys.auth,
+    ua: (req.headers['user-agent'] || '').slice(0, 250),
+  });
+  res.json({ ok: true });
+});
+router.post('/push/unsubscribe', async (req, res) => {
+  if (req.body && req.body.endpoint) await PushSubs.removeByEndpoint(req.body.endpoint);
+  res.json({ ok: true });
+});
 
 /* ---- Image upload (base64 data URL -> /uploads file) ---- */
 router.post('/upload', (req, res) => {

@@ -71,6 +71,10 @@ export const AdminAPI = {
   readAllNotifs: () => api.post('/admin/notifications/read', {}).then((r) => r.data),
   dismissNotif: (id) => api.post('/admin/notifications/dismiss', { id }).then((r) => r.data),
   clearNotifs: () => api.post('/admin/notifications/clear', {}).then((r) => r.data),
+  // web push (PWA phone notifications)
+  pushKey: () => api.get('/admin/push/key').then((r) => r.data),
+  pushSubscribe: (sub) => api.post('/admin/push/subscribe', sub).then((r) => r.data),
+  pushUnsubscribe: (endpoint) => api.post('/admin/push/unsubscribe', { endpoint }).then((r) => r.data),
   // services
   services: () => api.get('/admin/services').then((r) => r.data),
   service: (id) => api.get(`/admin/services/${id}`).then((r) => r.data),

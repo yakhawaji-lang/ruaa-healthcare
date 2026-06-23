@@ -310,10 +310,16 @@ export const Notifications = {
   add: (n) =>
     query('INSERT INTO notifications (recipient_type, recipient_id, type, title, body, link) VALUES (?,?,?,?,?,?)',
       [n.recipient_type, n.recipient_id ?? null, n.type, n.title, n.body || null, n.link || null]).catch(() => {}),
-  notifyAdmin: (type, title, body, link) =>
-    query('INSERT INTO notifications (recipient_type, type, title, body, link) VALUES (?,?,?,?,?)', ['admin', type, title, body || null, link || null]).catch(() => {}),
-  notifyUser: (uid, type, title, body, link) =>
-    query('INSERT INTO notifications (recipient_type, recipient_id, type, title, body, link) VALUES (?,?,?,?,?,?)', ['user', uid, type, title, body || null, link || null]).catch(() => {}),
+  notifyAdmin: (type, title, body, link) => {
+    const p = query('INSERT INTO notifications (recipient_type, type, title, body, link) VALUES (?,?,?,?,?)', ['admin', type, title, body || null, link || null]).catch(() => {});
+    import('../push.js').then((m) => m.pushToAdmins({ title, body, url: link || '/admin' })).catch(() => {});
+    return p;
+  },
+  notifyUser: (uid, type, title, body, link) => {
+    const p = query('INSERT INTO notifications (recipient_type, recipient_id, type, title, body, link) VALUES (?,?,?,?,?,?)', ['user', uid, type, title, body || null, link || null]).catch(() => {});
+    import('../push.js').then((m) => m.pushToUser(uid, { title, body, url: link || '/portal' })).catch(() => {});
+    return p;
+  },
   forAdmin: () => query("SELECT * FROM notifications WHERE recipient_type='admin' ORDER BY created_at DESC, id DESC LIMIT 40"),
   forUser: (uid) => query("SELECT * FROM notifications WHERE recipient_type='user' AND recipient_id=? ORDER BY created_at DESC, id DESC LIMIT 40", [uid]),
   unreadAdmin: () => query("SELECT COUNT(*) AS n FROM notifications WHERE recipient_type='admin' AND is_read=0").then((r) => r[0].n),
@@ -324,6 +330,20 @@ export const Notifications = {
   dismissUser: (uid, id) => query("DELETE FROM notifications WHERE id=? AND recipient_type='user' AND recipient_id=?", [id, uid]),
   clearAdmin: () => query("DELETE FROM notifications WHERE recipient_type='admin'"),
   clearUser: (uid) => query("DELETE FROM notifications WHERE recipient_type='user' AND recipient_id=?", [uid]),
+};
+
+/* ---------------- Web Push subscriptions ---------------- */
+export const PushSubs = {
+  add: (s) => query(
+    `INSERT INTO push_subscriptions (recipient_type, recipient_id, endpoint, p256dh, auth, ua)
+     VALUES (?,?,?,?,?,?)
+     ON DUPLICATE KEY UPDATE recipient_type=VALUES(recipient_type), recipient_id=VALUES(recipient_id),
+       p256dh=VALUES(p256dh), auth=VALUES(auth), ua=VALUES(ua)`,
+    [s.recipient_type || 'admin', s.recipient_id ?? null, s.endpoint, s.p256dh, s.auth, s.ua || null]
+  ).catch(() => {}),
+  removeByEndpoint: (endpoint) => query('DELETE FROM push_subscriptions WHERE endpoint=?', [endpoint]).catch(() => {}),
+  listAdmins: () => query("SELECT endpoint, p256dh, auth FROM push_subscriptions WHERE recipient_type='admin'"),
+  listUser: (uid) => query("SELECT endpoint, p256dh, auth FROM push_subscriptions WHERE recipient_type='user' AND recipient_id=?", [uid]),
 };
 
 /* ---------------- Analytics ---------------- */

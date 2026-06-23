@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { Stethoscope, Mail, MailOpen, ClipboardList, ShieldPlus, CalendarDays } from 'lucide-react';
 import { AdminAPI } from '../storage/api.js';
 import StatsPanel, { TrendChart } from '../account/StatsPanel.jsx';
+import AppInstallCard from './AppInstallCard.jsx';
 import { STATUS, VISIT_STATUS, REQUEST_STATUSES, CASE_STATUSES, VISIT_STATUSES } from '../account/status.js';
 import { useLang } from '../i18n.jsx';
 
@@ -53,6 +54,7 @@ export default function Dashboard() {
   return (
     <div className="dash">
       <h1 className="page-title">{tt.dashboard}</h1>
+      <AppInstallCard />
       <div className="stat-grid">
         {cards.map((c) => (
           <Link key={c.label} to={c.to} className="stat-card">
