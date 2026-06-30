@@ -25,6 +25,7 @@ router.get('/bootstrap', async (req, res) => {
     pages: pages.map((p) => ({ slug: p.slug, title_ar: p.title_ar, title_en: p.title_en })),
     services: services.map((s) => ({
       slug: s.slug, icon: s.icon, image: s.image, title_ar: s.title_ar, title_en: s.title_en,
+      price: s.price, price_note_ar: s.price_note_ar, price_note_en: s.price_note_en,
       body_ar: parseJSON(s.body_ar, []), body_en: parseJSON(s.body_en, []),
     })),
     heroSlides,
