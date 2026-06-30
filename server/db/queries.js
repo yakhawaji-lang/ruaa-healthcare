@@ -67,9 +67,9 @@ export const Pages = {
 /* ---------------- Services ---------------- */
 export const Services = {
   listPublic: () =>
-    query('SELECT slug, icon, image, price, price_note_ar, price_note_en, title_ar, title_en, body_ar, body_en FROM services WHERE deleted_at IS NULL AND is_published = 1 ORDER BY sort_order, id'),
+    query('SELECT slug, icon, image, CASE WHEN price_published = 1 THEN price ELSE NULL END AS price, price_note_ar, price_note_en, title_ar, title_en, body_ar, body_en FROM services WHERE deleted_at IS NULL AND is_published = 1 ORDER BY sort_order, id'),
   listPublicIds: () =>
-    query('SELECT id, slug, icon, image, price, price_note_ar, price_note_en, title_ar, title_en, body_ar, body_en FROM services WHERE deleted_at IS NULL AND is_published = 1 ORDER BY sort_order, id'),
+    query('SELECT id, slug, icon, image, CASE WHEN price_published = 1 THEN price ELSE NULL END AS price, price_note_ar, price_note_en, title_ar, title_en, body_ar, body_en FROM services WHERE deleted_at IS NULL AND is_published = 1 ORDER BY sort_order, id'),
   listAdmin: () =>
     query('SELECT id, slug, icon, image, price, title_ar, title_en, is_published, sort_order, updated_at FROM services WHERE deleted_at IS NULL ORDER BY sort_order, id'),
   bySlug: (slug) =>
@@ -78,13 +78,13 @@ export const Services = {
     query('SELECT * FROM services WHERE id = ? AND deleted_at IS NULL LIMIT 1', [id]).then((r) => r[0] || null),
   create: (s) =>
     query(
-      'INSERT INTO services (slug, icon, image, price, price_note_ar, price_note_en, title_ar, title_en, body_ar, body_en, is_published, sort_order) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)',
-      [s.slug, s.icon, s.image || null, s.price ?? null, s.price_note_ar || null, s.price_note_en || null, s.title_ar, s.title_en, s.body_ar, s.body_en, s.is_published ? 1 : 0, s.sort_order || 0]
+      'INSERT INTO services (slug, icon, image, price, price_published, price_note_ar, price_note_en, title_ar, title_en, body_ar, body_en, is_published, sort_order) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)',
+      [s.slug, s.icon, s.image || null, s.price ?? null, (s.price_published === 0 || s.price_published === false ? 0 : 1), s.price_note_ar || null, s.price_note_en || null, s.title_ar, s.title_en, s.body_ar, s.body_en, s.is_published ? 1 : 0, s.sort_order || 0]
     ),
   update: (id, s) =>
     query(
-      'UPDATE services SET slug=?, icon=?, image=?, price=?, price_note_ar=?, price_note_en=?, title_ar=?, title_en=?, body_ar=?, body_en=?, is_published=?, sort_order=? WHERE id=?',
-      [s.slug, s.icon, s.image || null, s.price ?? null, s.price_note_ar || null, s.price_note_en || null, s.title_ar, s.title_en, s.body_ar, s.body_en, s.is_published ? 1 : 0, s.sort_order || 0, id]
+      'UPDATE services SET slug=?, icon=?, image=?, price=?, price_published=?, price_note_ar=?, price_note_en=?, title_ar=?, title_en=?, body_ar=?, body_en=?, is_published=?, sort_order=? WHERE id=?',
+      [s.slug, s.icon, s.image || null, s.price ?? null, (s.price_published === 0 || s.price_published === false ? 0 : 1), s.price_note_ar || null, s.price_note_en || null, s.title_ar, s.title_en, s.body_ar, s.body_en, s.is_published ? 1 : 0, s.sort_order || 0, id]
     ),
   softDelete: (id) => query('UPDATE services SET deleted_at = NOW() WHERE id = ?', [id]),
 };

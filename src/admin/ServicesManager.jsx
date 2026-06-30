@@ -28,6 +28,7 @@ const T = {
     price_label: 'السعر (ر.س) — اتركه فارغًا لـ«حسب التقييم»',
     price_note_ar_label: 'نص السعر (عربي)',
     price_note_ar_ph: 'تبدأ من',
+    price_publish: 'نشر السعر في الموقع وبوابة العميل', price_hidden_note: 'السعر مخفي عن العملاء',
     content_arabic: 'المحتوى بالعربية',
     content_english: 'المحتوى بالإنجليزية',
     line_ar: 'سطر',
@@ -57,6 +58,7 @@ const T = {
     price_label: 'Price (SAR) — leave empty for "Based on assessment"',
     price_note_ar_label: 'Price note (Arabic)',
     price_note_ar_ph: 'Starting from',
+    price_publish: 'Publish price on site & client portal', price_hidden_note: 'Price hidden from clients',
     content_arabic: 'Content (Arabic)',
     content_english: 'Content (English)',
     line_ar: 'Line',
@@ -67,7 +69,7 @@ const T = {
   },
 };
 
-const blank = { slug: '', icon: 'stethoscope', image: '', price: '', price_note_ar: 'تبدأ من', price_note_en: 'Starting from', title_ar: '', title_en: '', body_ar: [''], body_en: [''], is_published: 1, sort_order: 0 };
+const blank = { slug: '', icon: 'stethoscope', image: '', price: '', price_published: 1, price_note_ar: 'تبدأ من', price_note_en: 'Starting from', title_ar: '', title_en: '', body_ar: [''], body_en: [''], is_published: 1, sort_order: 0 };
 
 export default function ServicesManager() {
   const { lang } = useLang();
@@ -177,6 +179,13 @@ function ServiceEditor({ data, setData, onClose, onSave }) {
               <input type="number" dir="ltr" value={data.price ?? ''} onChange={(e) => set('price', e.target.value)} /></div>
             <div className="field"><label>{tt.price_note_ar_label}</label>
               <input value={data.price_note_ar || ''} onChange={(e) => set('price_note_ar', e.target.value)} placeholder={tt.price_note_ar_ph} /></div>
+          </div>
+
+          <div className="field checkbox-field" style={{ marginBottom: 14 }}>
+            <label className="switch-label" onClick={() => set('price_published', data.price_published ? 0 : 1)}>
+              {data.price_published ? <Eye size={18} /> : <EyeOff size={18} />}
+              {data.price_published ? tt.price_publish : tt.price_hidden_note}
+            </label>
           </div>
 
           <div className="dual-editor">

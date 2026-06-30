@@ -46,7 +46,7 @@ router.get('/services/:slug', async (req, res) => {
   if (!s || !s.is_published) return res.status(404).json({ error: 'not_found' });
   res.json({
     slug: s.slug, icon: s.icon, image: s.image, title_ar: s.title_ar, title_en: s.title_en,
-    price: s.price, price_note_ar: s.price_note_ar, price_note_en: s.price_note_en,
+    price: s.price_published ? s.price : null, price_note_ar: s.price_note_ar, price_note_en: s.price_note_en,
     body_ar: parseJSON(s.body_ar, []), body_en: parseJSON(s.body_en, []),
   });
 });
