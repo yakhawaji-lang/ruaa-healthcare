@@ -4,7 +4,7 @@ import { Router } from 'express';
 import bcrypt from 'bcryptjs';
 import rateLimit from 'express-rate-limit';
 import { query } from '../db/pool.js';
-import { Users, Services, ServiceRequests, InsuranceCases, RequestEvents, Patients, Visits, Threads, Attachments, Notifications, InsurerServices } from '../db/queries.js';
+import { Users, Services, ServiceRequests, InsuranceCases, RequestEvents, Patients, Visits, Threads, Attachments, Notifications, InsurerServices, PromoCodes } from '../db/queries.js';
 import { signUserToken, requireUser, requireRole } from '../auth.js';
 import { saveDataUrl } from '../upload.js';
 
@@ -20,6 +20,30 @@ async function companyId(req) {
   req._cid = (u && u.parent_user_id) || req.user.uid;
   return req._cid;
 }
+
+// Validate a promo code (active, within date range, applies to the service).
+const parseJSONsafe = (v, fb) => { try { return v ? JSON.parse(v) : fb; } catch { return fb; } };
+async function checkPromo(code, serviceTitle) {
+  const p = await PromoCodes.byCode(code);
+  if (!p || !p.is_active) return { valid: false, error: 'invalid' };
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  if (p.starts_at && new Date(p.starts_at) > today) return { valid: false, error: 'not_started' };
+  if (p.ends_at) { const end = new Date(p.ends_at); end.setHours(23, 59, 59, 999); if (end < today) return { valid: false, error: 'expired' }; }
+  if (!p.all_services) {
+    const ids = (parseJSONsafe(p.service_ids, []) || []).map(Number);
+    const all = await Services.listPublicIds();
+    const titles = all.filter((s) => ids.includes(Number(s.id))).flatMap((s) => [s.title_ar, s.title_en]).filter(Boolean);
+    const ok = serviceTitle && titles.some((t) => String(serviceTitle).includes(t));
+    if (!ok) return { valid: false, error: 'not_applicable' };
+  }
+  return { valid: true, code: p.code, discount_type: p.discount_type, discount_value: Number(p.discount_value) };
+}
+
+router.post('/promo/validate', requireUser, async (req, res) => {
+  const { code, service_title } = req.body || {};
+  if (!code) return res.status(400).json({ valid: false, error: 'code_required' });
+  res.json(await checkPromo(code, service_title));
+});
 
 /* ---------------- Auth ---------------- */
 // Registration is for visitors only (insurance accounts are created by admin).
@@ -116,6 +140,8 @@ router.post('/upload', requireUser, (req, res) => {
 router.post('/requests', requireUser, requireRole('visitor'), async (req, res) => {
   const b = req.body || {};
   const svc = b.service_id ? await Services.byId(b.service_id) : null;
+  let promo = null;
+  if (b.promo_code) { const v = await checkPromo(b.promo_code, svc?.title_ar || b.service_title); if (v.valid) promo = v; }
   const r = await ServiceRequests.create({
     ref: 'TMP-' + Date.now() + Math.floor(Math.random() * 1000),
     user_id: req.user.uid,
@@ -123,6 +149,8 @@ router.post('/requests', requireUser, requireRole('visitor'), async (req, res) =
     service_title: svc?.title_ar || b.service_title || null,
     price: svc?.price ?? null,
     status: 'pending',
+    promo_code: promo?.code || null,
+    discount: promo?.discount_value ?? null,
     patient_name: b.patient_name, phone: b.phone, city: b.city,
     preferred_date: b.preferred_date || null, notes: b.notes,
   });

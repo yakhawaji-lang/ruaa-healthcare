@@ -7,6 +7,7 @@ import Dashboard from './Dashboard.jsx';
 import HeroSlidesManager from './HeroSlidesManager.jsx';
 import PartnersManager from './PartnersManager.jsx';
 import ServicesManager from './ServicesManager.jsx';
+import PromoCodesManager from './PromoCodesManager.jsx';
 import ServiceRequestsManager from './ServiceRequestsManager.jsx';
 import InsuranceCasesManager from './InsuranceCasesManager.jsx';
 import InsuranceCompaniesManager from './InsuranceCompaniesManager.jsx';
@@ -29,6 +30,7 @@ const PAGE_ROUTES = [
   ['hero', 'hero', HeroSlidesManager],
   ['partners', 'partners', PartnersManager],
   ['services', 'services', ServicesManager],
+  ['promos', 'promos', PromoCodesManager],
   ['pages', 'pages', PagesManager],
   ['messages', 'messages', MessagesManager],
   ['settings', 'settings', SettingsManager],

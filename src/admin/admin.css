@@ -242,6 +242,38 @@
 .mdc-day.today { border-color: var(--teal); }
 .mdc-day.sel { background: var(--navy); color: #fff; border-color: var(--navy); }
 .mdc-day:disabled { color: #c2ccd2; background: #fafbfc; cursor: default; }
+
+/* ===== Promo (discount) codes ===== */
+.promo-code { display: inline-flex; align-items: center; gap: 6px; font-weight: 800; color: var(--navy); letter-spacing: .04em; }
+.promo-code svg { color: var(--teal-dark); }
+.promo-date-btn { display: inline-flex; align-items: center; gap: 8px; width: 100%; justify-content: flex-start; padding: 11px 14px; border: 1.5px solid var(--line); border-radius: 11px; background: #fbfdfd; font-family: inherit; cursor: pointer; color: var(--navy); font-weight: 600; }
+.promo-date-btn:hover { border-color: var(--teal); }
+.promo-applyto { display: flex; gap: 10px; flex-wrap: wrap; }
+.promo-radio { display: inline-flex; align-items: center; gap: 7px; border: 1.5px solid var(--line); border-radius: 10px; padding: 9px 14px; cursor: pointer; font-weight: 600; color: var(--ink); }
+.promo-radio.on { border-color: var(--teal); background: var(--teal-light); color: var(--teal-dark); }
+.promo-svc-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 8px; max-height: 220px; overflow-y: auto; border: 1px solid var(--line); border-radius: 10px; padding: 10px; }
+.promo-svc { display: flex; align-items: center; gap: 8px; font-size: .86rem; color: var(--ink); cursor: pointer; padding: 6px 8px; border-radius: 8px; }
+.promo-svc.on { background: var(--teal-light); color: var(--teal-dark); font-weight: 700; }
+.promo-svc input, .promo-radio input { accent-color: var(--teal); }
+
+/* Two-month range calendar */
+.drc { border: 1px solid var(--line); border-radius: 12px; padding: 12px; background: #fff; margin-top: 8px; box-shadow: var(--shadow-sm); }
+.drc-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 10px; }
+.drc-range { font-weight: 700; color: var(--teal-dark); font-size: .9rem; }
+.drc-nav { width: 32px; height: 32px; border: 1px solid var(--line); background: #fff; border-radius: 8px; display: grid; place-items: center; cursor: pointer; color: var(--navy); }
+.drc-nav:hover { border-color: var(--teal); background: var(--teal-light); }
+.drc-months { display: flex; gap: 18px; flex-wrap: wrap; }
+.drc-month { flex: 1; min-width: 240px; }
+.drc-mtitle { text-align: center; font-weight: 800; color: var(--navy); margin-bottom: 8px; }
+.drc-wd { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; margin-bottom: 3px; }
+.drc-wd span { text-align: center; font-size: .68rem; font-weight: 700; color: var(--muted); }
+.drc-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; }
+.drc-empty { aspect-ratio: 1; }
+.drc-day { aspect-ratio: 1; border: 1px solid transparent; border-radius: 8px; background: #f5f9fa; color: var(--navy); font-family: inherit; font-weight: 700; font-size: .82rem; cursor: pointer; }
+.drc-day:hover { background: var(--teal-light); border-color: var(--teal); }
+.drc-day.inrange { background: #dbeef2; }
+.drc-day.edge { background: var(--navy); color: #fff; border-color: var(--navy); }
+.drc-foot { display: flex; justify-content: flex-end; margin-top: 10px; }
 .vs-list { display: grid; gap: 8px; }
 .vs-row { display: flex; align-items: center; gap: 14px; background: #fff; border: 1px solid var(--line); border-radius: 11px; padding: 12px 14px; flex-wrap: wrap; }
 .vs-when { min-width: 110px; }

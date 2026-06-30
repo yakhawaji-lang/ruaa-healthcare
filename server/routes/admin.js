@@ -5,7 +5,7 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import bcrypt from 'bcryptjs';
-import { Settings, Pages, Services, Messages, HeroSlides, Partners, Users, ServiceRequests, InsuranceCases, RequestEvents, Patients, Visits, Threads, Attachments, Analytics, Notifications, Audit, InsurerServices, Admins, PushSubs, isSuperAdmin, parsePerms } from '../db/queries.js';
+import { Settings, Pages, Services, Messages, HeroSlides, Partners, Users, ServiceRequests, InsuranceCases, RequestEvents, Patients, Visits, Threads, Attachments, Analytics, Notifications, Audit, InsurerServices, Admins, PushSubs, PromoCodes, isSuperAdmin, parsePerms } from '../db/queries.js';
 import { saveDataUrl } from '../upload.js';
 import { publicKey as vapidPublicKey } from '../push.js';
 
@@ -15,7 +15,7 @@ const router = Router();
 const PAGE_PREFIX = [
   ['/requests', 'requests'], ['/cases', 'cases'], ['/visits', 'visits'], ['/insurers', 'insurers'],
   ['/clients', 'clients'], ['/hero', 'hero'], ['/partners', 'partners'], ['/services', 'services'],
-  ['/pages', 'pages'], ['/messages', 'messages'], ['/settings', 'settings'],
+  ['/pages', 'pages'], ['/messages', 'messages'], ['/settings', 'settings'], ['/promos', 'promos'],
 ];
 const ACTION_BY_METHOD = { GET: 'view', POST: 'create', PUT: 'edit', PATCH: 'edit', DELETE: 'delete' };
 const pageFromPath = (p) => { for (const [pre, page] of PAGE_PREFIX) if (p.startsWith(pre)) return page; return 'dashboard'; };
@@ -674,6 +674,37 @@ router.put('/messages/:id/read', async (req, res) => {
 router.delete('/messages/:id', async (req, res) => {
   await Messages.softDelete(req.params.id);
   await Audit.log(req.admin.id, 'delete', 'message', req.params.id);
+  res.json({ ok: true });
+});
+
+/* ---- Promo (discount) codes ---- */
+router.get('/promos', async (req, res) => res.json(await PromoCodes.listAdmin()));
+router.post('/promos', async (req, res) => {
+  const b = req.body || {};
+  if (!b.code) return res.status(400).json({ error: 'code_required' });
+  const code = String(b.code).trim();
+  if (await PromoCodes.byCode(code)) return res.status(409).json({ error: 'code_taken' });
+  const r = await PromoCodes.create({ ...b, code });
+  await Audit.log(req.admin.id, 'create', 'promo', r.insertId);
+  res.status(201).json({ id: r.insertId });
+});
+router.put('/promos/:id', async (req, res) => {
+  const b = req.body || {};
+  if (!b.code) return res.status(400).json({ error: 'code_required' });
+  const code = String(b.code).trim();
+  const existing = await PromoCodes.byCode(code);
+  if (existing && String(existing.id) !== String(req.params.id)) return res.status(409).json({ error: 'code_taken' });
+  await PromoCodes.update(req.params.id, { ...b, code });
+  await Audit.log(req.admin.id, 'update', 'promo', req.params.id);
+  res.json({ ok: true });
+});
+router.put('/promos/:id/active', async (req, res) => {
+  await PromoCodes.setActive(req.params.id, req.body?.is_active ? 1 : 0);
+  res.json({ ok: true });
+});
+router.delete('/promos/:id', async (req, res) => {
+  await PromoCodes.remove(req.params.id);
+  await Audit.log(req.admin.id, 'delete', 'promo', req.params.id);
   res.json({ ok: true });
 });
 

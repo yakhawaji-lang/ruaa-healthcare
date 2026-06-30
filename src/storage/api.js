@@ -50,6 +50,8 @@ export const AccountAPI = {
   myVisits: () => api.get('/account/visits').then((r) => r.data),
   myCaseVisits: () => api.get('/account/case-visits').then((r) => r.data),
   allMessages: () => api.get('/account/messages').then((r) => r.data),
+  // promo codes
+  validatePromo: (code, service_title) => api.post('/account/promo/validate', { code, service_title }).then((r) => r.data),
   // notifications
   notifications: () => api.get('/account/notifications').then((r) => r.data),
   readNotif: (id) => api.post('/account/notifications/read', { id }).then((r) => r.data),
@@ -140,6 +142,12 @@ export const AdminAPI = {
   deleteInsurer: (id) => api.delete(`/admin/insurers/${id}`).then((r) => r.data),
   insurerMembers: (id) => api.get(`/admin/insurers/${id}/members`).then((r) => r.data),
   createInsurerMember: (id, data) => api.post(`/admin/insurers/${id}/members`, data).then((r) => r.data),
+  // promo (discount) codes
+  promos: () => api.get('/admin/promos').then((r) => r.data),
+  createPromo: (data) => api.post('/admin/promos', data).then((r) => r.data),
+  updatePromo: (id, data) => api.put(`/admin/promos/${id}`, data).then((r) => r.data),
+  setPromoActive: (id, isActive) => api.put(`/admin/promos/${id}/active`, { is_active: isActive }).then((r) => r.data),
+  deletePromo: (id) => api.delete(`/admin/promos/${id}`).then((r) => r.data),
   // visits + patient profile
   createVisit: (data) => api.post('/admin/visits', data).then((r) => r.data),
   updateVisit: (id, data) => api.put(`/admin/visits/${id}`, data).then((r) => r.data),

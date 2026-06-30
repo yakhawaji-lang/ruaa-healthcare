@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { NavLink, Link } from 'react-router-dom';
-import { LayoutDashboard, Images, Stethoscope, ClipboardList, ShieldPlus, Building2, Handshake, FileText, Mail, Settings, LogOut, ExternalLink, Globe, CalendarDays, Users2, UserRound, Menu, X } from 'lucide-react';
+import { LayoutDashboard, Images, Stethoscope, ClipboardList, ShieldPlus, Building2, Handshake, FileText, Mail, Settings, LogOut, ExternalLink, Globe, CalendarDays, Users2, UserRound, Menu, X, Ticket } from 'lucide-react';
 import { useAdminAuth } from './AdminApp.jsx';
 import { useLang } from '../i18n.jsx';
 import Logo from '../components/Logo.jsx';
@@ -23,6 +23,7 @@ const GROUPS = [
   ] },
   { ar: 'محتوى الموقع', en: 'Website Content', items: [
     { to: '/admin/services', page: 'services', icon: Stethoscope, ar: 'الخدمات', en: 'Services' },
+    { to: '/admin/promos', page: 'promos', icon: Ticket, ar: 'أكواد الخصم', en: 'Promo Codes' },
     { to: '/admin/hero', page: 'hero', icon: Images, ar: 'السلايدر', en: 'Slider' },
     { to: '/admin/partners', page: 'partners', icon: Handshake, ar: 'الشركاء', en: 'Partners' },
     { to: '/admin/pages', page: 'pages', icon: FileText, ar: 'الصفحات', en: 'Pages' },

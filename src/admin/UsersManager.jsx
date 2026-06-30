@@ -28,6 +28,7 @@ const PERM_GROUPS = [
   ] },
   { ar: 'محتوى الموقع', en: 'Website Content', pages: [
     { key: 'services', ar: 'الخدمات', en: 'Services', icon: Stethoscope, actions: ['view', 'create', 'edit', 'delete'] },
+    { key: 'promos', ar: 'أكواد الخصم', en: 'Promo Codes', icon: Stethoscope, actions: ['view', 'create', 'edit', 'delete'] },
     { key: 'hero', ar: 'السلايدر', en: 'Slider', icon: Images, actions: ['view', 'create', 'edit', 'delete'] },
     { key: 'partners', ar: 'الشركاء', en: 'Partners', icon: Handshake, actions: ['view', 'create', 'edit', 'delete'] },
     { key: 'pages', ar: 'الصفحات', en: 'Pages', icon: FileText, actions: ['view', 'edit'] },

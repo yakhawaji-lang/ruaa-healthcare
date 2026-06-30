@@ -176,14 +176,28 @@ function RequestModal({ user, services, onClose, onDone }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [done, setDone] = useState(null);
+  const [promo, setPromo] = useState('');
+  const [promoRes, setPromoRes] = useState(null);
+  const [promoBusy, setPromoBusy] = useState(false);
   const set = (k) => (e) => setF((p) => ({ ...p, [k]: e.target.value }));
+
+  const applyPromo = async () => {
+    if (!promo.trim()) return;
+    setPromoBusy(true);
+    try { setPromoRes(await AccountAPI.validatePromo(promo.trim(), f.requested_service)); }
+    catch { setPromoRes({ valid: false, error: 'invalid' }); }
+    finally { setPromoBusy(false); }
+  };
+  const discountLabel = promoRes?.valid
+    ? (promoRes.discount_type === 'amount' ? `${promoRes.discount_value} ${lang === 'en' ? 'SAR' : 'ر.س'}` : `${promoRes.discount_value}%`)
+    : '';
 
   const submit = async (e) => {
     e.preventDefault();
     if (!f.requested_service.trim()) { setError(tt.need_service); return; }
     setBusy(true); setError('');
     try {
-      const r = await AccountAPI.createRequest({ service_title: f.requested_service, patient_name: f.patient_name, phone: f.phone, city: f.city, preferred_date: f.preferred_date, notes: f.notes });
+      const r = await AccountAPI.createRequest({ service_title: f.requested_service, patient_name: f.patient_name, phone: f.phone, city: f.city, preferred_date: f.preferred_date, notes: f.notes, promo_code: promoRes?.valid ? promo.trim() : undefined });
       setDone(r);
     } finally { setBusy(false); }
   };
@@ -218,6 +232,20 @@ function RequestModal({ user, services, onClose, onDone }) {
               </div>
               <div className="field"><label>{tt.preferred_date}</label><DobInput iso value={f.preferred_date} onChange={(v) => setF((p) => ({ ...p, preferred_date: v }))} /></div>
               <div className="field"><label>{tt.extra_notes}</label><textarea rows={3} value={f.notes} onChange={set('notes')} /></div>
+              <div className="field">
+                <label>{lang === 'en' ? 'Promo code (optional)' : 'كود الخصم (اختياري)'}</label>
+                <div className="paste-row">
+                  <input dir="ltr" value={promo} onChange={(e) => { setPromo(e.target.value.toUpperCase()); setPromoRes(null); }} placeholder={lang === 'en' ? 'Enter code' : 'أدخل الكود'} />
+                  <button type="button" className="btn btn-outline btn-sm" onClick={applyPromo} disabled={promoBusy || !promo.trim()}>{promoBusy ? '...' : (lang === 'en' ? 'Apply' : 'تطبيق')}</button>
+                </div>
+                {promoRes && (
+                  <small style={{ color: promoRes.valid ? '#138a5b' : '#c0392b', fontWeight: 700 }}>
+                    {promoRes.valid
+                      ? `${lang === 'en' ? 'Valid code — discount' : 'كود صالح — خصم'} ${discountLabel}`
+                      : (lang === 'en' ? 'Invalid or inapplicable code' : 'كود غير صالح أو غير مطبّق')}
+                  </small>
+                )}
+              </div>
             </div>
             <div className="modal-foot">
               <button type="button" className="btn btn-ghost" onClick={onClose}>{tt.cancel}</button>

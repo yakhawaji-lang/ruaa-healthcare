@@ -130,8 +130,8 @@ export const Users = {
 /* ---------------- Service requests (visitors) ---------------- */
 export const ServiceRequests = {
   create: (r) =>
-    query('INSERT INTO service_requests (ref, user_id, service_id, service_title, price, status, patient_name, phone, city, preferred_date, notes) VALUES (?,?,?,?,?,?,?,?,?,?,?)',
-      [r.ref, r.user_id, r.service_id || null, r.service_title || null, r.price ?? null, r.status || 'pending', r.patient_name || null, r.phone || null, r.city || null, r.preferred_date || null, r.notes || null]),
+    query('INSERT INTO service_requests (ref, user_id, service_id, service_title, price, status, patient_name, phone, city, preferred_date, notes, promo_code, discount) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)',
+      [r.ref, r.user_id, r.service_id || null, r.service_title || null, r.price ?? null, r.status || 'pending', r.patient_name || null, r.phone || null, r.city || null, r.preferred_date || null, r.notes || null, r.promo_code || null, r.discount ?? null]),
   listByUser: (uid) => query('SELECT * FROM service_requests WHERE user_id = ? AND deleted_at IS NULL ORDER BY created_at DESC', [uid]),
   listAll: () =>
     query(`SELECT sr.*, u.name AS user_name, u.email AS user_email FROM service_requests sr JOIN users u ON u.id = sr.user_id WHERE sr.deleted_at IS NULL ORDER BY sr.created_at DESC`),
@@ -347,6 +347,23 @@ export const PushSubs = {
   removeByEndpoint: (endpoint) => query('DELETE FROM push_subscriptions WHERE endpoint=?', [endpoint]).catch(() => {}),
   listAdmins: () => query("SELECT endpoint, p256dh, auth FROM push_subscriptions WHERE recipient_type='admin'"),
   listUser: (uid) => query("SELECT endpoint, p256dh, auth FROM push_subscriptions WHERE recipient_type='user' AND recipient_id=?", [uid]),
+};
+
+/* ---------------- Promo (discount) codes ---------------- */
+export const PromoCodes = {
+  listAdmin: () => query('SELECT * FROM promo_codes ORDER BY created_at DESC'),
+  byId: (id) => query('SELECT * FROM promo_codes WHERE id=? LIMIT 1', [id]).then((r) => r[0] || null),
+  byCode: (code) => query('SELECT * FROM promo_codes WHERE code=? LIMIT 1', [String(code || '').trim()]).then((r) => r[0] || null),
+  create: (p) => query(
+    'INSERT INTO promo_codes (code, discount_type, discount_value, starts_at, ends_at, all_services, service_ids, is_active) VALUES (?,?,?,?,?,?,?,?)',
+    [p.code, p.discount_type || 'percent', p.discount_value || 0, p.starts_at || null, p.ends_at || null, p.all_services ? 1 : 0, p.service_ids ? JSON.stringify(p.service_ids) : null, p.is_active ? 1 : 0]
+  ),
+  update: (id, p) => query(
+    'UPDATE promo_codes SET code=?, discount_type=?, discount_value=?, starts_at=?, ends_at=?, all_services=?, service_ids=?, is_active=? WHERE id=?',
+    [p.code, p.discount_type || 'percent', p.discount_value || 0, p.starts_at || null, p.ends_at || null, p.all_services ? 1 : 0, p.service_ids ? JSON.stringify(p.service_ids) : null, p.is_active ? 1 : 0, id]
+  ),
+  setActive: (id, active) => query('UPDATE promo_codes SET is_active=? WHERE id=?', [active ? 1 : 0, id]),
+  remove: (id) => query('DELETE FROM promo_codes WHERE id=?', [id]),
 };
 
 /* ---------------- Analytics ---------------- */
