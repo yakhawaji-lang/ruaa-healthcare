@@ -17,7 +17,7 @@ if errorlevel 1 (
 echo.
 echo [2/3] Committing changes...
 git add -A
-git commit -m "Responsive mobile/tablet improvements"
+git commit -m "Update %DATE% %TIME%"
 echo.
 echo [3/3] Pushing to GitHub (a sign-in window may appear)...
 git push origin main
