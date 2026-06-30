@@ -178,6 +178,7 @@ function normalizeService(b) {
     icon: b.icon || 'stethoscope',
     image: b.image || null,
     price: (b.price === '' || b.price == null) ? null : Number(b.price),
+    price_published: (b.price_published === 0 || b.price_published === false) ? 0 : 1,
     price_note_ar: b.price_note_ar || null,
     price_note_en: b.price_note_en || null,
     title_ar: b.title_ar || '', title_en: b.title_en || '',
