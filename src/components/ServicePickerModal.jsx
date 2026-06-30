@@ -77,6 +77,9 @@ export default function ServicePickerModal({ services = [], initial, onApply, on
                       {on ? <CheckCircle2 size={20} color="#1f7d92" /> : null}
                     </div>
                     <strong className="svc-card-title">{pick(sv, 'title')}</strong>
+                    {(sv.price != null && sv.price !== '') && (
+                      <span className="svc-card-price">{pick(sv, 'price_note') || ''} {Number(sv.price).toLocaleString('en-US')} {lang === 'en' ? 'SAR' : 'ر.س'}</span>
+                    )}
                   </button>
                 );
               })}
