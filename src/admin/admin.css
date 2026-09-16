@@ -297,12 +297,14 @@
 .empty { color: var(--muted); text-align: center; padding: 30px; }
 
 /* Modal */
-.modal-overlay { position: fixed; inset: 0; background: rgba(16,59,74,0.5); display: grid; place-items: center; z-index: 100; padding: 20px; }
-.modal { background: #fff; border-radius: 16px; width: 100%; max-width: 860px; max-height: 92vh; display: flex; flex-direction: column; }
+.modal-overlay { position: fixed; inset: 0; background: rgba(16,59,74,0.5); display: grid; grid-template-columns: minmax(0, 1fr); place-items: center; z-index: 100; padding: 20px; overflow: auto; }
+/* min-width:0 everywhere: without it a wide child (a scroll strip, a long word) sets the
+   modal's automatic minimum size and pushes it past the viewport on phones. */
+.modal { background: #fff; border-radius: 16px; width: 100%; min-width: 0; max-width: 860px; max-height: 92vh; display: flex; flex-direction: column; }
 .modal-head { display: flex; align-items: center; justify-content: space-between; padding: 20px 24px; border-bottom: 1px solid var(--line); }
 .modal-head h2 { color: var(--navy); font-size: 1.2rem; }
 .modal-head button { background: none; border: none; cursor: pointer; color: var(--muted); }
-.modal-body { padding: 24px; overflow-y: auto; flex: 1 1 auto; min-height: 0; }
+.modal-body { padding: 24px; overflow-y: auto; flex: 1 1 auto; min-height: 0; min-width: 0; }
 /* let a <form> wrapper participate in the modal's flex layout so the body
    scrolls and the footer stays pinned (fixes buttons overflowing the modal) */
 .modal > form { display: contents; }
