@@ -208,3 +208,27 @@
 .st-kv b { color: var(--navy); }
 .st-card .tm-avail-row { grid-template-columns: 1.2fr 1fr 1fr auto; }
 @media (max-width: 900px) { .st-access-grid, .st-info-grid { grid-template-columns: 1fr; } .st-search { min-width: 0; width: 100%; } }
+
+/* availability — compact chips + add-range dialog */
+.av-days { display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; }
+.av-day { display: flex; align-items: flex-start; gap: 10px; }
+.av-day-name { flex: 0 0 82px; font-weight: 700; color: var(--navy); font-size: 0.88rem; padding-top: 5px; }
+.av-ranges { display: flex; gap: 6px; flex-wrap: wrap; }
+.av-chip { display: inline-flex; align-items: center; gap: 6px; padding: 5px 8px 5px 10px; border-radius: 999px; background: var(--teal-light); color: var(--teal-dark); font-size: 0.82rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+.av-chip button { border: none; background: rgba(0,0,0,0.08); color: inherit; width: 18px; height: 18px; border-radius: 50%; display: grid; place-items: center; cursor: pointer; }
+.av-chip button:hover { background: #c0392b; color: #fff; }
+.av-overlay { position: fixed; inset: 0; z-index: 300; background: rgba(16,59,74,0.45); display: grid; place-items: center; padding: 16px; }
+.av-dialog { background: #fff; border-radius: 16px; width: 100%; max-width: 440px; padding: 18px 20px; box-shadow: 0 20px 50px rgba(0,0,0,0.25); }
+.av-dialog-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+.av-dialog-head strong { display: flex; align-items: center; gap: 8px; color: var(--navy); }
+.av-dialog-head button { border: none; background: none; cursor: pointer; color: var(--muted); }
+.av-label { display: block; font-weight: 700; color: var(--navy); font-size: 0.85rem; margin-bottom: 6px; }
+.av-daypick { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
+.av-daypick button { padding: 8px 4px; border: 1.5px solid var(--line); border-radius: 10px; background: #fff; cursor: pointer; font-family: inherit; font-weight: 700; font-size: 0.8rem; color: var(--muted); display: inline-flex; align-items: center; justify-content: center; gap: 3px; }
+.av-daypick button.sel { border-color: var(--teal); background: var(--teal-light); color: var(--teal-dark); }
+.av-presets { display: flex; gap: 6px; margin: 8px 0 14px; flex-wrap: wrap; }
+.av-presets button { border: none; background: none; cursor: pointer; font-family: inherit; font-size: 0.78rem; color: var(--teal); font-weight: 700; text-decoration: underline; padding: 0; }
+.av-times { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.av-times label { display: flex; flex-direction: column; gap: 4px; font-size: 0.8rem; color: var(--muted); font-weight: 600; }
+.av-times input { padding: 9px 10px; border: 1.5px solid var(--line); border-radius: 10px; font-family: inherit; font-size: 0.95rem; width: 100%; }
+.av-dialog-foot { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; }
