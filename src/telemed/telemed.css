@@ -204,6 +204,8 @@
 .st-card p.muted { margin: 0 0 10px; font-size: 0.86rem; }
 .st-h4 { display: flex; align-items: center; gap: 6px; font-size: 0.85rem; color: var(--navy); margin: 12px 0 6px; }
 .st-kv { display: flex; gap: 10px; align-items: center; font-size: 0.88rem; margin-bottom: 6px; }
+.st-note { display: flex; gap: 8px; align-items: flex-start; font-size: 0.84rem; line-height: 1.6; background: rgba(24, 107, 118, 0.06); border: 1px dashed rgba(24, 107, 118, 0.25); border-radius: 10px; padding: 8px 12px; margin: 0 0 12px; }
+.st-note svg { flex: none; margin-top: 4px; color: var(--primary, #186b76); }
 .st-kv span { color: var(--muted); }
 .st-kv b { color: var(--navy); }
 .st-card .tm-avail-row { grid-template-columns: 1.2fr 1fr 1fr auto; }

@@ -4,7 +4,7 @@
 import { Router } from 'express';
 import bcrypt from 'bcryptjs';
 import { Staff, Users, Admins, Doctors, Audit } from '../db/queries.js';
-import { grantTelemed, revokeTelemed, grantAdmin, revokeAdmin } from '../staff.js';
+import { grantTelemed, revokeTelemed, grantAdmin, revokeAdmin, setStaffPassword } from '../staff.js';
 
 const router = Router();
 const fail = (res, e) => {
@@ -88,6 +88,15 @@ router.delete('/:id/telemed', async (req, res) => {
   await revokeTelemed(req.params.id);
   await Audit.log(req.admin.id, 'revoke', 'staff_telemed', req.params.id);
   res.json({ ok: true });
+});
+// One password for the person: updates every login they have (telemedicine and,
+// for super admins, the control-panel user too).
+router.put('/:id/password', async (req, res) => {
+  try {
+    const r = await setStaffPassword(req.params.id, req.body?.password, { actingAdminId: req.admin.id, isSuper: req.isSuper });
+    await Audit.log(req.admin.id, 'password', 'staff', req.params.id);
+    res.json({ ok: true, ...r });
+  } catch (e) { fail(res, e); }
 });
 router.put('/:id/telemed/password', async (req, res) => {
   const s = await Staff.byId(req.params.id);

@@ -61,6 +61,23 @@ export async function ensureStaffImported() {
   console.log(`[staff] imported ${imported.size ? [...new Set(imported.values())].length : 0} record(s) into the staff directory`);
 }
 
+const adminHash = (id) => query('SELECT password_hash FROM admins WHERE id=? LIMIT 1', [id]).then((r) => r[0]?.password_hash || null);
+const userHash = (id) => query('SELECT password_hash FROM users WHERE id=? AND deleted_at IS NULL LIMIT 1', [id]).then((r) => r[0]?.password_hash || null);
+
+// Sets one password for every login the person has (telemedicine + control panel).
+export async function setStaffPassword(staffId, password, { actingAdminId, isSuper } = {}) {
+  const st = await Staff.byId(staffId);
+  if (!st) throw Object.assign(new Error('not_found'), { code: 'not_found' });
+  if (!st.user_id && !st.admin_id) throw Object.assign(new Error('not_found'), { code: 'not_found' });
+  if (!password || String(password).length < 6) throw Object.assign(new Error('weak_password'), { code: 'weak_password' });
+  const hash = await bcrypt.hash(String(password), 10);
+  const changed = [];
+  if (st.user_id) { await Users.updatePassword(st.user_id, hash); changed.push('telemed'); }
+  // a non-super admin may only change control-panel passwords of their own account
+  if (st.admin_id && (isSuper || Number(st.admin_id) === Number(actingAdminId))) { await Admins.updatePassword(st.admin_id, hash); changed.push('admin'); }
+  return { changed };
+}
+
 /* ---------------- Telemedicine access ---------------- */
 // Creates (or links) the users.role='doctor' account + doctors row for a staff record.
 export async function grantTelemed(staffId, { email, password, slot_minutes, is_published, availability, date_availability }) {
@@ -72,10 +89,17 @@ export async function grantTelemed(staffId, { email, password, slot_minutes, is_
   let user = await Users.byEmail(mail);
   if (user && user.role !== 'doctor') throw Object.assign(new Error('email_taken'), { code: 'email_taken' });
   if (!user) {
-    if (!password || String(password).length < 6) throw Object.assign(new Error('weak_password'), { code: 'weak_password' });
+    // One password for the person: when they already have a control-panel login
+    // and no new password is given, reuse that login's password hash.
+    let hash = null;
+    if (!password && st.admin_id) hash = await adminHash(st.admin_id);
+    if (!hash) {
+      if (!password || String(password).length < 6) throw Object.assign(new Error('weak_password'), { code: 'weak_password' });
+      hash = await bcrypt.hash(String(password), 10);
+    }
     const any = await Users.byEmailAny(mail);
     if (any) await Users.releaseEmail(any.id);
-    const r = await Users.create({ role: 'doctor', name: st.name_ar || st.name_en, email: mail, phone: st.phone }, await bcrypt.hash(String(password), 10));
+    const r = await Users.create({ role: 'doctor', name: st.name_ar || st.name_en, email: mail, phone: st.phone }, hash);
     user = { id: r.insertId };
   }
   await Doctors.upsertProfile(user.id, { slot_minutes: slot_minutes || 20, is_published: is_published === 0 || is_published === false ? 0 : 1, sort_order: st.sort_order });
@@ -110,10 +134,15 @@ export async function grantAdmin(staffId, { admin_id, email, password, permissio
   const mail = norm(email || st.email);
   if (!mail) throw Object.assign(new Error('email_required'), { code: 'email_required' });
   if (await Admins.byEmail(mail)) throw Object.assign(new Error('email_taken'), { code: 'email_taken' });
-  if (!password || String(password).length < 6) throw Object.assign(new Error('weak_password'), { code: 'weak_password' });
+  let hash = null;
+  if (!password && st.user_id) hash = await userHash(st.user_id);   // reuse the telemedicine password
+  if (!hash) {
+    if (!password || String(password).length < 6) throw Object.assign(new Error('weak_password'), { code: 'weak_password' });
+    hash = await bcrypt.hash(String(password), 10);
+  }
   const role = is_super ? 'super' : 'staff';
   const perms = is_super ? null : JSON.stringify(permissions || { pages: { dashboard: { view: true }, visits: { view: true }, telemed: { view: true } } });
-  const r = await Admins.create(st.name_ar || st.name_en, mail, await bcrypt.hash(String(password), 10), role, perms);
+  const r = await Admins.create(st.name_ar || st.name_en, mail, hash, role, perms);
   await Staff.setAdmin(staffId, r.insertId);
   if (!st.email) await query('UPDATE staff SET email=? WHERE id=?', [mail, staffId]);
   return { admin_id: r.insertId, existed: false };

@@ -211,6 +211,7 @@ export const AdminAPI = {
   staffGrantTelemed: (id, data) => api.post(`/admin/staff/${id}/telemed`, data).then((r) => r.data),
   staffRevokeTelemed: (id) => api.delete(`/admin/staff/${id}/telemed`).then((r) => r.data),
   staffTelemedPassword: (id, password) => api.put(`/admin/staff/${id}/telemed/password`, { password }).then((r) => r.data),
+  staffPassword: (id, password) => api.put(`/admin/staff/${id}/password`, { password }).then((r) => r.data),
   staffGrantAdmin: (id, data) => api.post(`/admin/staff/${id}/admin`, data).then((r) => r.data),
   staffRevokeAdmin: (id, remove = false) => api.delete(`/admin/staff/${id}/admin`, { params: remove ? { remove: 1 } : {} }).then((r) => r.data),
   staffAdminPassword: (id, password) => api.put(`/admin/staff/${id}/admin/password`, { password }).then((r) => r.data),

@@ -39,7 +39,8 @@ const T = {
     tm_title: 'الطب الاتصالي', tm_off: 'لا يملك حسابًا للطب الاتصالي.', tm_on: 'يملك حسابًا — يدخل من /login ويرى جدوله وينضم للاستشارات.',
     tm_email: 'بريد الدخول', tm_password: 'كلمة المرور', tm_grant: 'منح الصلاحية', tm_revoke: 'سحب الصلاحية', tm_confirm_revoke: 'سحب صلاحية الطب الاتصالي؟ سيُغلق حساب الدخول وتبقى استشاراته السابقة.',
     slot: 'مدة الاستشارة (دقيقة)', published: 'يظهر للمرضى في الحجز الذاتي', availability: 'أوقات التوفر', days_off: 'أيام الإجازة', add_off: 'إضافة',
-    reset_pw: 'تغيير كلمة المرور', new_pw: 'كلمة المرور الجديدة', pw_done: 'تم تحديث كلمة المرور',
+    reset_pw: 'تغيير كلمة المرور', new_pw: 'كلمة المرور الجديدة', pw_done: 'تم تحديث كلمة المرور', pw_all: 'كلمة مرور واحدة للفرد — تُطبَّق على كل حسابات الدخول المرتبطة به (الطب الاتصالي ولوحة التحكم).',
+    same_login_admin: 'سيدخل بنفس بريد وكلمة مرور لوحة التحكم — لا حاجة لكلمة مرور جديدة.', same_login_tm: 'سيدخل بنفس بريد وكلمة مرور الطب الاتصالي — لا حاجة لكلمة مرور جديدة.', set_other_pw: 'أو حدّد كلمة مرور مختلفة (اختياري)',
     ad_title: 'لوحة التحكم', ad_off: 'لا يملك حساب دخول للوحة التحكم.', ad_on: 'يملك حساب دخول للوحة التحكم.', ad_super_only: 'منح صلاحية لوحة التحكم متاح لمدير النظام فقط.',
     ad_link: 'ربط بحساب موجود', ad_pick: 'اختر مستخدمًا...', ad_create: 'إنشاء حساب جديد', ad_email: 'بريد الدخول', ad_password: 'كلمة المرور', ad_grant: 'منح الصلاحية',
     ad_perm_hint: 'يُنشأ الحساب بصلاحيات عرض أساسية (لوحة التحكم، الزيارات، الطب الاتصالي). عدّل التفاصيل من «إدارة المستخدمين».',
@@ -67,7 +68,8 @@ const T = {
     tm_title: 'Telemedicine', tm_off: 'No telemedicine account.', tm_on: 'Has an account — signs in at /login to see the schedule and join consultations.',
     tm_email: 'Login email', tm_password: 'Password', tm_grant: 'Grant access', tm_revoke: 'Revoke access', tm_confirm_revoke: 'Revoke telemedicine access? The login is closed; past consultations stay.',
     slot: 'Consultation length (min)', published: 'Visible to patients for self-booking', availability: 'Availability', days_off: 'Days off', add_off: 'Add',
-    reset_pw: 'Change password', new_pw: 'New password', pw_done: 'Password updated',
+    reset_pw: 'Change password', new_pw: 'New password', pw_done: 'Password updated', pw_all: 'One password per person — applied to every login linked to them (telemedicine and control panel).',
+    same_login_admin: 'Signs in with the same control-panel email and password — no new password needed.', same_login_tm: 'Signs in with the same telemedicine email and password — no new password needed.', set_other_pw: 'Or set a different password (optional)',
     ad_title: 'Control panel', ad_off: 'No control-panel login.', ad_on: 'Has a control-panel login.', ad_super_only: 'Granting control-panel access is for the super admin only.',
     ad_link: 'Link an existing user', ad_pick: 'Pick a user...', ad_create: 'Create a new user', ad_email: 'Login email', ad_password: 'Password', ad_grant: 'Grant access',
     ad_perm_hint: 'The user is created with basic view permissions (dashboard, visits, telemedicine). Fine-tune in "User Management".',
@@ -307,7 +309,7 @@ function StaffModal({ id, roles, tt, lang, isSuper, canEdit, onClose, onCreated 
 
 /* ============================ Access panel ============================ */
 function AccessPanel({ s, tt, lang, isSuper, canEdit, reload }) {
-  const [tm, setTm] = useState({ email: s.telemed_email || s.email || '', password: '' });
+  const [tm, setTm] = useState({ email: s.telemed_email || s.admin_email || s.email || '', password: '' });
   const [slot, setSlot] = useState(s.slot_minutes || 20);
   const [pub, setPub] = useState(s.is_published == null ? true : !!s.is_published);
   const [rules, setRules] = useState(s.availability || []);
@@ -315,7 +317,7 @@ function AccessPanel({ s, tt, lang, isSuper, canEdit, reload }) {
   const [off, setOff] = useState(s.days_off || []);
   const [newOff, setNewOff] = useState('');
   const [admins, setAdmins] = useState([]);
-  const [ad, setAd] = useState({ mode: 'link', admin_id: '', email: s.email || '', password: '' });
+  const [ad, setAd] = useState({ mode: 'link', admin_id: '', email: s.telemed_email || s.email || '', password: '' });
   const [pw, setPw] = useState({ which: null, value: '', done: false });
   const [msg, setMsg] = useState('');
   const [busy, setBusy] = useState(false);
@@ -324,16 +326,16 @@ function AccessPanel({ s, tt, lang, isSuper, canEdit, reload }) {
   const linkedAdminIds = new Set();
   const err = (e) => { const c = e?.response?.data?.error; setMsg(c === 'email_taken' ? tt.email_taken : c === 'weak_password' ? tt.weak : c === 'admin_linked' ? tt.linked : tt.failed); };
 
-  const grantTm = async () => { setBusy(true); setMsg(''); try { await AdminAPI.staffGrantTelemed(s.id, { email: tm.email, password: tm.password, slot_minutes: slot, is_published: pub ? 1 : 0, availability: rules, date_availability: dates }); await reload(); } catch (e) { err(e); } finally { setBusy(false); } };
+  const grantTm = async () => { setBusy(true); setMsg(''); try { await AdminAPI.staffGrantTelemed(s.id, { email: tm.email, password: tm.password || undefined, slot_minutes: slot, is_published: pub ? 1 : 0, availability: rules, date_availability: dates }); await reload(); } catch (e) { err(e); } finally { setBusy(false); } };
   const revokeTm = async () => { if (!confirm(tt.tm_confirm_revoke)) return; await AdminAPI.staffRevokeTelemed(s.id); await reload(); };
   const saveTm = async () => { setBusy(true); setMsg(''); try { await AdminAPI.updateStaff(s.id, { ...s, slot_minutes: slot, is_published: pub ? 1 : 0, availability: rules.filter((r) => r.start_time < r.end_time), date_availability: dates }); setMsg(tt.saved); await reload(); } catch (e) { err(e); } finally { setBusy(false); } };
   const addOff = async () => { if (!newOff || !s.user_id) return; await AdminAPI.addDoctorDayOff(s.user_id, newOff); setNewOff(''); await reload(); };
   const removeOff = async (oid) => { await AdminAPI.removeDoctorDayOff(s.user_id, oid); await reload(); };
-  const grantAd = async () => { setBusy(true); setMsg(''); try { await AdminAPI.staffGrantAdmin(s.id, ad.mode === 'link' ? { admin_id: ad.admin_id } : { email: ad.email, password: ad.password }); await reload(); } catch (e) { err(e); } finally { setBusy(false); } };
+  const grantAd = async () => { setBusy(true); setMsg(''); try { await AdminAPI.staffGrantAdmin(s.id, ad.mode === 'link' ? { admin_id: ad.admin_id } : { email: ad.email, password: ad.password || undefined }); await reload(); } catch (e) { err(e); } finally { setBusy(false); } };
   const unlinkAd = async () => { await AdminAPI.staffRevokeAdmin(s.id); await reload(); };
   const setPassword = async () => {
     if (pw.value.length < 6) { setMsg(tt.weak); return; }
-    try { if (pw.which === 'tm') await AdminAPI.staffTelemedPassword(s.id, pw.value); else await AdminAPI.staffAdminPassword(s.id, pw.value); setPw({ which: null, value: '', done: true }); setMsg(tt.pw_done); } catch (e) { err(e); }
+    try { await AdminAPI.staffPassword(s.id, pw.value); setPw({ which: null, value: '', done: true }); setMsg(tt.pw_done); } catch (e) { err(e); }
   };
   const adminRow = admins.find((a) => String(a.id) === String(s.admin_id));
 
@@ -356,9 +358,10 @@ function AccessPanel({ s, tt, lang, isSuper, canEdit, reload }) {
             <p className="muted">{tt.tm_off}</p>
             {canEdit && (
               <>
+                {s.admin_id && <p className="muted st-note"><KeyRound size={13} /> {tt.same_login_admin}</p>}
                 <div className="field-row">
                   <div className="field"><label>{tt.tm_email}</label><input type="email" dir="ltr" value={tm.email} onChange={(e) => setTm((p) => ({ ...p, email: e.target.value }))} /></div>
-                  <div className="field"><label>{tt.tm_password}</label><input type="text" dir="ltr" value={tm.password} onChange={(e) => setTm((p) => ({ ...p, password: e.target.value }))} placeholder="6+" /></div>
+                  <div className="field"><label>{s.admin_id ? tt.set_other_pw : tt.tm_password}</label><input type="text" dir="ltr" value={tm.password} onChange={(e) => setTm((p) => ({ ...p, password: e.target.value }))} placeholder="6+" /></div>
                 </div>
                 <div className="field-row">
                   <div className="field"><label>{tt.slot}</label><input type="number" dir="ltr" min={5} step={5} value={slot} onChange={(e) => setSlot(e.target.value)} /></div>
@@ -366,7 +369,7 @@ function AccessPanel({ s, tt, lang, isSuper, canEdit, reload }) {
                 </div>
                 <h4 className="st-h4"><Clock size={14} /> {tt.availability}</h4>
                 <AvailabilityEditor rules={rules} onChange={setRules} dates={dates} onChangeDates={setDates} />
-                <div className="tm-actions-row"><button type="button" className="btn btn-primary" disabled={busy || !tm.email || !tm.password} onClick={grantTm}><Video size={15} /> {tt.tm_grant}</button></div>
+                <div className="tm-actions-row"><button type="button" className="btn btn-primary" disabled={busy || !tm.email || (!tm.password && !s.admin_id)} onClick={grantTm}><Video size={15} /> {tt.tm_grant}</button></div>
               </>
             )}
           </>
@@ -420,14 +423,15 @@ function AccessPanel({ s, tt, lang, isSuper, canEdit, reload }) {
                   </div>
                 ) : (
                   <>
+                    {s.user_id && <p className="muted st-note"><KeyRound size={13} /> {tt.same_login_tm}</p>}
                     <div className="field-row">
                       <div className="field"><label>{tt.ad_email}</label><input type="email" dir="ltr" value={ad.email} onChange={(e) => setAd((p) => ({ ...p, email: e.target.value }))} /></div>
-                      <div className="field"><label>{tt.ad_password}</label><input type="text" dir="ltr" value={ad.password} onChange={(e) => setAd((p) => ({ ...p, password: e.target.value }))} placeholder="6+" /></div>
+                      <div className="field"><label>{s.user_id ? tt.set_other_pw : tt.ad_password}</label><input type="text" dir="ltr" value={ad.password} onChange={(e) => setAd((p) => ({ ...p, password: e.target.value }))} placeholder="6+" /></div>
                     </div>
                     <p className="muted"><small>{tt.ad_perm_hint}</small></p>
                   </>
                 )}
-                <div className="tm-actions-row"><button type="button" className="btn btn-primary" disabled={busy || (ad.mode === 'link' ? !ad.admin_id : !(ad.email && ad.password))} onClick={grantAd}><LayoutDashboard size={15} /> {tt.ad_grant}</button></div>
+                <div className="tm-actions-row"><button type="button" className="btn btn-primary" disabled={busy || (ad.mode === 'link' ? !ad.admin_id : !(ad.email && (ad.password || s.user_id)))} onClick={grantAd}><LayoutDashboard size={15} /> {tt.ad_grant}</button></div>
               </>
             )}
           </>
@@ -448,8 +452,9 @@ function AccessPanel({ s, tt, lang, isSuper, canEdit, reload }) {
 
       {pw.which && (
         <div className="st-card" style={{ gridColumn: '1 / -1' }}>
+          {s.user_id && s.admin_id && <p className="muted st-note"><KeyRound size={13} /> {tt.pw_all}</p>}
           <div className="field-row" style={{ alignItems: 'end' }}>
-            <div className="field"><label>{tt.new_pw} — {pw.which === 'tm' ? tt.tm_title : tt.ad_title}</label><input type="text" dir="ltr" value={pw.value} onChange={(e) => setPw((p) => ({ ...p, value: e.target.value }))} autoFocus /></div>
+            <div className="field"><label>{tt.new_pw}{!(s.user_id && s.admin_id) && <> — {pw.which === 'tm' ? tt.tm_title : tt.ad_title}</>}</label><input type="text" dir="ltr" value={pw.value} onChange={(e) => setPw((p) => ({ ...p, value: e.target.value }))} autoFocus /></div>
             <div className="tm-actions-row" style={{ marginTop: 0 }}>
               <button type="button" className="btn btn-primary btn-sm" onClick={setPassword}>{tt.save}</button>
               <button type="button" className="btn btn-ghost btn-sm" onClick={() => setPw({ which: null, value: '', done: false })}>{tt.cancel}</button>
