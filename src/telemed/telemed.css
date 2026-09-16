@@ -176,8 +176,27 @@
   .tm-off-add { grid-template-columns: 1fr; }
   .tm-stats { grid-template-columns: repeat(3, 1fr); gap: 8px; }
   .tm-room { border-radius: 0; margin: 0 -16px; min-height: 80vh; }
-  .tm-card { flex-wrap: wrap; }
-  .tm-card-end { width: 100%; justify-content: flex-end; }
+  /* consultation cards: icon + text on one row; the arrow row is dropped unless there is a join button */
+  .tm-card { flex-wrap: wrap; gap: 12px; padding: 12px 14px; align-items: flex-start; }
+  .tm-card-icon { width: 40px; height: 40px; border-radius: 11px; }
+  .tm-card-body { flex: 1 1 0; }
+  .tm-card-top { gap: 6px 8px; }
+  .tm-card-top strong { font-size: 0.95rem; }
+  .tm-card-sub { gap: 6px 10px; font-size: 0.8rem; }
+  .tm-card-end { width: 100%; justify-content: stretch; }
+  .tm-card-end:not(:has(.tm-join-btn)) { display: none; }
+  .tm-card-end .tm-card-arrow { display: none; }
+  .tm-card-end .tm-join-btn { width: 100%; justify-content: center; }
+  .tm-section .tm-hero { padding: 20px 18px; gap: 16px; border-radius: 16px; }
+  .tm-hero p { font-size: 0.92rem; }
+  .tm-hero-cta { width: 100%; flex-direction: row; justify-content: space-between; }
+  .tm-hero-cta .btn { flex: 1; justify-content: center; }
+  .tm-hero-icon { width: 34px; height: 34px; }
+  .tm-stats > div { padding: 12px 8px; }
+  .tm-stats b { font-size: 1.3rem; }
+  .tm-stats span { font-size: 0.78rem; }
+  .tm-tabs { margin: 0 -4px 16px; padding: 0 4px; }
+  .tm-tabs button { padding: 10px 10px; font-size: 0.88rem; }
 }
 
 /* staff directory */
