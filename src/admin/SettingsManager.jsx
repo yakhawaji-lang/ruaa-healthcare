@@ -11,7 +11,7 @@ const labels = {
     phone: 'الهاتف', phone_intl: 'الهاتف (دولي)', whatsapp: 'واتساب', email: 'البريد',
     instagram: 'إنستغرام', twitter: 'تويتر/X', founded: 'سنة التأسيس',
     hero_image: 'صورة البانر الرئيسي', about_image: 'صورة صفحة من نحن', cta_image: 'صورة شريط الدعوة',
-    telemed_enabled: 'الاستشارات عن بُعد (1 = مفعّلة / 0 = معطّلة)', telemed_price: 'رسوم الاستشارة عن بُعد (ريال، اختياري)',
+    telemed_enabled: 'الطب الاتصالي (1 = مفعّلة / 0 = معطّلة)', telemed_price: 'رسوم استشارة الطب الاتصالي (ريال، اختياري)',
     telemed_slot_minutes: 'المدة الافتراضية للاستشارة (دقيقة)', jitsi_domain: 'نطاق خادم Jitsi للمكالمات (مثال: meet.jit.si)',
   },
   en: {

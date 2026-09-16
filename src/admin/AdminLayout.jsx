@@ -15,7 +15,7 @@ const GROUPS = [
     { to: '/admin/requests', page: 'requests', icon: ClipboardList, ar: 'طلبات الخدمات', en: 'Service Requests' },
     { to: '/admin/cases', page: 'cases', icon: ShieldPlus, ar: 'حالات التأمين', en: 'Insurance Cases' },
     { to: '/admin/visits', page: 'visits', icon: CalendarDays, ar: 'تقويم الزيارات', en: 'Visits Calendar' },
-    { to: '/admin/telemed', page: 'telemed', icon: Video, ar: 'الاستشارات عن بُعد', en: 'Remote Consultations' },
+    { to: '/admin/telemed', page: 'telemed', icon: Video, ar: 'الطب الاتصالي', en: 'Remote Consultations' },
     { to: '/admin/messages', page: 'messages', icon: Mail, ar: 'الرسائل', en: 'Messages' },
   ] },
   { ar: 'الحسابات', en: 'Accounts', items: [

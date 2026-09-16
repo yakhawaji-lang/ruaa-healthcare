@@ -10,7 +10,7 @@ import { useLang } from '../i18n.jsx';
 const T = {
   ar: {
     dashboard: 'لوحة التحكم', service_requests: 'طلبات الخدمات', insurance_cases: 'حالات التأمين',
-    upcoming_visits: 'زيارات قادمة', consultations: 'استشارات عن بُعد', services: 'الخدمات', unread_messages: 'الرسائل غير المقروءة',
+    upcoming_visits: 'زيارات قادمة', consultations: 'الطب الاتصالي', services: 'الخدمات', unread_messages: 'الرسائل غير المقروءة',
     new: 'جديدة', statistics: 'الإحصائيات',
     requests_by_status: 'طلبات الخدمات حسب الحالة', cases_by_status: 'حالات التأمين حسب الحالة',
     visits_by_status: 'الزيارات حسب الحالة', trend_title: 'الطلبات والحالات (آخر 6 أشهر)',
