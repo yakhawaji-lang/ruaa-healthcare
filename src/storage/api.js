@@ -62,6 +62,29 @@ export const AccountAPI = {
   sendCaseMessage: (id, payload) => api.post(`/account/cases/${id}/messages`, payload).then((r) => r.data),
   sendRequestMessage: (id, payload) => api.post(`/account/requests/${id}/messages`, payload).then((r) => r.data),
   uploadFile: (data, filename) => api.post('/account/upload', { data, filename }).then((r) => r.data),
+  // telemedicine (patient)
+  telemedDoctors: () => api.get('/account/telemed/doctors').then((r) => r.data),
+  telemedDays: (doctorId) => api.get('/account/telemed/days', { params: { doctor_id: doctorId } }).then((r) => r.data),
+  telemedSlots: (doctorId, date) => api.get('/account/telemed/slots', { params: { doctor_id: doctorId, date } }).then((r) => r.data),
+  bookConsultation: (data) => api.post('/account/telemed/consultations', data).then((r) => r.data),
+  myConsultations: () => api.get('/account/telemed/consultations').then((r) => r.data),
+  consultation: (id) => api.get(`/account/telemed/consultations/${id}`).then((r) => r.data),
+  cancelConsultation: (id) => api.post(`/account/telemed/consultations/${id}/cancel`).then((r) => r.data),
+  sendConsultationMessage: (id, payload) => api.post(`/account/telemed/consultations/${id}/messages`, payload).then((r) => r.data),
+  joinConsultation: (id) => api.get(`/account/telemed/consultations/${id}/join`).then((r) => r.data),
+};
+
+/* ---------------- Doctor portal ---------------- */
+export const DoctorAPI = {
+  me: () => api.get('/account/doctor/me').then((r) => r.data),
+  saveProfile: (data) => api.put('/account/doctor/me', data).then((r) => r.data),
+  setAvailability: (rules) => api.put('/account/doctor/availability', { rules }).then((r) => r.data),
+  addDayOff: (date, note) => api.post('/account/doctor/days-off', { date, note }).then((r) => r.data),
+  removeDayOff: (id) => api.delete(`/account/doctor/days-off/${id}`).then((r) => r.data),
+  consultations: () => api.get('/account/doctor/consultations').then((r) => r.data),
+  consultation: (id) => api.get(`/account/doctor/consultations/${id}`).then((r) => r.data),
+  join: (id) => api.get(`/account/doctor/consultations/${id}/join`).then((r) => r.data),
+  saveOutcome: (id, data) => api.put(`/account/doctor/consultations/${id}`, data).then((r) => r.data),
 };
 
 /* ---------------- Admin ---------------- */
@@ -158,6 +181,25 @@ export const AdminAPI = {
   sendCaseMessage: (id, payload) => api.post(`/admin/cases/${id}/messages`, payload).then((r) => r.data),
   sendRequestMessage: (id, payload) => api.post(`/admin/requests/${id}/messages`, payload).then((r) => r.data),
   uploadFile: (data, filename) => api.post('/admin/upload-file', { data, filename }).then((r) => r.data),
+  // telemedicine
+  doctors: () => api.get('/admin/telemed/doctors').then((r) => r.data),
+  doctor: (id) => api.get(`/admin/telemed/doctors/${id}`).then((r) => r.data),
+  createDoctor: (data) => api.post('/admin/telemed/doctors', data).then((r) => r.data),
+  updateDoctor: (id, data) => api.put(`/admin/telemed/doctors/${id}`, data).then((r) => r.data),
+  setDoctorAvailability: (id, rules) => api.put(`/admin/telemed/doctors/${id}/availability`, { rules }).then((r) => r.data),
+  addDoctorDayOff: (id, date, note) => api.post(`/admin/telemed/doctors/${id}/days-off`, { date, note }).then((r) => r.data),
+  removeDoctorDayOff: (id, offId) => api.delete(`/admin/telemed/doctors/${id}/days-off/${offId}`).then((r) => r.data),
+  setDoctorActive: (id, isActive) => api.put(`/admin/telemed/doctors/${id}/active`, { is_active: isActive }).then((r) => r.data),
+  setDoctorPassword: (id, password) => api.put(`/admin/telemed/doctors/${id}/password`, { password }).then((r) => r.data),
+  deleteDoctor: (id) => api.delete(`/admin/telemed/doctors/${id}`).then((r) => r.data),
+  telemedSlots: (doctorId, date) => api.get('/admin/telemed/slots', { params: { doctor_id: doctorId, date } }).then((r) => r.data),
+  consultations: () => api.get('/admin/telemed/consultations').then((r) => r.data),
+  consultation: (id) => api.get(`/admin/telemed/consultations/${id}`).then((r) => r.data),
+  createConsultation: (data) => api.post('/admin/telemed/consultations', data).then((r) => r.data),
+  updateConsultation: (id, data) => api.put(`/admin/telemed/consultations/${id}`, data).then((r) => r.data),
+  deleteConsultation: (id) => api.delete(`/admin/telemed/consultations/${id}`).then((r) => r.data),
+  sendConsultationMessage: (id, payload) => api.post(`/admin/telemed/consultations/${id}/messages`, payload).then((r) => r.data),
+  joinConsultation: (id) => api.get(`/admin/telemed/consultations/${id}/join`).then((r) => r.data),
 };
 
 

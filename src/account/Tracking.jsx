@@ -10,9 +10,11 @@ const T = {
 
 // Professional order-style tracking: a horizontal stepper of the flow + a
 // detailed event timeline (inspired by global order-tracking pages).
-export default function Tracking({ flow, status, events = [], audience = 'admin' }) {
+// `labelFn(status, lang)` optionally overrides the step wording (e.g. telemedicine flow).
+export default function Tracking({ flow, status, events = [], audience = 'admin', labelFn }) {
   const { lang, pick } = useLang();
   const tt = T[lang];
+  const stepLabel = (st) => (labelFn ? labelFn(st, lang) : statusLabel(st, lang, audience));
   const idx = flow.indexOf(status);
   const isTerminalBad = status === 'cancelled' || status === 'rejected';
 
@@ -25,7 +27,7 @@ export default function Tracking({ flow, status, events = [], audience = 'admin'
             return (
               <div key={st} className={`track-step ${done ? 'done' : ''} ${active ? 'active' : ''}`}>
                 <div className="track-dot">{done ? <Check size={15} /> : i + 1}</div>
-                <span>{statusLabel(st, lang, audience)}</span>
+                <span>{stepLabel(st)}</span>
                 {i < flow.length - 1 && <i className="track-line" />}
               </div>
             );
@@ -42,7 +44,7 @@ export default function Tracking({ flow, status, events = [], audience = 'admin'
               <span className="te-dot" style={{ background: statusColor(e.status) }} />
               <div className="te-body">
                 <div className="te-head">
-                  <strong>{ev.title || statusLabel(e.status, lang, audience)}</strong>
+                  <strong>{ev.title || stepLabel(e.status)}</strong>
                   <small dir="ltr">{fmtDateTime(e.created_at)}</small>
                 </div>
                 {ev.note && <p>{ev.note}</p>}

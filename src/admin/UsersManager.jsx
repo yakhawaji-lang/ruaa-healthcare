@@ -20,6 +20,7 @@ const PERM_GROUPS = [
     { key: 'requests', ar: 'طلبات الخدمات', en: 'Service Requests', icon: ClipboardList, actions: ['view', 'create', 'edit', 'delete'] },
     { key: 'cases', ar: 'حالات التأمين', en: 'Insurance Cases', icon: ShieldPlus, actions: ['view', 'create', 'edit', 'delete'] },
     { key: 'visits', ar: 'تقويم الزيارات', en: 'Visits Calendar', icon: CalendarDays, actions: ['view', 'create', 'edit', 'delete'] },
+    { key: 'telemed', ar: 'الاستشارات عن بُعد', en: 'Remote Consultations', icon: CalendarDays, actions: ['view', 'create', 'edit', 'delete'] },
     { key: 'messages', ar: 'الرسائل', en: 'Messages', icon: Mail, actions: ['view', 'edit', 'delete'] },
   ] },
   { ar: 'الحسابات', en: 'Accounts', pages: [

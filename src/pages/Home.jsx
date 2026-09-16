@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, ArrowRight } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Video, Phone } from 'lucide-react';
 import { useLang } from '../i18n.jsx';
 import { useSite } from '../App.jsx';
 import { useSettings } from '../useSettings.js';
@@ -71,6 +71,20 @@ export default function Home() {
           </div>
         </div>
       </section>
+
+      {/* Telemedicine banner */}
+      {(s('telemed_enabled') || '1') !== '0' && (
+        <section className="section telemed-band">
+          <div className="container telemed-band-inner">
+            <div className="telemed-band-icons"><span><Video size={26} /></span><span><Phone size={26} /></span></div>
+            <div className="telemed-band-text">
+              <h2>{t('telemed_home_title')}</h2>
+              <p>{t('telemed_home_sub')}</p>
+            </div>
+            <Link to="/telemedicine" className="btn btn-white">{t('telemed_home_cta')} <Arrow size={16} /></Link>
+          </div>
+        </section>
+      )}
 
       {/* Partners (insurance companies) */}
       {(site?.partners || []).length > 0 && (

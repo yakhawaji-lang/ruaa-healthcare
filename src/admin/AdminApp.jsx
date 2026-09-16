@@ -15,6 +15,7 @@ import PagesManager from './PagesManager.jsx';
 import MessagesManager from './MessagesManager.jsx';
 import SettingsManager from './SettingsManager.jsx';
 import VisitsCalendar from './VisitsCalendar.jsx';
+import TelemedManager from './TelemedManager.jsx';
 import UsersManager from './UsersManager.jsx';
 import ClientsManager from './ClientsManager.jsx';
 import './admin.css';
@@ -25,6 +26,7 @@ const PAGE_ROUTES = [
   ['requests', 'requests', ServiceRequestsManager],
   ['cases', 'cases', InsuranceCasesManager],
   ['visits', 'visits', VisitsCalendar],
+  ['telemed', 'telemed', TelemedManager],
   ['insurers', 'insurers', InsuranceCompaniesManager],
   ['clients', 'clients', ClientsManager],
   ['hero', 'hero', HeroSlidesManager],

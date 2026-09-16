@@ -15,6 +15,7 @@ import { useLang } from '../i18n.jsx';
 import ServiceIcon from '../components/ServiceIcon.jsx';
 import DobInput from '../components/DobInput.jsx';
 import ServicePickerModal from '../components/ServicePickerModal.jsx';
+import TelemedSection from '../telemed/TelemedSection.jsx';
 
 const T = {
   ar: {
@@ -125,6 +126,9 @@ export default function VisitorPortal() {
           <VisitsList visits={upcoming} />
         </section>
       )}
+
+      {/* Telemedicine: book / join video & voice consultations */}
+      <TelemedSection />
 
       {/* Request a service */}
       <section className="portal-section">

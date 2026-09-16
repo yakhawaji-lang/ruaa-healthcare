@@ -16,6 +16,7 @@ export default function Navbar() {
     { to: '/', label: t('nav_home'), end: true },
     { to: '/about', label: t('nav_about') },
     { to: '/services', label: t('nav_services') },
+    ...((s('telemed_enabled') || '1') !== '0' ? [{ to: '/telemedicine', label: t('nav_telemed') }] : []),
     { to: '/#partners', label: t('nav_partners'), hash: true },
     { to: '/contact', label: t('nav_contact') },
   ];

@@ -24,6 +24,17 @@ const TITLE_EN = {
   'تم تحديد جدولة الزيارة': 'Visit scheduling confirmed',
   'بدأ تنفيذ الرعاية': 'Care delivery started',
   'تم إكمال الحالة بنجاح': 'Case completed successfully',
+  // telemedicine
+  'تم استلام طلب الاستشارة': 'Consultation request received',
+  'تم تحديد موعد الاستشارة': 'Consultation scheduled',
+  'تم تعديل موعد الاستشارة': 'Consultation rescheduled',
+  'بدأت الاستشارة': 'Consultation started',
+  'اكتملت الاستشارة': 'Consultation completed',
+  'تم إلغاء الاستشارة': 'Consultation cancelled',
+  'لم يحضر المريض': 'Patient did not show',
+  'بانتظار الجدولة': 'Awaiting scheduling',
+  'تم تحديد الموعد': 'Scheduled',
+  'الاستشارة جارية': 'Consultation in progress',
   // visit status change labels
   'تمت': 'Completed',
   'ملغاة': 'Cancelled',
@@ -33,6 +44,8 @@ const TITLE_EN = {
 const ACTOR_EN = {
   'النظام': 'System',
   'الإدارة': 'Administration',
+  'الطبيب': 'Doctor',
+  'العميل': 'Client',
 };
 
 const VISIT_TYPE_EN = {

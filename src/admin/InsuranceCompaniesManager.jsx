@@ -183,7 +183,11 @@ function MembersModal({ company, onClose }) {
       await AdminAPI.createInsurerMember(company.id, f);
       setF({ name: '', email: '', phone: '', password: '' }); load();
     } catch (e) {
-      setError(e?.response?.data?.error === 'email_taken' ? L.email_taken : L.failed);
+      const code = e?.response?.data?.error;
+      const detail = e?.response?.data?.detail;
+      if (code === 'email_taken') setError(L.email_taken);
+      else if (code === 'weak_password') setError(L.password_ph);
+      else setError(`${L.failed}${code ? ` (${code}${detail ? `: ${detail}` : ''})` : ''}`);
     } finally { setBusy(false); }
   };
   const toggle = async (m) => { await AdminAPI.setInsurerActive(m.id, !m.is_active); load(); };

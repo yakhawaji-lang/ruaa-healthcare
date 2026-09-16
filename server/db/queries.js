@@ -22,7 +22,7 @@ export const Admins = {
 // Is this admin a super admin (full access)? NULL permissions = legacy super.
 export const isSuperAdmin = (a) => !!a && (a.role === 'super' || a.permissions == null);
 export const parsePerms = (a) => { try { return a?.permissions ? JSON.parse(a.permissions) : null; } catch { return null; } };
-export const ADMIN_PAGES = ['dashboard', 'requests', 'cases', 'visits', 'insurers', 'clients', 'hero', 'partners', 'services', 'pages', 'messages', 'settings'];
+export const ADMIN_PAGES = ['dashboard', 'requests', 'cases', 'visits', 'telemed', 'insurers', 'clients', 'hero', 'partners', 'services', 'pages', 'messages', 'settings'];
 
 /* ---------------- Settings ---------------- */
 export const Settings = {
@@ -108,6 +108,13 @@ export const InsurerServices = {
 export const Users = {
   byEmail: (email) =>
     query('SELECT * FROM users WHERE email = ? AND deleted_at IS NULL LIMIT 1', [email]).then((r) => r[0] || null),
+  // Same as byEmail but ignores soft-deletes: the `email` column is UNIQUE at the
+  // DB level, so a deleted row still blocks the address.
+  byEmailAny: (email) =>
+    query('SELECT id, deleted_at FROM users WHERE email = ? LIMIT 1', [email]).then((r) => r[0] || null),
+  // Frees a soft-deleted row's address so it can be reused by a new account.
+  releaseEmail: (id) =>
+    query("UPDATE users SET email = CONCAT('deleted+', id, '.', email) WHERE id = ? AND deleted_at IS NOT NULL", [id]),
   byPhone: (phone) =>
     query("SELECT * FROM users WHERE phone = ? AND deleted_at IS NULL ORDER BY id DESC LIMIT 1", [phone]).then((r) => r[0] || null),
   byId: (id) =>
@@ -364,6 +371,96 @@ export const PromoCodes = {
   ),
   setActive: (id, active) => query('UPDATE promo_codes SET is_active=? WHERE id=?', [active ? 1 : 0, id]),
   remove: (id) => query('DELETE FROM promo_codes WHERE id=?', [id]),
+};
+
+/* ---------------- Telemedicine: doctors ---------------- */
+const DOCTOR_COLS = `u.id, u.name, u.email, u.phone, u.is_active, u.created_at,
+  d.title_ar, d.title_en, d.specialty_ar, d.specialty_en, d.bio_ar, d.bio_en, d.photo, d.slot_minutes, d.is_published, d.sort_order`;
+export const Doctors = {
+  // all doctor accounts (admin)
+  listAdmin: () => query(`SELECT ${DOCTOR_COLS} FROM users u LEFT JOIN doctors d ON d.user_id = u.id
+    WHERE u.role='doctor' AND u.deleted_at IS NULL ORDER BY d.sort_order, u.name`),
+  // published + active doctors (patients' self-booking list)
+  listPublic: () => query(`SELECT u.id, u.name, d.title_ar, d.title_en, d.specialty_ar, d.specialty_en, d.bio_ar, d.bio_en, d.photo, d.slot_minutes
+    FROM users u JOIN doctors d ON d.user_id = u.id
+    WHERE u.role='doctor' AND u.deleted_at IS NULL AND u.is_active=1 AND d.is_published=1 ORDER BY d.sort_order, u.name`),
+  byId: (id) => query(`SELECT ${DOCTOR_COLS} FROM users u LEFT JOIN doctors d ON d.user_id = u.id
+    WHERE u.id=? AND u.role='doctor' AND u.deleted_at IS NULL LIMIT 1`, [id]).then((r) => r[0] || null),
+  upsertProfile: (uid, p) => query(
+    `INSERT INTO doctors (user_id, title_ar, title_en, specialty_ar, specialty_en, bio_ar, bio_en, photo, slot_minutes, is_published, sort_order)
+     VALUES (?,?,?,?,?,?,?,?,?,?,?)
+     ON DUPLICATE KEY UPDATE title_ar=VALUES(title_ar), title_en=VALUES(title_en), specialty_ar=VALUES(specialty_ar), specialty_en=VALUES(specialty_en),
+       bio_ar=VALUES(bio_ar), bio_en=VALUES(bio_en), photo=VALUES(photo), slot_minutes=VALUES(slot_minutes), is_published=VALUES(is_published), sort_order=VALUES(sort_order)`,
+    [uid, p.title_ar || null, p.title_en || null, p.specialty_ar || null, p.specialty_en || null, p.bio_ar || null, p.bio_en || null, p.photo || null,
+      Math.max(5, Number(p.slot_minutes) || 20), (p.is_published === 0 || p.is_published === false) ? 0 : 1, Number(p.sort_order) || 0]),
+  // weekly availability rules
+  availability: (uid) => query('SELECT id, weekday, start_time, end_time FROM doctor_availability WHERE doctor_user_id=? ORDER BY weekday, start_time', [uid]),
+  setAvailability: async (uid, rules = []) => {
+    await query('DELETE FROM doctor_availability WHERE doctor_user_id=?', [uid]);
+    const clean = (Array.isArray(rules) ? rules : [])
+      .map((r) => ({ weekday: Number(r.weekday), start_time: String(r.start_time || '').slice(0, 5), end_time: String(r.end_time || '').slice(0, 5) }))
+      .filter((r) => r.weekday >= 0 && r.weekday <= 6 && /^\d{2}:\d{2}$/.test(r.start_time) && /^\d{2}:\d{2}$/.test(r.end_time) && r.start_time < r.end_time);
+    for (const r of clean) await query('INSERT INTO doctor_availability (doctor_user_id, weekday, start_time, end_time) VALUES (?,?,?,?)', [uid, r.weekday, r.start_time, r.end_time]);
+    return clean.length;
+  },
+  daysOff: (uid) => query("SELECT id, DATE_FORMAT(off_date, '%Y-%m-%d') AS off_date, note FROM doctor_days_off WHERE doctor_user_id=? AND off_date >= CURDATE() - INTERVAL 1 DAY ORDER BY off_date", [uid]),
+  addDayOff: (uid, date, note) => query('INSERT IGNORE INTO doctor_days_off (doctor_user_id, off_date, note) VALUES (?,?,?)', [uid, date, note || null]),
+  removeDayOff: (uid, id) => query('DELETE FROM doctor_days_off WHERE id=? AND doctor_user_id=?', [id, uid]),
+  isDayOff: (uid, date) => query('SELECT id FROM doctor_days_off WHERE doctor_user_id=? AND off_date=? LIMIT 1', [uid, date]).then((r) => !!r[0]),
+  removeAll: async (uid) => {
+    await query('DELETE FROM doctor_availability WHERE doctor_user_id=?', [uid]);
+    await query('DELETE FROM doctor_days_off WHERE doctor_user_id=?', [uid]);
+    await query('DELETE FROM doctors WHERE user_id=?', [uid]);
+  },
+};
+
+/* ---------------- Telemedicine: consultations ---------------- */
+// scheduled_at is returned as 'YYYY-MM-DD HH:MM' text (local wall-clock) to
+// avoid timezone shifts between the DB server and the browser.
+const CONS_COLS = `c.id, c.ref, c.user_id, c.doctor_user_id, c.mode, c.source, c.status,
+  DATE_FORMAT(c.scheduled_at, '%Y-%m-%d %H:%i') AS scheduled_at, c.duration_min, c.patient_name, c.phone, c.complaint, c.preferred_note,
+  c.price, c.room, DATE_FORMAT(c.started_at, '%Y-%m-%d %H:%i') AS started_at, DATE_FORMAT(c.ended_at, '%Y-%m-%d %H:%i') AS ended_at,
+  c.doctor_notes, c.diagnosis, c.prescription, c.follow_up, c.created_at, c.updated_at,
+  du.name AS doctor_name, d.title_ar AS doctor_title_ar, d.title_en AS doctor_title_en, d.specialty_ar AS doctor_specialty_ar, d.specialty_en AS doctor_specialty_en, d.photo AS doctor_photo,
+  pu.name AS user_name, pu.email AS user_email, pu.phone AS user_phone`;
+const CONS_FROM = `FROM consultations c
+  LEFT JOIN users du ON du.id = c.doctor_user_id
+  LEFT JOIN doctors d ON d.user_id = c.doctor_user_id
+  LEFT JOIN users pu ON pu.id = c.user_id`;
+export const Consultations = {
+  create: (c) => query(
+    `INSERT INTO consultations (ref, user_id, doctor_user_id, mode, source, status, scheduled_at, duration_min, patient_name, phone, complaint, preferred_note, price, room)
+     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+    [c.ref, c.user_id, c.doctor_user_id || null, c.mode === 'audio' ? 'audio' : 'video', c.source || 'self', c.status || 'pending',
+      c.scheduled_at || null, Number(c.duration_min) || 20, c.patient_name || null, c.phone || null, c.complaint || null, c.preferred_note || null,
+      c.price ?? null, c.room || null]),
+  setRef: (id, ref) => query('UPDATE consultations SET ref=? WHERE id=?', [ref, id]),
+  byId: (id) => query(`SELECT ${CONS_COLS} ${CONS_FROM} WHERE c.id=? AND c.deleted_at IS NULL LIMIT 1`, [id]).then((r) => r[0] || null),
+  byIdForUser: (id, uid) => query(`SELECT ${CONS_COLS} ${CONS_FROM} WHERE c.id=? AND c.user_id=? AND c.deleted_at IS NULL LIMIT 1`, [id, uid]).then((r) => r[0] || null),
+  byIdForDoctor: (id, did) => query(`SELECT ${CONS_COLS} ${CONS_FROM} WHERE c.id=? AND c.doctor_user_id=? AND c.deleted_at IS NULL LIMIT 1`, [id, did]).then((r) => r[0] || null),
+  listByUser: (uid) => query(`SELECT ${CONS_COLS} ${CONS_FROM} WHERE c.user_id=? AND c.deleted_at IS NULL ORDER BY COALESCE(c.scheduled_at, c.created_at) DESC, c.id DESC`, [uid]),
+  listByDoctor: (did) => query(`SELECT ${CONS_COLS} ${CONS_FROM} WHERE c.doctor_user_id=? AND c.deleted_at IS NULL ORDER BY c.scheduled_at ASC, c.id ASC`, [did]),
+  listAll: () => query(`SELECT ${CONS_COLS} ${CONS_FROM} WHERE c.deleted_at IS NULL ORDER BY (c.status='pending') DESC, COALESCE(c.scheduled_at, c.created_at) DESC, c.id DESC`),
+  // booked starts for a doctor on a given day (to remove from the free slots)
+  bookedOn: (did, date) => query(
+    `SELECT DATE_FORMAT(scheduled_at, '%H:%i') AS t, duration_min FROM consultations
+     WHERE doctor_user_id=? AND DATE(scheduled_at)=? AND status IN ('scheduled','in_progress') AND deleted_at IS NULL`, [did, date]),
+  isSlotTaken: (did, at, excludeId = null) => query(
+    `SELECT id FROM consultations WHERE doctor_user_id=? AND scheduled_at=? AND status IN ('scheduled','in_progress') AND deleted_at IS NULL ${excludeId ? 'AND id<>?' : ''} LIMIT 1`,
+    excludeId ? [did, at, excludeId] : [did, at]).then((r) => !!r[0]),
+  // admin scheduling / assignment
+  schedule: (id, f) => query('UPDATE consultations SET doctor_user_id=?, scheduled_at=?, duration_min=?, status=?, price=?, mode=? WHERE id=?',
+    [f.doctor_user_id || null, f.scheduled_at || null, Number(f.duration_min) || 20, f.status, f.price ?? null, f.mode === 'audio' ? 'audio' : 'video', id]),
+  setStatus: (id, status) => query('UPDATE consultations SET status=? WHERE id=?', [status, id]),
+  setRoom: (id, room) => query('UPDATE consultations SET room=? WHERE id=?', [room, id]),
+  markStarted: (id, at) => query('UPDATE consultations SET status=\'in_progress\', started_at=COALESCE(started_at, ?) WHERE id=?', [at, id]),
+  // doctor's clinical summary + outcome
+  saveOutcome: (id, f) => query('UPDATE consultations SET status=?, ended_at=COALESCE(ended_at, ?), doctor_notes=?, diagnosis=?, prescription=?, follow_up=? WHERE id=?',
+    [f.status, f.ended_at || null, f.doctor_notes || null, f.diagnosis || null, f.prescription || null, f.follow_up || null, id]),
+  softDelete: (id) => query('UPDATE consultations SET deleted_at = NOW() WHERE id=?', [id]),
+  count: () => query('SELECT COUNT(*) AS n FROM consultations WHERE deleted_at IS NULL').then((r) => r[0].n),
+  pending: () => query("SELECT COUNT(*) AS n FROM consultations WHERE deleted_at IS NULL AND status='pending'").then((r) => r[0].n),
+  upcoming: (nowStr) => query("SELECT COUNT(*) AS n FROM consultations WHERE deleted_at IS NULL AND status='scheduled' AND scheduled_at >= ?", [nowStr]).then((r) => r[0].n),
 };
 
 /* ---------------- Analytics ---------------- */

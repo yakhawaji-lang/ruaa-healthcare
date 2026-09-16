@@ -348,3 +348,16 @@ img { max-width: 100%; }
   .partners-grid { grid-template-columns: 1fr; }
   .hero-features { flex-direction: column; align-items: center; }
 }
+
+/* ===== Telemedicine (public) ===== */
+.telemed-band { padding: 0 0 40px; }
+.telemed-band-inner { display: flex; align-items: center; gap: 22px; flex-wrap: wrap; background: linear-gradient(120deg, var(--navy) 0%, var(--teal-dark) 100%); color: #fff; border-radius: var(--radius, 18px); padding: 26px 30px; box-shadow: var(--shadow); }
+.telemed-band-icons { display: flex; gap: 8px; }
+.telemed-band-icons span { width: 52px; height: 52px; border-radius: 14px; background: rgba(255,255,255,0.14); display: grid; place-items: center; }
+.telemed-band-text { flex: 1 1 320px; }
+.telemed-band-text h2 { color: #fff; font-size: 1.35rem; margin: 0 0 6px; }
+.telemed-band-text p { margin: 0; opacity: 0.9; }
+.telemed-art { display: grid; place-items: center; }
+.telemed-art-box { position: relative; width: 100%; max-width: 420px; aspect-ratio: 4/3; border-radius: var(--radius, 18px); background: linear-gradient(135deg, var(--teal-light), #fff); border: 1px solid var(--line); display: grid; place-items: center; color: var(--navy); box-shadow: var(--shadow); }
+.telemed-art-badge { position: absolute; top: 18px; inset-inline-end: 18px; display: inline-flex; align-items: center; gap: 6px; background: var(--navy); color: #fff; padding: 6px 12px; border-radius: 999px; font-size: 0.8rem; font-weight: 700; }
+.telemed-art-badge.b2 { top: auto; bottom: 18px; inset-inline-end: auto; inset-inline-start: 18px; background: var(--teal); }

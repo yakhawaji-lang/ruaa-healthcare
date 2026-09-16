@@ -19,7 +19,8 @@ router.get('/bootstrap', async (req, res) => {
     Partners.listPublic(),
   ]);
   // operational/admin-only lists must not leak to the public site
-  for (const k of ['visit_types', 'clinician_roles', 'clinical_staff']) delete settings[k];
+  for (const k of ['visit_types', 'clinician_roles', 'clinical_staff', 'telemed_price']) delete settings[k];
+  // telemedicine: only the on/off flag is needed publicly (price is shown inside the portal)
   res.json({
     settings,
     pages: pages.map((p) => ({ slug: p.slug, title_ar: p.title_ar, title_en: p.title_en })),

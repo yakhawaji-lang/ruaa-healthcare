@@ -11,12 +11,16 @@ const labels = {
     phone: 'الهاتف', phone_intl: 'الهاتف (دولي)', whatsapp: 'واتساب', email: 'البريد',
     instagram: 'إنستغرام', twitter: 'تويتر/X', founded: 'سنة التأسيس',
     hero_image: 'صورة البانر الرئيسي', about_image: 'صورة صفحة من نحن', cta_image: 'صورة شريط الدعوة',
+    telemed_enabled: 'الاستشارات عن بُعد (1 = مفعّلة / 0 = معطّلة)', telemed_price: 'رسوم الاستشارة عن بُعد (ريال، اختياري)',
+    telemed_slot_minutes: 'المدة الافتراضية للاستشارة (دقيقة)', jitsi_domain: 'نطاق خادم Jitsi للمكالمات (مثال: meet.jit.si)',
   },
   en: {
     name: 'Center name', tagline: 'Tagline', address: 'Address', hours: 'Working hours',
     phone: 'Phone', phone_intl: 'Phone (international)', whatsapp: 'WhatsApp', email: 'Email',
     instagram: 'Instagram', twitter: 'Twitter/X', founded: 'Founded year',
     hero_image: 'Main banner image', about_image: 'About page image', cta_image: 'CTA strip image',
+    telemed_enabled: 'Remote consultations (1 = on / 0 = off)', telemed_price: 'Remote consultation fee (SAR, optional)',
+    telemed_slot_minutes: 'Default consultation length (min)', jitsi_domain: 'Jitsi server domain for calls (e.g. meet.jit.si)',
   },
 };
 const T = {

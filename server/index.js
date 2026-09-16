@@ -9,6 +9,7 @@ import publicRoutes from './routes/public.js';
 import authRoutes from './routes/auth.js';
 import adminRoutes from './routes/admin.js';
 import accountRoutes from './routes/account.js';
+import { patientRouter as telemedPatientRoutes, doctorRouter as telemedDoctorRoutes } from './routes/telemed.js';
 import { requireAuth } from './auth.js';
 
 dotenv.config();
@@ -32,6 +33,8 @@ app.get('/api/health', (req, res) => res.json({ ok: true, ts: Date.now() }));
 
 app.use('/api/public', publicRoutes);
 app.use('/api/auth', authRoutes);
+app.use('/api/account/telemed', telemedPatientRoutes); // patients: book / join consultations
+app.use('/api/account/doctor', telemedDoctorRoutes);   // doctors' portal
 app.use('/api/account', accountRoutes);
 app.use('/api/admin', requireAuth, adminRoutes);
 

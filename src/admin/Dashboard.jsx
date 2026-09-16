@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Stethoscope, Mail, MailOpen, ClipboardList, ShieldPlus, CalendarDays } from 'lucide-react';
+import { Stethoscope, Mail, MailOpen, ClipboardList, ShieldPlus, CalendarDays, Video } from 'lucide-react';
 import { AdminAPI } from '../storage/api.js';
 import StatsPanel, { TrendChart } from '../account/StatsPanel.jsx';
 import AppInstallCard from './AppInstallCard.jsx';
@@ -10,7 +10,7 @@ import { useLang } from '../i18n.jsx';
 const T = {
   ar: {
     dashboard: 'لوحة التحكم', service_requests: 'طلبات الخدمات', insurance_cases: 'حالات التأمين',
-    upcoming_visits: 'زيارات قادمة', services: 'الخدمات', unread_messages: 'الرسائل غير المقروءة',
+    upcoming_visits: 'زيارات قادمة', consultations: 'استشارات عن بُعد', services: 'الخدمات', unread_messages: 'الرسائل غير المقروءة',
     new: 'جديدة', statistics: 'الإحصائيات',
     requests_by_status: 'طلبات الخدمات حسب الحالة', cases_by_status: 'حالات التأمين حسب الحالة',
     visits_by_status: 'الزيارات حسب الحالة', trend_title: 'الطلبات والحالات (آخر 6 أشهر)',
@@ -20,7 +20,7 @@ const T = {
   },
   en: {
     dashboard: 'Dashboard', service_requests: 'Service Requests', insurance_cases: 'Insurance Cases',
-    upcoming_visits: 'Upcoming Visits', services: 'Services', unread_messages: 'Unread Messages',
+    upcoming_visits: 'Upcoming Visits', consultations: 'Remote Consultations', services: 'Services', unread_messages: 'Unread Messages',
     new: 'New', statistics: 'Statistics',
     requests_by_status: 'Service requests by status', cases_by_status: 'Insurance cases by status',
     visits_by_status: 'Visits by status', trend_title: 'Requests & cases (last 6 months)',
@@ -47,6 +47,7 @@ export default function Dashboard() {
     { label: tt.service_requests, value: stats?.requests, icon: ClipboardList, to: '/admin/requests', color: '#0b3556', badge: stats?.requestsPending },
     { label: tt.insurance_cases, value: stats?.cases, icon: ShieldPlus, to: '/admin/cases', color: '#1f7d92', badge: stats?.casesPending },
     { label: tt.upcoming_visits, value: stats?.visitsUpcoming, icon: CalendarDays, to: '/admin/requests', color: '#2e8b57' },
+    { label: tt.consultations, value: stats?.consultationsUpcoming, icon: Video, to: '/admin/telemed', color: '#8b5cf6', badge: stats?.consultationsPending },
     { label: tt.services, value: stats?.services, icon: Stethoscope, to: '/admin/services', color: '#5eafbe' },
     { label: tt.unread_messages, value: stats?.unread, icon: MailOpen, to: '/admin/messages', color: '#e08a3c' },
   ];

@@ -8,6 +8,9 @@ import bcrypt from 'bcryptjs';
 import { Settings, Pages, Services, Messages, HeroSlides, Partners, Users, ServiceRequests, InsuranceCases, RequestEvents, Patients, Visits, Threads, Attachments, Analytics, Notifications, Audit, InsurerServices, Admins, PushSubs, PromoCodes, isSuperAdmin, parsePerms } from '../db/queries.js';
 import { saveDataUrl } from '../upload.js';
 import { publicKey as vapidPublicKey } from '../push.js';
+import { adminRouter as telemedAdminRoutes } from './telemed.js';
+import { Consultations } from '../db/queries.js';
+import { nowStr as telemedNow } from '../telemed.js';
 
 const router = Router();
 
@@ -16,6 +19,7 @@ const PAGE_PREFIX = [
   ['/requests', 'requests'], ['/cases', 'cases'], ['/visits', 'visits'], ['/insurers', 'insurers'],
   ['/clients', 'clients'], ['/hero', 'hero'], ['/partners', 'partners'], ['/services', 'services'],
   ['/pages', 'pages'], ['/messages', 'messages'], ['/settings', 'settings'], ['/promos', 'promos'],
+  ['/telemed', 'telemed'],
 ];
 const ACTION_BY_METHOD = { GET: 'view', POST: 'create', PUT: 'edit', PATCH: 'edit', DELETE: 'delete' };
 const pageFromPath = (p) => { for (const [pre, page] of PAGE_PREFIX) if (p.startsWith(pre)) return page; return 'dashboard'; };
@@ -96,12 +100,16 @@ router.post('/upload-file', (req, res) => {
   catch (e) { res.status(400).json({ error: e.code || 'upload_failed' }); }
 });
 
+/* ---- Telemedicine (doctors, availability, consultations) — page key "telemed" ---- */
+router.use('/telemed', telemedAdminRoutes);
+
 /* ---- Dashboard summary ---- */
 router.get('/stats', async (req, res) => {
-  const [services, pages, messages, unread, reqCount, reqPending, caseCount, casePending, visitsUpcoming, threadUnread] = await Promise.all([
+  const [services, pages, messages, unread, reqCount, reqPending, caseCount, casePending, visitsUpcoming, threadUnread, consCount, consPending, consUpcoming] = await Promise.all([
     Services.listAdmin(), Pages.listAdmin(), Messages.list(), Messages.unreadCount(),
     ServiceRequests.count(), ServiceRequests.pending(), InsuranceCases.count(), InsuranceCases.pending(),
     Visits.upcomingCount(), Threads.unreadForAdmin(),
+    Consultations.count().catch(() => 0), Consultations.pending().catch(() => 0), Consultations.upcoming(telemedNow()).catch(() => 0),
   ]);
   res.json({
     services: services.length,
@@ -111,6 +119,7 @@ router.get('/stats', async (req, res) => {
     requests: reqCount, requestsPending: reqPending,
     cases: caseCount, casesPending: casePending,
     visitsUpcoming, threadUnread,
+    consultations: consCount, consultationsPending: consPending, consultationsUpcoming: consUpcoming,
     recent: messages.slice(0, 5),
   });
 });
@@ -425,27 +434,50 @@ router.delete('/cases/:id', async (req, res) => {
   res.json({ ok: true });
 });
 
+/* ---- Email availability -------------------------------------------------
+   users.email is UNIQUE in MySQL, and soft-deleted rows keep their address,
+   so a plain "is there a live user with this email?" check passes while the
+   INSERT still fails with ER_DUP_ENTRY. Returns null when the address is free
+   (releasing it from a deleted row if needed), or an error code to send back. */
+async function claimEmail(email, selfId = null) {
+  const live = await Users.byEmail(email);
+  if (live && String(live.id) !== String(selfId ?? '')) return 'email_taken';
+  if (live) return null;
+  const any = await Users.byEmailAny(email);
+  if (any && String(any.id) !== String(selfId ?? '')) await Users.releaseEmail(any.id);
+  return null;
+}
+const dbFail = (res, e) => {
+  console.error('[admin] save failed:', e?.code || '', e?.sqlMessage || e?.message || e);
+  return res.status(500).json({ error: e?.code === 'ER_DUP_ENTRY' ? 'email_taken' : 'db_error', detail: e?.sqlMessage || e?.message });
+};
+
 /* ---- Insurance company accounts (created by admin) ---- */
 router.get('/insurers', async (req, res) => res.json(await Users.listByRole('insurance')));
 router.post('/insurers', async (req, res) => {
   const b = req.body || {};
   if (!b.email || !b.password || !(b.company_name || b.name)) return res.status(400).json({ error: 'missing_fields' });
   const email = String(b.email).toLowerCase().trim();
-  if (await Users.byEmail(email)) return res.status(409).json({ error: 'email_taken' });
-  const hash = await bcrypt.hash(b.password, 10);
-  const r = await Users.create({ role: 'insurance', name: b.name || b.company_name, company_name: b.company_name || b.name, email, phone: b.phone }, hash);
-  await Audit.log(req.admin.id, 'create', 'insurer', r.insertId);
-  res.status(201).json({ id: r.insertId });
+  const clash = await claimEmail(email);
+  if (clash) return res.status(409).json({ error: clash });
+  try {
+    const hash = await bcrypt.hash(b.password, 10);
+    const r = await Users.create({ role: 'insurance', name: b.name || b.company_name, company_name: b.company_name || b.name, email, phone: b.phone }, hash);
+    await Audit.log(req.admin.id, 'create', 'insurer', r.insertId);
+    res.status(201).json({ id: r.insertId });
+  } catch (e) { return dbFail(res, e); }
 });
 router.put('/insurers/:id', async (req, res) => {
   const b = req.body || {};
   if (!b.email || !(b.company_name || b.name)) return res.status(400).json({ error: 'missing_fields' });
   const email = String(b.email).toLowerCase().trim();
-  const existing = await Users.byEmail(email);
-  if (existing && String(existing.id) !== String(req.params.id)) return res.status(409).json({ error: 'email_taken' });
-  await Users.updateInsurer(req.params.id, { company_name: b.company_name || b.name, name: b.name || b.company_name, email, phone: b.phone });
-  await Audit.log(req.admin.id, 'update', 'insurer', req.params.id);
-  res.json({ ok: true });
+  const clash = await claimEmail(email, req.params.id);
+  if (clash) return res.status(409).json({ error: clash });
+  try {
+    await Users.updateInsurer(req.params.id, { company_name: b.company_name || b.name, name: b.name || b.company_name, email, phone: b.phone });
+    await Audit.log(req.admin.id, 'update', 'insurer', req.params.id);
+    res.json({ ok: true });
+  } catch (e) { return dbFail(res, e); }
 });
 router.put('/insurers/:id/active', async (req, res) => {
   await Users.setActive(req.params.id, req.body?.is_active ? 1 : 0);
@@ -482,14 +514,17 @@ router.post('/insurers/:id/members', async (req, res) => {
   const parent = await Users.byId(req.params.id);
   if (!parent || parent.role !== 'insurance') return res.status(404).json({ error: 'company_not_found' });
   const email = String(b.email).toLowerCase().trim();
-  if (await Users.byEmail(email)) return res.status(409).json({ error: 'email_taken' });
-  const hash = await bcrypt.hash(b.password, 10);
-  const r = await Users.create({
-    role: 'insurance', parent_user_id: parent.id,
-    name: b.name, company_name: parent.company_name, email, phone: b.phone,
-  }, hash);
-  await Audit.log(req.admin.id, 'create', 'insurer_member', r.insertId);
-  res.status(201).json({ id: r.insertId });
+  const clash = await claimEmail(email);
+  if (clash) return res.status(409).json({ error: clash });
+  try {
+    const hash = await bcrypt.hash(b.password, 10);
+    const r = await Users.create({
+      role: 'insurance', parent_user_id: parent.id,
+      name: b.name, company_name: parent.company_name, email, phone: b.phone,
+    }, hash);
+    await Audit.log(req.admin.id, 'create', 'insurer_member', r.insertId);
+    res.status(201).json({ id: r.insertId });
+  } catch (e) { return dbFail(res, e); }
 });
 
 /* ---- Client (visitor) accounts ---- */
@@ -499,21 +534,26 @@ router.post('/clients', async (req, res) => {
   if (!b.name || !b.email || !b.password) return res.status(400).json({ error: 'missing_fields' });
   if (b.password.length < 6) return res.status(400).json({ error: 'weak_password' });
   const email = String(b.email).toLowerCase().trim();
-  if (await Users.byEmail(email)) return res.status(409).json({ error: 'email_taken' });
-  const hash = await bcrypt.hash(b.password, 10);
-  const r = await Users.create({ role: 'visitor', name: b.name, email, phone: b.phone }, hash);
-  await Audit.log(req.admin.id, 'create', 'client', r.insertId);
-  res.status(201).json({ id: r.insertId });
+  const clash = await claimEmail(email);
+  if (clash) return res.status(409).json({ error: clash });
+  try {
+    const hash = await bcrypt.hash(b.password, 10);
+    const r = await Users.create({ role: 'visitor', name: b.name, email, phone: b.phone }, hash);
+    await Audit.log(req.admin.id, 'create', 'client', r.insertId);
+    res.status(201).json({ id: r.insertId });
+  } catch (e) { return dbFail(res, e); }
 });
 router.put('/clients/:id', async (req, res) => {
   const b = req.body || {};
   if (!b.name || !b.email) return res.status(400).json({ error: 'missing_fields' });
   const email = String(b.email).toLowerCase().trim();
-  const existing = await Users.byEmail(email);
-  if (existing && String(existing.id) !== String(req.params.id)) return res.status(409).json({ error: 'email_taken' });
-  await Users.updateAccount(req.params.id, { name: b.name, email, phone: b.phone });
-  await Audit.log(req.admin.id, 'update', 'client', req.params.id);
-  res.json({ ok: true });
+  const clash = await claimEmail(email, req.params.id);
+  if (clash) return res.status(409).json({ error: clash });
+  try {
+    await Users.updateAccount(req.params.id, { name: b.name, email, phone: b.phone });
+    await Audit.log(req.admin.id, 'update', 'client', req.params.id);
+    res.json({ ok: true });
+  } catch (e) { return dbFail(res, e); }
 });
 router.put('/clients/:id/active', async (req, res) => {
   await Users.setActive(req.params.id, req.body?.is_active ? 1 : 0);

@@ -9,6 +9,7 @@ import About from './pages/About.jsx';
 import Services from './pages/Services.jsx';
 import ServiceDetail from './pages/ServiceDetail.jsx';
 import Contact from './pages/Contact.jsx';
+import Telemedicine from './pages/Telemedicine.jsx';
 import NotFound from './pages/NotFound.jsx';
 import AdminApp from './admin/AdminApp.jsx';
 import { AccountProvider } from './account/AccountContext.jsx';
@@ -38,6 +39,7 @@ function PublicSite() {
           <Route path="/about" element={<About />} />
           <Route path="/services" element={<Services />} />
           <Route path="/services/:slug" element={<ServiceDetail />} />
+          <Route path="/telemedicine" element={<Telemedicine />} />
           <Route path="/contact" element={<Contact />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
