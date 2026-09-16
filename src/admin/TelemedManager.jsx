@@ -2,7 +2,7 @@
 // and doctor accounts (profile, availability, password, activation).
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Video, Phone, Plus, X, Pencil, Trash2, Stethoscope, CalendarDays, UserRound, Save, ExternalLink, Users2 } from 'lucide-react';
+import { Video, Phone, Plus, X, Pencil, Trash2, Stethoscope, CalendarDays, UserRound, Save, ExternalLink, Users2, CheckCircle2, XCircle, Hourglass } from 'lucide-react';
 import { AdminAPI } from '../storage/api.js';
 import { useAdminAuth } from './AdminApp.jsx';
 import { useLang } from '../i18n.jsx';
@@ -19,7 +19,9 @@ import '../telemed/telemed.css';
 const T = {
   ar: {
     title: 'الطب الاتصالي', hint: 'إدارة استشارات الفيديو والصوت: الجدولة، تعيين الأطباء، متابعة الحالة، والانضمام للغرفة.',
-    tab_cons: 'الاستشارات', tab_docs: 'الممارسون الصحيون', all: 'الكل', pending: 'بانتظار الجدولة', today: 'اليوم', upcoming: 'قادمة', closed: 'منتهية',
+    tab_cons: 'الاستشارات', tab_docs: 'الممارسون الصحيون', all: 'الكل', pending: 'بانتظار الجدولة', unconfirmed: 'بانتظار التأكيد', today: 'اليوم', upcoming: 'قادمة', closed: 'منتهية',
+    confirm: 'تأكيد الحجز', reject: 'رفض الحجز', confirm_q: 'تأكيد هذا الموعد؟ سيُبلَّغ المريض والممارس.', reject_q: 'سبب الرفض (يُرسل للمريض، اختياري):', confirmed: 'تم تأكيد الموعد', rejected: 'تم رفض الحجز',
+    unconfirmed_banner: 'هذا الحجز بانتظار التأكيد — الموعد محجوز مؤقتًا ولن يُفتح للمريض أو الممارس حتى يُؤكَّد.', no_confirm_perm: 'تأكيد الحجوزات يحتاج صلاحية «تأكيد الحجز» في الطب الاتصالي.', slot_gone: 'تعذّر التأكيد: الوقت لم يعد متاحًا.',
     th_ref: 'المرجع', th_patient: 'المريض', th_doctor: 'الممارس', th_when: 'الموعد', th_mode: 'النوع', th_status: 'الحالة', th_actions: 'إجراءات',
     empty: 'لا توجد استشارات.', new_cons: 'استشارة جديدة', tbd: '— غير محدد —', open: 'فتح', delete: 'حذف', confirm_delete: 'حذف الاستشارة نهائيًا؟',
     cons_modal: 'تفاصيل الاستشارة', schedule: 'الجدولة وتعيين الممارس', doctor: 'الممارس الصحي', date: 'اليوم', time: 'الوقت', free_slots: 'الأوقات المتاحة', custom_time: 'وقت مخصص',
@@ -45,7 +47,9 @@ const T = {
   },
   en: {
     title: 'Remote Consultations', hint: 'Manage video & voice consultations: scheduling, assigning doctors, status tracking and joining the room.',
-    tab_cons: 'Consultations', tab_docs: 'Providers', all: 'All', pending: 'Awaiting scheduling', today: 'Today', upcoming: 'Upcoming', closed: 'Closed',
+    tab_cons: 'Consultations', tab_docs: 'Providers', all: 'All', pending: 'Awaiting scheduling', unconfirmed: 'Awaiting confirmation', today: 'Today', upcoming: 'Upcoming', closed: 'Closed',
+    confirm: 'Confirm booking', reject: 'Decline booking', confirm_q: 'Confirm this appointment? The patient and provider will be notified.', reject_q: 'Reason (sent to the patient, optional):', confirmed: 'Appointment confirmed', rejected: 'Booking declined',
+    unconfirmed_banner: 'This booking awaits confirmation — the slot is held, but the room stays closed for the patient and provider until it is confirmed.', no_confirm_perm: 'Confirming bookings needs the "Confirm bookings" permission under Remote Consultations.', slot_gone: 'Could not confirm: the time is no longer free.',
     th_ref: 'Ref', th_patient: 'Patient', th_doctor: 'Provider', th_when: 'Appointment', th_mode: 'Type', th_status: 'Status', th_actions: 'Actions',
     empty: 'No consultations.', new_cons: 'New consultation', tbd: '— not set —', open: 'Open', delete: 'Delete', confirm_delete: 'Permanently delete this consultation?',
     cons_modal: 'Consultation details', schedule: 'Scheduling & provider', doctor: 'Provider', date: 'Day', time: 'Time', free_slots: 'Free slots', custom_time: 'Custom time',
@@ -104,6 +108,7 @@ function ConsultationsTab({ tt, lang }) {
   const items = (data.items || []).filter((c) => {
     const d = splitAt(c.scheduled_at).date;
     if (filter === 'pending') return c.status === 'pending';
+    if (filter === 'unconfirmed') return c.status === 'unconfirmed';
     if (filter === 'today') return d === today && !isClosed(c.status);
     if (filter === 'upcoming') return d > today && !isClosed(c.status);
     if (filter === 'closed') return isClosed(c.status);
@@ -111,13 +116,18 @@ function ConsultationsTab({ tt, lang }) {
   });
   const close = () => { setOpenId(null); if (params.get('open')) { params.delete('open'); setParams(params, { replace: true }); } load(); };
   const remove = async (id) => { if (confirm(tt.confirm_delete)) { await AdminAPI.deleteConsultation(id); load(); } };
+  const confirmBooking = async (id) => { if (!confirm(tt.confirm_q)) return; try { await AdminAPI.confirmConsultation(id, 'confirm'); } catch (e) { alert(e?.response?.data?.error === 'slot_taken' ? tt.slot_gone : tt.failed); } load(); };
+  const rejectBooking = async (id) => { const note = prompt(tt.reject_q, ''); if (note === null) return; await AdminAPI.confirmConsultation(id, 'reject', note); load(); };
+  const unconfirmedCount = (data.items || []).filter((c) => c.status === 'unconfirmed').length;
 
   return (
     <>
       <div className="page-head" style={{ marginBottom: 10 }}>
         <div className="tm-filters">
-          {['all', 'pending', 'today', 'upcoming', 'closed'].map((k) => (
-            <button key={k} type="button" className={filter === k ? 'active' : ''} onClick={() => setFilter(k)}>{tt[k]}</button>
+          {['all', 'unconfirmed', 'pending', 'today', 'upcoming', 'closed'].map((k) => (
+            <button key={k} type="button" className={filter === k ? 'active' : ''} onClick={() => setFilter(k)}>
+              {tt[k]}{k === 'unconfirmed' && unconfirmedCount > 0 && <span className="tm-filter-badge">{unconfirmedCount}</span>}
+            </button>
           ))}
         </div>
         {can('telemed', 'create') && <button className="btn btn-primary" onClick={() => setCreating(true)}><Plus size={18} /> {tt.new_cons}</button>}
@@ -136,6 +146,12 @@ function ConsultationsTab({ tt, lang }) {
                   <td>{c.mode === 'audio' ? <Phone size={15} /> : <Video size={15} />} {modeLabel(c.mode, lang)}</td>
                   <td><ConsPill status={c.status} /></td>
                   <td className="row-actions">
+                    {c.status === 'unconfirmed' && can('telemed', 'confirm') && (
+                      <>
+                        <button onClick={() => confirmBooking(c.id)} className="ok" title={tt.confirm}><CheckCircle2 size={16} /></button>
+                        <button onClick={() => rejectBooking(c.id)} className="danger" title={tt.reject}><XCircle size={16} /></button>
+                      </>
+                    )}
                     <button onClick={() => setOpenId(c.id)} title={tt.open}><Pencil size={16} /></button>
                     {can('telemed', 'delete') && <button onClick={() => remove(c.id)} className="danger" title={tt.delete}><Trash2 size={16} /></button>}
                   </td>
@@ -225,9 +241,19 @@ function ConsultationModal({ id, tt, lang, onClose }) {
     } finally { setBusy(false); }
   };
   const sendMsg = async (payload) => { await AdminAPI.sendConsultationMessage(id, payload); await load(); };
+  const decide = async (action) => {
+    let note;
+    if (action === 'confirm') { if (!confirm(tt.confirm_q)) return; }
+    else { note = prompt(tt.reject_q, ''); if (note === null) return; }
+    setBusy(true); setError('');
+    try { await AdminAPI.confirmConsultation(id, action, note); setSaved(true); setTimeout(() => setSaved(false), 2000); await load(); }
+    catch (e) { setError(e?.response?.data?.error === 'slot_taken' ? tt.slot_gone : tt.failed); }
+    finally { setBusy(false); }
+  };
   const Icon = c.mode === 'audio' ? Phone : Video;
   const p = c.profile || {};
   const canEdit = can('telemed', 'edit');
+  const canConfirm = can('telemed', 'confirm');
 
   if (room) {
     return (
@@ -250,6 +276,17 @@ function ConsultationModal({ id, tt, lang, onClose }) {
         </div>
         <div className="modal-body">
           {error && <div className="form-alert error">{error}</div>}
+          {c.status === 'unconfirmed' && (
+            <div className="tm-confirm-bar">
+              <div><Hourglass size={18} /> <span>{tt.unconfirmed_banner}</span></div>
+              {canConfirm ? (
+                <div className="tm-actions-row" style={{ marginTop: 0 }}>
+                  <button type="button" className="btn btn-primary btn-sm" disabled={busy} onClick={() => decide('confirm')}><CheckCircle2 size={15} /> {tt.confirm}</button>
+                  <button type="button" className="btn btn-outline btn-sm danger-text" disabled={busy} onClick={() => decide('reject')}><XCircle size={15} /> {tt.reject}</button>
+                </div>
+              ) : <small className="muted">{tt.no_confirm_perm}</small>}
+            </div>
+          )}
           <div className="tm-admin-layout">
             <div>
               <div className="detail-meta" style={{ marginBottom: 12 }}>

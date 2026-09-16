@@ -4,12 +4,14 @@
 //   adminRouter   → /api/admin/telemed     (mounted inside admin.js, page key "telemed")
 import { Router } from 'express';
 import bcrypt from 'bcryptjs';
-import { Users, Doctors, Consultations, RequestEvents, Threads, Patients, Notifications, Audit, Settings, Staff } from '../db/queries.js';
+import { Users, Doctors, Consultations, RequestEvents, Threads, Patients, Notifications, Audit, Settings, Staff, parsePerms } from '../db/queries.js';
 import { requireUser, requireRole } from '../auth.js';
-import { freeSlots, slotStatus, joinWindow, joinInfo, nowLocal, normDateTime, isIsoDate, createConsultation, addEvent, notifyParties, consStatusLabel, modeLabelAr } from '../telemed.js';
+import { freeSlots, slotStatus, joinWindow, joinInfo, nowLocal, normDateTime, isIsoDate, createConsultation, addEvent, notifyParties, consStatusLabel, modeLabelAr, requiresConfirmation, confirmConsultation } from '../telemed.js';
 
 const modeOf = (m) => (m === 'audio' ? 'audio' : 'video');
 const CLOSED = ['completed', 'cancelled', 'no_show'];
+// Admin holding the telemed → "confirm bookings" permission (super admins always).
+const canConfirm = (req) => !!req.isSuper || !!parsePerms(req.adminFull)?.pages?.telemed?.confirm;
 
 /* =====================================================================
    PATIENT (visitor) — /api/account/telemed
@@ -59,11 +61,15 @@ patientRouter.post('/consultations', async (req, res) => {
       user_id: req.user.uid, doctor_user_id: b.doctor_user_id || null, scheduled_at: b.scheduled_at || null,
       mode: modeOf(b.mode), complaint: b.complaint.trim(), patient_name: b.patient_name || u?.name, phone: b.phone || u?.phone,
       preferred_note: b.preferred_note || null, price: s.telemed_price?.ar ? Number(s.telemed_price.ar) : null, source: 'self',
+      requireConfirm: (s.telemed_require_confirm?.ar ?? '1') !== '0',
     });
     const when = c.scheduled_at ? ` — ${c.scheduled_at}` : ' — بانتظار الجدولة';
     await notifyParties(c, {
-      admin: { title: 'طلب استشارة عن بُعد جديد', body: `${c.patient_name || ''} (${modeLabelAr(c.mode)})${when}` },
-      doctor: c.doctor_user_id ? { title: 'استشارة جديدة محجوزة معك', body: `${c.patient_name || ''} — ${c.scheduled_at}` } : null,
+      admin: c.status === 'unconfirmed'
+        ? { title: 'حجز استشارة بانتظار التأكيد', body: `${c.patient_name || ''} (${modeLabelAr(c.mode)})${when}` }
+        : { title: 'طلب استشارة عن بُعد جديد', body: `${c.patient_name || ''} (${modeLabelAr(c.mode)})${when}` },
+      // the provider is told once the booking is confirmed
+      doctor: c.doctor_user_id && c.status === 'scheduled' ? { title: 'استشارة جديدة محجوزة معك', body: `${c.patient_name || ''} — ${c.scheduled_at}` } : null,
     });
     res.status(201).json({ id: c.id, ref: c.ref, status: c.status, scheduled_at: c.scheduled_at });
   } catch (e) {
@@ -189,6 +195,7 @@ doctorRouter.put('/consultations/:id', async (req, res) => {
   const c = await Consultations.byIdForDoctor(req.params.id, req.user.uid);
   if (!c) return res.status(404).json({ error: 'not_found' });
   const b = req.body || {};
+  if (c.status === 'unconfirmed' && b.status && b.status !== c.status) return res.status(409).json({ error: 'unconfirmed' });
   const status = ['completed', 'no_show', 'in_progress', 'scheduled'].includes(b.status) ? b.status : c.status;
   await Consultations.saveOutcome(c.id, {
     status, ended_at: CLOSED.includes(status) ? nowLocal().str + ':00' : null,
@@ -321,10 +328,12 @@ adminRouter.post('/consultations', async (req, res) => {
       user_id: u.id, doctor_user_id: b.doctor_user_id || null, scheduled_at: b.scheduled_at || null, mode: modeOf(b.mode),
       complaint: b.complaint || null, patient_name: b.patient_name || u.name, phone: b.phone || u.phone, preferred_note: b.preferred_note || null,
       price: b.price === '' || b.price == null ? null : Number(b.price), source: 'admin', duration_min: b.duration_min,
+      requireConfirm: (await requiresConfirmation()) && !canConfirm(req),
     });
     await notifyParties(c, {
-      patient: { title: c.scheduled_at ? 'تم حجز استشارة عن بُعد لك' : 'تم تسجيل طلب استشارة لك', body: `${modeLabelAr(c.mode)}${c.scheduled_at ? ' — ' + c.scheduled_at : ''}` },
-      doctor: c.doctor_user_id ? { title: 'استشارة جديدة مجدولة معك', body: `${c.patient_name || ''} — ${c.scheduled_at || ''}` } : null,
+      patient: { title: c.status === 'scheduled' ? 'تم حجز استشارة عن بُعد لك' : c.status === 'unconfirmed' ? 'تم حجز موعد استشارة لك بانتظار التأكيد' : 'تم تسجيل طلب استشارة لك', body: `${modeLabelAr(c.mode)}${c.scheduled_at ? ' — ' + c.scheduled_at : ''}` },
+      doctor: c.doctor_user_id && c.status === 'scheduled' ? { title: 'استشارة جديدة مجدولة معك', body: `${c.patient_name || ''} — ${c.scheduled_at || ''}` } : null,
+      admin: c.status === 'unconfirmed' ? { title: 'حجز استشارة بانتظار التأكيد', body: `${c.patient_name || ''} — ${c.scheduled_at}` } : null,
     });
     await Audit.log(req.admin.id, 'create', 'consultation', c.id);
     res.status(201).json({ id: c.id, ref: c.ref });
@@ -341,21 +350,37 @@ adminRouter.put('/consultations/:id', async (req, res) => {
   const b = req.body || {};
   const doctorId = b.doctor_user_id === undefined ? cur.doctor_user_id : (b.doctor_user_id || null);
   const at = b.scheduled_at === undefined ? cur.scheduled_at : normDateTime(b.scheduled_at);
-  let status = ['pending', 'scheduled', 'in_progress', 'completed', 'cancelled', 'no_show'].includes(b.status) ? b.status : cur.status;
+  let status = ['pending', 'unconfirmed', 'scheduled', 'in_progress', 'completed', 'cancelled', 'no_show'].includes(b.status) ? b.status : cur.status;
+  const confirmer = canConfirm(req);
   if (doctorId && at) {
     const st = await slotStatus(doctorId, at, cur.id);
     if (st === 'taken') return res.status(409).json({ error: 'slot_taken' });
-    if (status === 'pending') status = 'scheduled';
-  } else if (status === 'scheduled') {
+    if (status === 'pending') status = confirmer ? 'scheduled' : 'unconfirmed';
+    // moving to "scheduled" from an unconfirmed / pending state is a confirmation → needs the permission
+    if (status === 'scheduled' && ['pending', 'unconfirmed'].includes(cur.status) && !confirmer) status = 'unconfirmed';
+  } else if (status === 'scheduled' || status === 'unconfirmed') {
     status = 'pending'; // cannot be "scheduled" without a doctor and a time
   }
+  const confirmedNow = status === 'scheduled' && cur.status === 'unconfirmed';
   await Consultations.schedule(cur.id, {
     doctor_user_id: doctorId, scheduled_at: at ? at + ':00' : null, duration_min: b.duration_min || cur.duration_min,
     status, price: b.price === undefined ? cur.price : (b.price === '' || b.price == null ? null : Number(b.price)), mode: b.mode || cur.mode,
   });
   const c = await Consultations.byId(cur.id);
   const changedSlot = (c.scheduled_at !== cur.scheduled_at) || (c.doctor_user_id !== cur.doctor_user_id);
-  if (changedSlot && c.status === 'scheduled') {
+  if (confirmedNow) {
+    await addEvent(c.id, 'scheduled', changedSlot ? 'تم تأكيد الموعد بعد تعديله' : 'تم تأكيد الموعد', b.note || `${c.doctor_name || ''} — ${c.scheduled_at}`, 'الإدارة');
+    await notifyParties(c, {
+      patient: { title: 'تم تأكيد موعد استشارتك', body: `${c.doctor_name || 'الطبيب'} — ${c.scheduled_at} (${modeLabelAr(c.mode)})` },
+      doctor: { title: 'استشارة مؤكدة معك', body: `${c.patient_name || ''} — ${c.scheduled_at}` },
+    });
+  } else if (c.status === 'unconfirmed' && (changedSlot || cur.status !== 'unconfirmed')) {
+    await addEvent(c.id, 'unconfirmed', cur.status === 'unconfirmed' ? 'تم تعديل الموعد بانتظار التأكيد' : 'تم حجز الموعد بانتظار التأكيد', `${c.doctor_name || ''} — ${c.scheduled_at}`, 'الإدارة');
+    await notifyParties(c, {
+      patient: { title: 'موعد استشارتك بانتظار التأكيد', body: `${c.doctor_name || 'الطبيب'} — ${c.scheduled_at}` },
+      admin: { title: 'حجز استشارة بانتظار التأكيد', body: `${c.patient_name || ''} — ${c.scheduled_at}` },
+    });
+  } else if (changedSlot && c.status === 'scheduled') {
     await addEvent(c.id, 'scheduled', cur.scheduled_at ? 'تم تعديل موعد الاستشارة' : 'تم تحديد موعد الاستشارة', `${c.doctor_name || ''} — ${c.scheduled_at}`, 'الإدارة');
     await notifyParties(c, {
       patient: { title: cur.scheduled_at ? 'تم تعديل موعد استشارتك' : 'تم تحديد موعد استشارتك', body: `${c.doctor_name || 'الطبيب'} — ${c.scheduled_at} (${modeLabelAr(c.mode)})` },
@@ -373,6 +398,22 @@ adminRouter.put('/consultations/:id', async (req, res) => {
   }
   await Audit.log(req.admin.id, 'update', 'consultation', c.id);
   res.json({ ok: true });
+});
+
+// Confirm or decline a booking that awaits confirmation (permission telemed → confirm).
+adminRouter.post('/consultations/:id/confirm', async (req, res) => {
+  if (!canConfirm(req)) return res.status(403).json({ error: 'forbidden' });
+  const c = await Consultations.byId(req.params.id);
+  if (!c) return res.status(404).json({ error: 'not_found' });
+  const action = req.body?.action === 'reject' ? 'reject' : 'confirm';
+  try {
+    const status = await confirmConsultation(c, { action, note: req.body?.note?.trim() || null, actor: `الإدارة — ${req.adminFull?.name || ''}`.trim() });
+    await Audit.log(req.admin.id, action, 'consultation', c.id);
+    res.json({ ok: true, status });
+  } catch (e) {
+    const code = e.code || 'failed';
+    res.status(code === 'slot_taken' || code === 'not_unconfirmed' ? 409 : 400).json({ error: code });
+  }
 });
 
 adminRouter.post('/consultations/:id/messages', async (req, res) => {

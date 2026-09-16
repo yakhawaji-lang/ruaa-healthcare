@@ -20,7 +20,7 @@ const PERM_GROUPS = [
     { key: 'requests', ar: 'طلبات الخدمات', en: 'Service Requests', icon: ClipboardList, actions: ['view', 'create', 'edit', 'delete'] },
     { key: 'cases', ar: 'حالات التأمين', en: 'Insurance Cases', icon: ShieldPlus, actions: ['view', 'create', 'edit', 'delete'] },
     { key: 'visits', ar: 'تقويم الزيارات', en: 'Visits Calendar', icon: CalendarDays, actions: ['view', 'create', 'edit', 'delete'] },
-    { key: 'telemed', ar: 'الطب الاتصالي', en: 'Remote Consultations', icon: CalendarDays, actions: ['view', 'create', 'edit', 'delete'] },
+    { key: 'telemed', ar: 'الطب الاتصالي', en: 'Remote Consultations', icon: CalendarDays, actions: ['view', 'create', 'edit', 'delete', 'confirm'] },
     { key: 'messages', ar: 'الرسائل', en: 'Messages', icon: Mail, actions: ['view', 'edit', 'delete'] },
   ] },
   { ar: 'الحسابات', en: 'Accounts', pages: [
@@ -40,7 +40,7 @@ const PERM_GROUPS = [
   ] },
 ];
 const PAGES = PERM_GROUPS.flatMap((g) => g.pages);
-const ACTIONS = ['view', 'create', 'edit', 'delete'];
+const ACTIONS = ['view', 'create', 'edit', 'delete', 'confirm'];
 
 const T = {
   ar: {
@@ -52,7 +52,7 @@ const T = {
     confirm_delete: 'حذف هذا المستخدم؟', name: 'الاسم', email: 'البريد الإلكتروني', password: 'كلمة المرور',
     password_ph: '6 أحرف على الأقل', full_access: 'صلاحية كاملة (مدير عام)',
     permissions: 'الصلاحيات التفصيلية', perm_hint: 'حدّد ما يمكن لهذا الموظف رؤيته والقيام به في كل قسم.', page: 'الصفحة',
-    a_view: 'عرض', a_create: 'إضافة', a_edit: 'تعديل', a_delete: 'حذف', a_all: 'الكل',
+    a_view: 'عرض', a_create: 'إضافة', a_edit: 'تعديل', a_delete: 'حذف', a_confirm: 'تأكيد الحجز', a_all: 'الكل',
     grant_all: 'منح كل الصلاحيات', clear_all: 'مسح الكل',
     cancel: 'إلغاء', create: 'إنشاء', save: 'حفظ',
     new_password: 'كلمة المرور الجديدة', pw_done: 'تم تحديث كلمة المرور', pw_modal: 'تغيير كلمة المرور',
@@ -69,7 +69,7 @@ const T = {
     confirm_delete: 'Delete this user?', name: 'Name', email: 'Email', password: 'Password',
     password_ph: 'At least 6 characters', full_access: 'Full access (super admin)',
     permissions: 'Detailed permissions', perm_hint: 'Choose what this staff member can see and do in each section.', page: 'Page',
-    a_view: 'View', a_create: 'Create', a_edit: 'Edit', a_delete: 'Delete', a_all: 'All',
+    a_view: 'View', a_create: 'Create', a_edit: 'Edit', a_delete: 'Delete', a_confirm: 'Confirm bookings', a_all: 'All',
     grant_all: 'Grant everything', clear_all: 'Clear all',
     cancel: 'Cancel', create: 'Create', save: 'Save',
     new_password: 'New password', pw_done: 'Password updated', pw_modal: 'Change password',

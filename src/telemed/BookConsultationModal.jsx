@@ -19,7 +19,7 @@ const T = {
     next: 'التالي', back: 'رجوع', confirm: 'تأكيد الحجز', sending: 'جارٍ الحجز...', cancel: 'إلغاء',
     summary: 'ملخص الحجز', doctor: 'الممارس', when: 'الموعد', mode: 'النوع', tbd: 'تحدده الإدارة', price: 'الرسوم', sar: 'ريال', free_note: 'تُحدَّد الرسوم عند التأكيد',
     done_title: 'تم الحجز بنجاح', done_scheduled: 'موعدك مؤكد. ستصلك تنبيهات قبل الموعد، ويظهر زر الدخول للغرفة قبل الموعد بـ 15 دقيقة.',
-    done_pending: 'تم استلام طلبك. ستحدد الإدارة الطبيب والموعد وتُبلغك بإشعار.', ref: 'رقم المرجع:', view: 'عرض استشاراتي',
+    done_pending: 'تم استلام طلبك. ستحدد الإدارة الطبيب والموعد وتُبلغك بإشعار.', done_unconfirmed: 'تم حجز الموعد وحُفظ لك مؤقتًا. ستراجعه الإدارة وتؤكده قريبًا، وسيصلك إشعار بالتأكيد.', ref: 'رقم المرجع:', view: 'عرض استشاراتي',
     slot_taken: 'عذرًا، تم حجز هذا الوقت للتو. اختر وقتًا آخر.', failed: 'تعذّر إتمام الحجز، حاول مجددًا.', min: 'دقيقة',
   },
   en: {
@@ -33,7 +33,7 @@ const T = {
     next: 'Next', back: 'Back', confirm: 'Confirm booking', sending: 'Booking...', cancel: 'Cancel',
     summary: 'Booking summary', doctor: 'Provider', when: 'Appointment', mode: 'Type', tbd: 'Set by the team', price: 'Fee', sar: 'SAR', free_note: 'Fee confirmed on scheduling',
     done_title: 'Booked successfully', done_scheduled: 'Your appointment is confirmed. You will be reminded, and the join button appears 15 minutes before the start.',
-    done_pending: 'Your request was received. The team will assign a doctor and time and notify you.', ref: 'Reference:', view: 'View my consultations',
+    done_pending: 'Your request was received. The team will assign a doctor and time and notify you.', done_unconfirmed: 'Your slot is booked and held for you. The team will review and confirm it shortly; you will be notified.', ref: 'Reference:', view: 'View my consultations',
     slot_taken: 'Sorry, that time was just booked. Please choose another.', failed: 'Could not complete the booking, please try again.', min: 'min',
   },
 };
@@ -114,7 +114,7 @@ export default function BookConsultationModal({ user, onClose, onDone }) {
             <CheckCircle2 size={48} className="success-icon" />
             <h3>{tt.done_title}</h3>
             <p>{tt.ref} <b dir="ltr">{done.ref}</b></p>
-            <p className="muted">{done.status === 'scheduled' ? tt.done_scheduled : tt.done_pending}</p>
+            <p className="muted">{done.status === 'scheduled' ? tt.done_scheduled : done.status === 'unconfirmed' ? tt.done_unconfirmed : tt.done_pending}</p>
             <button className="btn btn-primary" onClick={onDone}>{tt.view}</button>
           </div>
         ) : (

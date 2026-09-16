@@ -14,6 +14,7 @@ const labels = {
     hero_image: 'صورة البانر الرئيسي', about_image: 'صورة صفحة من نحن', cta_image: 'صورة شريط الدعوة',
     telemed_enabled: 'الطب الاتصالي (1 = مفعّلة / 0 = معطّلة)', telemed_price: 'رسوم استشارة الطب الاتصالي (ريال، اختياري)',
     telemed_slot_minutes: 'المدة الافتراضية للاستشارة (دقيقة)', jitsi_domain: 'نطاق خادم Jitsi للمكالمات (مثال: meet.jit.si)',
+    telemed_require_confirm: 'الحجوزات تحتاج تأكيد الإدارة قبل اعتمادها (1 = نعم / 0 = تُعتمد مباشرة)',
   },
   en: {
     name: 'Center name', tagline: 'Tagline', address: 'Address', hours: 'Working hours',
@@ -22,6 +23,7 @@ const labels = {
     hero_image: 'Main banner image', about_image: 'About page image', cta_image: 'CTA strip image',
     telemed_enabled: 'Remote consultations (1 = on / 0 = off)', telemed_price: 'Remote consultation fee (SAR, optional)',
     telemed_slot_minutes: 'Default consultation length (min)', jitsi_domain: 'Jitsi server domain for calls (e.g. meet.jit.si)',
+    telemed_require_confirm: 'Bookings need admin confirmation (1 = yes / 0 = auto-confirm)',
   },
 };
 const T = {

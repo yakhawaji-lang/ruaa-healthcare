@@ -33,6 +33,12 @@ const TITLE_EN = {
   'تم إلغاء الاستشارة': 'Consultation cancelled',
   'لم يحضر المريض': 'Patient did not show',
   'بانتظار الجدولة': 'Awaiting scheduling',
+  'بانتظار التأكيد': 'Awaiting confirmation',
+  'تم حجز الموعد بانتظار التأكيد': 'Booked — awaiting confirmation',
+  'تم تعديل الموعد بانتظار التأكيد': 'Rescheduled — awaiting confirmation',
+  'تم تأكيد الموعد': 'Appointment confirmed',
+  'تم تأكيد الموعد بعد تعديله': 'Rescheduled and confirmed',
+  'تم رفض الحجز': 'Booking declined',
   'تم تحديد الموعد': 'Scheduled',
   'الاستشارة جارية': 'Consultation in progress',
   // visit status change labels

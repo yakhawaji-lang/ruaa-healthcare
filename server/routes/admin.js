@@ -48,7 +48,8 @@ router.use(async (req, res, next) => {
     if (sup) return next();
     const perms = parsePerms(a) || { pages: {} };
     const page = pageFromPath(p);
-    const action = ACTION_BY_METHOD[req.method] || 'view';
+    let action = ACTION_BY_METHOD[req.method] || 'view';
+    if (/^\/telemed\/consultations\/\d+\/confirm$/.test(p)) action = 'confirm';
     const pp = perms.pages?.[page];
     if (pp && pp[action]) return next();
     return res.status(403).json({ error: 'forbidden' });

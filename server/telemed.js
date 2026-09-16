@@ -127,7 +127,7 @@ export async function joinInfo(c, { name, role, email, avatar } = {}) {
 
 /* ---------------- Status labels + timeline helpers ---------------- */
 export const CONS_STATUS_AR = {
-  pending: 'بانتظار الجدولة', scheduled: 'تم تحديد الموعد', in_progress: 'الاستشارة جارية',
+  pending: 'بانتظار الجدولة', unconfirmed: 'بانتظار التأكيد', scheduled: 'تم تحديد الموعد', in_progress: 'الاستشارة جارية',
   completed: 'اكتملت الاستشارة', cancelled: 'تم إلغاء الاستشارة', no_show: 'لم يحضر المريض',
 };
 export const consStatusLabel = (s) => CONS_STATUS_AR[s] || s || 'تحديث';
@@ -145,7 +145,9 @@ export async function notifyParties(c, { patient, doctor, admin }) {
 }
 
 // Shared "book / schedule" core used by the patient (self) and the admin.
-export async function createConsultation({ user_id, doctor_user_id, scheduled_at, mode, complaint, patient_name, phone, preferred_note, price, source = 'self', duration_min }) {
+// requireConfirm: a booked slot becomes 'unconfirmed' (held, but not scheduled) until an
+// admin with the telemed→confirm permission confirms it.
+export async function createConsultation({ user_id, doctor_user_id, scheduled_at, mode, complaint, patient_name, phone, preferred_note, price, source = 'self', duration_min, requireConfirm = false }) {
   const at = normDateTime(scheduled_at);
   let status = 'pending';
   let doc = null;
@@ -157,7 +159,7 @@ export async function createConsultation({ user_id, doctor_user_id, scheduled_at
     const st = await slotStatus(doc.id, at);
     if (st === 'taken') throw Object.assign(new Error('slot_taken'), { code: 'slot_taken' });
     if (st === 'outside' && source !== 'admin') throw Object.assign(new Error('slot_unavailable'), { code: 'slot_unavailable' });
-    status = 'scheduled';
+    status = requireConfirm ? 'unconfirmed' : 'scheduled';
   }
   const r = await Consultations.create({
     ref: 'TMP-' + Date.now() + Math.floor(Math.random() * 1000),
@@ -173,7 +175,36 @@ export async function createConsultation({ user_id, doctor_user_id, scheduled_at
   await addEvent(id, 'pending', 'تم استلام طلب الاستشارة', `${modeLabelAr(mode)}${complaint ? ' — ' + String(complaint).slice(0, 120) : ''}`, source === 'admin' ? 'الإدارة' : 'النظام');
   if (status === 'scheduled') {
     await addEvent(id, 'scheduled', 'تم تحديد موعد الاستشارة', `${doc.name} — ${at}`, source === 'admin' ? 'الإدارة' : 'النظام');
+  } else if (status === 'unconfirmed') {
+    await addEvent(id, 'unconfirmed', 'تم حجز الموعد بانتظار التأكيد', `${doc.name} — ${at}`, source === 'admin' ? 'الإدارة' : 'النظام');
   }
   const c = await Consultations.byId(id);
   return c;
+}
+
+/* ---------------- Confirmation ---------------- */
+export async function requiresConfirmation() {
+  const s = await Settings.asObject();
+  return (s.telemed_require_confirm?.ar ?? '1') !== '0';
+}
+
+// Confirms (→ scheduled) or declines (→ cancelled) a consultation that is awaiting confirmation.
+export async function confirmConsultation(c, { action = 'confirm', note, actor = 'الإدارة' } = {}) {
+  if (c.status !== 'unconfirmed') throw Object.assign(new Error('not_unconfirmed'), { code: 'not_unconfirmed' });
+  if (action === 'reject') {
+    await Consultations.setStatus(c.id, 'cancelled');
+    await addEvent(c.id, 'cancelled', 'تم رفض الحجز', note || null, actor);
+    await notifyParties(c, { patient: { title: 'تعذّر تأكيد موعد استشارتك', body: note || 'يمكنك اختيار موعد آخر من بوابتك.' } });
+    return 'cancelled';
+  }
+  if (!c.doctor_user_id || !c.scheduled_at) throw Object.assign(new Error('missing_slot'), { code: 'missing_slot' });
+  const at = String(c.scheduled_at).slice(0, 16);
+  if (await Consultations.isSlotTaken(c.doctor_user_id, at + ':00', c.id)) throw Object.assign(new Error('slot_taken'), { code: 'slot_taken' });
+  await Consultations.setStatus(c.id, 'scheduled');
+  await addEvent(c.id, 'scheduled', 'تم تأكيد الموعد', note || `${c.doctor_name || ''} — ${at}`, actor);
+  await notifyParties(c, {
+    patient: { title: 'تم تأكيد موعد استشارتك', body: `${c.doctor_name || 'الطبيب'} — ${at} (${modeLabelAr(c.mode)})` },
+    doctor: { title: 'استشارة مؤكدة معك', body: `${c.patient_name || ''} — ${at}` },
+  });
+  return 'scheduled';
 }

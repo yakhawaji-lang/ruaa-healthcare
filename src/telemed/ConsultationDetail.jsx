@@ -2,7 +2,7 @@
 // tracking timeline and correspondence with the administration.
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowRight, ArrowLeft, Video, Phone, CalendarDays, Clock, UserRound, FileText, XCircle, Pill, Stethoscope } from 'lucide-react';
+import { ArrowRight, ArrowLeft, Video, Phone, CalendarDays, Clock, UserRound, FileText, XCircle, Pill, Stethoscope, Hourglass } from 'lucide-react';
 import { AccountAPI } from '../storage/api.js';
 import { useLang } from '../i18n.jsx';
 import Tracking from '../account/Tracking.jsx';
@@ -14,12 +14,14 @@ import './telemed.css';
 const T = {
   ar: {
     back: 'رجوع لحسابي', consultation: 'استشارة عن بُعد', doctor: 'الممارس الصحي', when: 'الموعد', tbd: 'يُحدَّد لاحقًا', mode: 'النوع', price: 'الرسوم', sar: 'ريال',
+    unconfirmed_t: 'موعدك بانتظار التأكيد', unconfirmed_h: 'الموعد محجوز لك مؤقتًا وستؤكده الإدارة قريبًا. سيصلك إشعار عند التأكيد ويظهر زر الدخول للغرفة بعدها.',
     complaint: 'سبب الاستشارة', join: 'دخول غرفة الاستشارة', join_hint: (m) => (m > 0 ? `يمكنك الدخول قبل الموعد بـ 15 دقيقة (متبقٍ ${m} دقيقة)` : 'الغرفة مفتوحة الآن'),
     cancel: 'إلغاء الاستشارة', confirm_cancel: 'هل تريد إلغاء هذه الاستشارة؟', tracking: 'متابعة الاستشارة', thread: 'المراسلات مع إدارة رؤى',
     summary: 'ملخص الممارس', diagnosis: 'التشخيص', notes: 'الملاحظات الطبية', prescription: 'الوصفة / التوصيات', follow_up: 'المتابعة', preferred: 'الوقت المفضّل',
   },
   en: {
     back: 'Back to my account', consultation: 'Remote consultation', doctor: 'Provider', when: 'Appointment', tbd: 'To be set', mode: 'Type', price: 'Fee', sar: 'SAR',
+    unconfirmed_t: 'Awaiting confirmation', unconfirmed_h: 'The slot is held for you and the team will confirm it shortly. You will be notified, and the join button appears after confirmation.',
     complaint: 'Reason', join: 'Join the consultation room', join_hint: (m) => (m > 0 ? `You can join 15 minutes before the start (${m} minutes left)` : 'The room is open now'),
     cancel: 'Cancel consultation', confirm_cancel: 'Cancel this consultation?', tracking: 'Consultation tracking', thread: 'Messages with RU-MD administration',
     summary: "Provider's summary", diagnosis: 'Diagnosis', notes: 'Clinical notes', prescription: 'Prescription / advice', follow_up: 'Follow-up', preferred: 'Preferred time',
@@ -72,6 +74,11 @@ export default function ConsultationDetail() {
             </div>
             {c.complaint && <p className="detail-notes"><FileText size={14} /> <b>{tt.complaint}:</b> {c.complaint}</p>}
 
+            {c.status === 'unconfirmed' && (
+              <div className="tm-join-box tm-unconfirmed">
+                <div><strong><Hourglass size={16} /> {tt.unconfirmed_t}</strong><small>{tt.unconfirmed_h}</small></div>
+              </div>
+            )}
             {c.status === 'scheduled' || c.status === 'in_progress' ? (
               <div className={`tm-join-box ${joinable ? 'open' : ''}`}>
                 <div>

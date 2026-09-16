@@ -518,13 +518,13 @@ export const Consultations = {
   byIdForDoctor: (id, did) => query(`SELECT ${CONS_COLS} ${CONS_FROM} WHERE c.id=? AND c.doctor_user_id=? AND c.deleted_at IS NULL LIMIT 1`, [id, did]).then((r) => r[0] || null),
   listByUser: (uid) => query(`SELECT ${CONS_COLS} ${CONS_FROM} WHERE c.user_id=? AND c.deleted_at IS NULL ORDER BY COALESCE(c.scheduled_at, c.created_at) DESC, c.id DESC`, [uid]),
   listByDoctor: (did) => query(`SELECT ${CONS_COLS} ${CONS_FROM} WHERE c.doctor_user_id=? AND c.deleted_at IS NULL ORDER BY c.scheduled_at ASC, c.id ASC`, [did]),
-  listAll: () => query(`SELECT ${CONS_COLS} ${CONS_FROM} WHERE c.deleted_at IS NULL ORDER BY (c.status='pending') DESC, COALESCE(c.scheduled_at, c.created_at) DESC, c.id DESC`),
+  listAll: () => query(`SELECT ${CONS_COLS} ${CONS_FROM} WHERE c.deleted_at IS NULL ORDER BY (c.status IN ('pending','unconfirmed')) DESC, COALESCE(c.scheduled_at, c.created_at) DESC, c.id DESC`),
   // booked starts for a doctor on a given day (to remove from the free slots)
   bookedOn: (did, date) => query(
     `SELECT DATE_FORMAT(scheduled_at, '%H:%i') AS t, duration_min FROM consultations
-     WHERE doctor_user_id=? AND DATE(scheduled_at)=? AND status IN ('scheduled','in_progress') AND deleted_at IS NULL`, [did, date]),
+     WHERE doctor_user_id=? AND DATE(scheduled_at)=? AND status IN ('unconfirmed','scheduled','in_progress') AND deleted_at IS NULL`, [did, date]),
   isSlotTaken: (did, at, excludeId = null) => query(
-    `SELECT id FROM consultations WHERE doctor_user_id=? AND scheduled_at=? AND status IN ('scheduled','in_progress') AND deleted_at IS NULL ${excludeId ? 'AND id<>?' : ''} LIMIT 1`,
+    `SELECT id FROM consultations WHERE doctor_user_id=? AND scheduled_at=? AND status IN ('unconfirmed','scheduled','in_progress') AND deleted_at IS NULL ${excludeId ? 'AND id<>?' : ''} LIMIT 1`,
     excludeId ? [did, at, excludeId] : [did, at]).then((r) => !!r[0]),
   // admin scheduling / assignment
   schedule: (id, f) => query('UPDATE consultations SET doctor_user_id=?, scheduled_at=?, duration_min=?, status=?, price=?, mode=? WHERE id=?',
@@ -537,7 +537,9 @@ export const Consultations = {
     [f.status, f.ended_at || null, f.doctor_notes || null, f.diagnosis || null, f.prescription || null, f.follow_up || null, id]),
   softDelete: (id) => query('UPDATE consultations SET deleted_at = NOW() WHERE id=?', [id]),
   count: () => query('SELECT COUNT(*) AS n FROM consultations WHERE deleted_at IS NULL').then((r) => r[0].n),
-  pending: () => query("SELECT COUNT(*) AS n FROM consultations WHERE deleted_at IS NULL AND status='pending'").then((r) => r[0].n),
+  // "needs admin action": awaiting scheduling or awaiting confirmation
+  pending: () => query("SELECT COUNT(*) AS n FROM consultations WHERE deleted_at IS NULL AND status IN ('pending','unconfirmed')").then((r) => r[0].n),
+  unconfirmed: () => query("SELECT COUNT(*) AS n FROM consultations WHERE deleted_at IS NULL AND status='unconfirmed'").then((r) => r[0].n),
   upcoming: (nowStr) => query("SELECT COUNT(*) AS n FROM consultations WHERE deleted_at IS NULL AND status='scheduled' AND scheduled_at >= ?", [nowStr]).then((r) => r[0].n),
 };
 

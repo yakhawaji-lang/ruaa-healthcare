@@ -2,13 +2,14 @@
 // shared by the patient portal, the doctor portal and the admin manager.
 export const CONS_STATUS = {
   pending:     { ar: 'بانتظار الجدولة',   en: 'Awaiting scheduling', color: '#e08a3c' },
+  unconfirmed: { ar: 'بانتظار التأكيد',   en: 'Awaiting confirmation', color: '#b45309' },
   scheduled:   { ar: 'تم تحديد الموعد',   en: 'Scheduled',           color: '#3b82f6' },
   in_progress: { ar: 'الاستشارة جارية',   en: 'In progress',         color: '#8b5cf6' },
   completed:   { ar: 'اكتملت',            en: 'Completed',           color: '#2e8b57' },
   cancelled:   { ar: 'ملغاة',             en: 'Cancelled',           color: '#c0392b' },
   no_show:     { ar: 'لم يحضر المريض',    en: 'No-show',             color: '#7a8a93' },
 };
-export const CONS_FLOW = ['pending', 'scheduled', 'in_progress', 'completed'];
+export const CONS_FLOW = ['pending', 'unconfirmed', 'scheduled', 'in_progress', 'completed'];
 export const CONS_STATUSES = Object.keys(CONS_STATUS);
 export const consLabel = (s, lang = 'ar') => CONS_STATUS[s]?.[lang] || CONS_STATUS[s]?.ar || s || '';
 export const consColor = (s) => CONS_STATUS[s]?.color || '#5a6f7a';

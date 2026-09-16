@@ -196,6 +196,7 @@ export const AdminAPI = {
   consultations: () => api.get('/admin/telemed/consultations').then((r) => r.data),
   consultation: (id) => api.get(`/admin/telemed/consultations/${id}`).then((r) => r.data),
   createConsultation: (data) => api.post('/admin/telemed/consultations', data).then((r) => r.data),
+  confirmConsultation: (id, action = 'confirm', note) => api.post(`/admin/telemed/consultations/${id}/confirm`, { action, note }).then((r) => r.data),
   updateConsultation: (id, data) => api.put(`/admin/telemed/consultations/${id}`, data).then((r) => r.data),
   deleteConsultation: (id) => api.delete(`/admin/telemed/consultations/${id}`).then((r) => r.data),
   sendConsultationMessage: (id, payload) => api.post(`/admin/telemed/consultations/${id}/messages`, payload).then((r) => r.data),
