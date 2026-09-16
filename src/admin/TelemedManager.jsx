@@ -19,6 +19,8 @@ import '../telemed/telemed.css';
 const T = {
   ar: {
     title: 'الطب الاتصالي', hint: 'إدارة استشارات الفيديو والصوت: الجدولة، تعيين الأطباء، متابعة الحالة، والانضمام للغرفة.',
+    prov_label: 'مزوّد المكالمات', prov_jaas: '8x8 JaaS — جاهز للإنتاج', prov_demo: 'meet.jit.si — تجريبي (تُقطع المكالمة بعد 5 دقائق)', prov_jitsi: 'خادم Jitsi خاص',
+    prob_app_id_format: 'JAAS_APP_ID يجب أن يبدأ بـ vpaas-magic-cookie-', prob_key_id_format: 'JAAS_KEY_ID يجب أن يكون بصيغة AppID/KeyID كما في لوحة JaaS', prob_private_key_format: 'JAAS_PRIVATE_KEY لا يحتوي على BEGIN PRIVATE KEY — تحقق من النسخ وفواصل الأسطر', prob_jaas_incomplete: 'قيم JaaS ناقصة في server/.env (يلزم القيم الثلاث معًا)',
     tab_cons: 'الاستشارات', tab_docs: 'الممارسون الصحيون', all: 'الكل', pending: 'بانتظار الجدولة', unconfirmed: 'بانتظار التأكيد', today: 'اليوم', upcoming: 'قادمة', closed: 'منتهية',
     confirm: 'تأكيد الحجز', reject: 'رفض الحجز', confirm_q: 'تأكيد هذا الموعد؟ سيُبلَّغ المريض والممارس.', reject_q: 'سبب الرفض (يُرسل للمريض، اختياري):', confirmed: 'تم تأكيد الموعد', rejected: 'تم رفض الحجز',
     unconfirmed_banner: 'هذا الحجز بانتظار التأكيد — الموعد محجوز مؤقتًا ولن يُفتح للمريض أو الممارس حتى يُؤكَّد.', no_confirm_perm: 'تأكيد الحجوزات يحتاج صلاحية «تأكيد الحجز» في الطب الاتصالي.', slot_gone: 'تعذّر التأكيد: الوقت لم يعد متاحًا.',
@@ -47,6 +49,8 @@ const T = {
   },
   en: {
     title: 'Remote Consultations', hint: 'Manage video & voice consultations: scheduling, assigning doctors, status tracking and joining the room.',
+    prov_label: 'Call provider', prov_jaas: '8x8 JaaS — production ready', prov_demo: 'meet.jit.si — demo only (calls drop after 5 min)', prov_jitsi: 'Self-hosted Jitsi',
+    prob_app_id_format: 'JAAS_APP_ID must start with vpaas-magic-cookie-', prob_key_id_format: 'JAAS_KEY_ID must be AppID/KeyID as shown in the JaaS console', prob_private_key_format: 'JAAS_PRIVATE_KEY has no BEGIN PRIVATE KEY — check the paste and line breaks', prob_jaas_incomplete: 'JaaS values incomplete in server/.env (all three are required)',
     tab_cons: 'Consultations', tab_docs: 'Providers', all: 'All', pending: 'Awaiting scheduling', unconfirmed: 'Awaiting confirmation', today: 'Today', upcoming: 'Upcoming', closed: 'Closed',
     confirm: 'Confirm booking', reject: 'Decline booking', confirm_q: 'Confirm this appointment? The patient and provider will be notified.', reject_q: 'Reason (sent to the patient, optional):', confirmed: 'Appointment confirmed', rejected: 'Booking declined',
     unconfirmed_banner: 'This booking awaits confirmation — the slot is held, but the room stays closed for the patient and provider until it is confirmed.', no_confirm_perm: 'Confirming bookings needs the "Confirm bookings" permission under Remote Consultations.', slot_gone: 'Could not confirm: the time is no longer free.',
@@ -78,10 +82,20 @@ export default function TelemedManager() {
   const { lang } = useLang();
   const tt = T[lang];
   const [tab, setTab] = useState('cons');
+  const [prov, setProv] = useState(null);
+  useEffect(() => { AdminAPI.telemedProvider().then(setProv).catch(() => {}); }, []);
+  const provLabel = !prov ? '' : prov.provider === 'jaas' ? tt.prov_jaas : prov.domain === 'meet.jit.si' ? tt.prov_demo : `${tt.prov_jitsi} — ${prov.domain}`;
+  const provOk = prov && (prov.provider === 'jaas' ? prov.problems.length === 0 : prov.domain !== 'meet.jit.si');
   return (
     <div>
       <div className="page-head">
         <div><h1 className="page-title">{tt.title}</h1><p className="page-hint">{tt.hint}</p></div>
+        {prov && (
+          <div className={`tm-provider ${provOk ? 'ok' : 'warn'}`} title={tt.prov_label}>
+            <Video size={14} /> <span>{provLabel}</span>
+            {prov.problems.map((p) => <small key={p}>{tt['prob_' + p] || p}</small>)}
+          </div>
+        )}
       </div>
       <div className="tm-admin-tabs">
         <button type="button" className={tab === 'cons' ? 'active' : ''} onClick={() => setTab('cons')}><Video size={16} /> {tt.tab_cons}</button>

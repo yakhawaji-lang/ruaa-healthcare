@@ -2,6 +2,7 @@
 // local-time handling (Asia/Riyadh), free-slot generation, Jitsi room naming
 // and join credentials (public meet.jit.si, a self-hosted Jitsi, or 8x8 JaaS).
 import crypto from 'crypto';
+import fs from 'fs';
 import jwt from 'jsonwebtoken';
 import { Doctors, Consultations, Settings, RequestEvents, Notifications } from './db/queries.js';
 
@@ -97,6 +98,35 @@ export function joinWindow(c) {
   return { ok: true };
 }
 
+// JaaS credentials, tolerant of how the private key was pasted into .env:
+// real newlines, escaped \n, surrounding quotes, CRLF, or a path in JAAS_PRIVATE_KEY_FILE.
+function jaasCreds() {
+  const clean = (v) => String(v || '').trim().replace(/^["']|["']$/g, '');
+  const appId = clean(process.env.JAAS_APP_ID);
+  const keyId = clean(process.env.JAAS_KEY_ID);
+  let pk = clean(process.env.JAAS_PRIVATE_KEY);
+  if (!pk && process.env.JAAS_PRIVATE_KEY_FILE) {
+    try { pk = fs.readFileSync(clean(process.env.JAAS_PRIVATE_KEY_FILE), 'utf8'); } catch { pk = ''; }
+  }
+  pk = pk.replace(/\\r\\n|\\n/g, '\n').replace(/\r\n/g, '\n').trim();
+  if (pk && !pk.endsWith('\n')) pk += '\n';
+  return { appId, keyId, pk };
+}
+
+// Which call provider is active (for the admin status badge / self-check).
+export async function providerInfo() {
+  const { appId, keyId, pk } = jaasCreds();
+  if (appId && keyId && pk) {
+    const problems = [];
+    if (!/^vpaas-magic-cookie-/.test(appId)) problems.push('app_id_format');
+    if (!keyId.startsWith(appId + '/')) problems.push('key_id_format');
+    if (!/BEGIN (RSA )?PRIVATE KEY/.test(pk)) problems.push('private_key_format');
+    return { provider: 'jaas', domain: '8x8.vc', problems };
+  }
+  const partial = [appId, keyId, pk].filter(Boolean).length;
+  return { provider: 'jitsi', domain: await jitsiDomain(), problems: partial ? ['jaas_incomplete'] : [] };
+}
+
 async function jitsiDomain() {
   const s = await Settings.asObject();
   const d = (s.jitsi_domain?.ar || s.jitsi_domain?.en || process.env.JITSI_DOMAIN || 'meet.jit.si').trim();
@@ -106,9 +136,7 @@ async function jitsiDomain() {
 // Builds what the browser needs to open the room. With JaaS (8x8.vc) env vars a
 // signed JWT is produced so nobody has to "log in as moderator" on meet.jit.si.
 export async function joinInfo(c, { name, role, email, avatar } = {}) {
-  const appId = process.env.JAAS_APP_ID;
-  const keyId = process.env.JAAS_KEY_ID;
-  const pk = (process.env.JAAS_PRIVATE_KEY || '').replace(/\\n/g, '\n');
+  const { appId, keyId, pk } = jaasCreds();
   const moderator = role === 'doctor' || role === 'admin';
   const base = { id: c.id, ref: c.ref, mode: c.mode, displayName: name || 'RU-MD', moderator, subject: `RU-MD ${c.ref}` };
   if (appId && keyId && pk) {

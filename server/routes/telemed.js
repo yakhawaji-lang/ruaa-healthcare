@@ -6,7 +6,7 @@ import { Router } from 'express';
 import bcrypt from 'bcryptjs';
 import { Users, Doctors, Consultations, RequestEvents, Threads, Patients, Notifications, Audit, Settings, Staff, parsePerms } from '../db/queries.js';
 import { requireUser, requireRole } from '../auth.js';
-import { freeSlots, slotStatus, joinWindow, joinInfo, nowLocal, normDateTime, isIsoDate, createConsultation, addEvent, notifyParties, consStatusLabel, modeLabelAr, requiresConfirmation, confirmConsultation } from '../telemed.js';
+import { freeSlots, slotStatus, joinWindow, joinInfo, nowLocal, normDateTime, isIsoDate, createConsultation, addEvent, notifyParties, consStatusLabel, modeLabelAr, requiresConfirmation, confirmConsultation, providerInfo } from '../telemed.js';
 
 const modeOf = (m) => (m === 'audio' ? 'audio' : 'video');
 const CLOSED = ['completed', 'cancelled', 'no_show'];
@@ -301,6 +301,8 @@ adminRouter.delete('/doctors/:id', async (req, res) => {
 });
 
 /* ---- Slots (for the admin scheduler) ---- */
+adminRouter.get('/provider', async (req, res) => res.json(await providerInfo()));
+
 adminRouter.get('/slots', async (req, res) => {
   const { doctor_id, date } = req.query;
   if (!doctor_id || !isIsoDate(date)) return res.status(400).json({ error: 'bad_query' });

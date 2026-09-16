@@ -194,6 +194,7 @@ export const AdminAPI = {
   deleteDoctor: (id) => api.delete(`/admin/telemed/doctors/${id}`).then((r) => r.data),
   telemedSlots: (doctorId, date) => api.get('/admin/telemed/slots', { params: { doctor_id: doctorId, date } }).then((r) => r.data),
   consultations: () => api.get('/admin/telemed/consultations').then((r) => r.data),
+  telemedProvider: () => api.get('/admin/telemed/provider').then((r) => r.data),
   consultation: (id) => api.get(`/admin/telemed/consultations/${id}`).then((r) => r.data),
   createConsultation: (data) => api.post('/admin/telemed/consultations', data).then((r) => r.data),
   confirmConsultation: (id, action = 'confirm', note) => api.post(`/admin/telemed/consultations/${id}/confirm`, { action, note }).then((r) => r.data),

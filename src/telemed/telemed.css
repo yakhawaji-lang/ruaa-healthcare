@@ -284,3 +284,11 @@
 .tm-filter-badge { display: inline-grid; place-items: center; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 999px; background: #d97706; color: #fff; font-size: 0.7rem; margin-inline-start: 6px; }
 .row-actions button.ok { color: #138a5b; }
 .row-actions button.ok:hover { background: #e4f8ee; }
+
+/* call provider badge (admin) */
+.tm-provider { display: flex; flex-direction: column; gap: 4px; padding: 8px 14px; border-radius: 12px; font-size: 0.82rem; font-weight: 700; max-width: 360px; }
+.tm-provider > span { display: inline; }
+.tm-provider svg { vertical-align: -2px; margin-inline-end: 4px; }
+.tm-provider.ok { background: #e4f8ee; color: #138a5b; }
+.tm-provider.warn { background: #fff7e6; color: #9a5b00; border: 1px solid #f3c77a; }
+.tm-provider small { display: block; font-weight: 500; color: #b42318; }
