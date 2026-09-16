@@ -106,7 +106,15 @@ img { max-width: 100%; }
 /* slider dots */
 .hero-dots { display: flex; gap: 8px; justify-content: center; margin-top: 18px; }
 .hero-dots button { width: 10px; height: 10px; border-radius: 50%; border: none; background: #cddde2; cursor: pointer; padding: 0; transition: all 0.2s; }
-.hero-dots button.active { background: var(--teal); width: 26px; border-radius: 6px; }
+.hero-dots button.active { background: #cddde2; width: 34px; border-radius: 6px; position: relative; overflow: hidden; }
+.hero-dot-fill { position: absolute; inset: 0; inset-inline-end: auto; width: 0; background: var(--teal); border-radius: 6px; animation: heroDot linear forwards; }
+@keyframes heroDot { from { width: 0; } to { width: 100%; } }
+@media (prefers-reduced-motion: reduce) { .hero-dot-fill { width: 100%; animation: none; } }
+/* soft scrim so a light photo never washes out the arrows */
+.hero-scrim { position: absolute; inset: 0; z-index: 2; pointer-events: none; border-radius: 24px;
+  background: linear-gradient(180deg, rgba(11,53,86,0.16) 0%, rgba(11,53,86,0) 32%, rgba(11,53,86,0.10) 100%); }
+.hero-text h1 { text-wrap: balance; }
+.hero-badge { border: 1px solid rgba(32,150,160,0.25); }
 /* text fade-up on slide change */
 .hero-text { animation: heroFade 0.7s ease; }
 @keyframes heroFade { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }

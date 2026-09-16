@@ -194,7 +194,7 @@ export const Messages = {
 };
 
 /* ---------------- Hero slides ---------------- */
-const SLIDE_COLS = 'id, image, title_ar, title_en, subtitle_ar, subtitle_en, badge_ar, badge_en, is_published, sort_order';
+const SLIDE_COLS = 'id, image, title_ar, title_en, subtitle_ar, subtitle_en, badge_ar, badge_en, cta_label_ar, cta_label_en, cta_href, is_published, sort_order';
 export const HeroSlides = {
   listPublic: () =>
     query(`SELECT ${SLIDE_COLS} FROM hero_slides WHERE deleted_at IS NULL AND is_published = 1 ORDER BY sort_order, id`),
@@ -204,13 +204,15 @@ export const HeroSlides = {
     query('SELECT * FROM hero_slides WHERE id = ? AND deleted_at IS NULL LIMIT 1', [id]).then((r) => r[0] || null),
   create: (s) =>
     query(
-      'INSERT INTO hero_slides (image, title_ar, title_en, subtitle_ar, subtitle_en, badge_ar, badge_en, is_published, sort_order) VALUES (?,?,?,?,?,?,?,?,?)',
-      [s.image || null, s.title_ar, s.title_en, s.subtitle_ar, s.subtitle_en, s.badge_ar, s.badge_en, s.is_published ? 1 : 0, s.sort_order || 0]
+      'INSERT INTO hero_slides (image, title_ar, title_en, subtitle_ar, subtitle_en, badge_ar, badge_en, cta_label_ar, cta_label_en, cta_href, is_published, sort_order) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)',
+      [s.image || null, s.title_ar, s.title_en, s.subtitle_ar, s.subtitle_en, s.badge_ar, s.badge_en,
+        s.cta_label_ar || null, s.cta_label_en || null, s.cta_href || null, s.is_published ? 1 : 0, s.sort_order || 0]
     ),
   update: (id, s) =>
     query(
-      'UPDATE hero_slides SET image=?, title_ar=?, title_en=?, subtitle_ar=?, subtitle_en=?, badge_ar=?, badge_en=?, is_published=?, sort_order=? WHERE id=?',
-      [s.image || null, s.title_ar, s.title_en, s.subtitle_ar, s.subtitle_en, s.badge_ar, s.badge_en, s.is_published ? 1 : 0, s.sort_order || 0, id]
+      'UPDATE hero_slides SET image=?, title_ar=?, title_en=?, subtitle_ar=?, subtitle_en=?, badge_ar=?, badge_en=?, cta_label_ar=?, cta_label_en=?, cta_href=?, is_published=?, sort_order=? WHERE id=?',
+      [s.image || null, s.title_ar, s.title_en, s.subtitle_ar, s.subtitle_en, s.badge_ar, s.badge_en,
+        s.cta_label_ar || null, s.cta_label_en || null, s.cta_href || null, s.is_published ? 1 : 0, s.sort_order || 0, id]
     ),
   softDelete: (id) => query('UPDATE hero_slides SET deleted_at = NOW() WHERE id = ?', [id]),
   count: () => query('SELECT COUNT(*) AS n FROM hero_slides WHERE deleted_at IS NULL').then((r) => r[0].n),

@@ -22,6 +22,9 @@ const T = {
     title_en: 'Title (English)',
     subtitle_ar: 'الوصف (عربي)',
     subtitle_en: 'Subtitle (English)',
+    cta_ar: 'زر الشريحة (عربي)', cta_ar_ph: 'احجز استشارة الآن', cta_en_lbl: 'زر الشريحة (إنجليزي)',
+    cta_href: 'رابط الزر', cta_href_ph: '/telemedicine أو /services أو /contact',
+    cta_hint: 'اتركه فارغًا ليستخدم زر الموقع الافتراضي (تواصل معنا).',
     badge_ar: 'الشارة العلوية (عربي)',
     badge_ar_ph: 'مقدم الرعاية الأول...',
     badge_en: 'Badge (English)',
@@ -47,6 +50,9 @@ const T = {
     title_en: 'Title (English)',
     subtitle_ar: 'Subtitle (Arabic)',
     subtitle_en: 'Subtitle (English)',
+    cta_ar: 'Slide button (Arabic)', cta_ar_ph: 'Book a consultation', cta_en_lbl: 'Slide button (English)',
+    cta_href: 'Button link', cta_href_ph: '/telemedicine, /services or /contact',
+    cta_hint: 'Leave empty to use the site-wide button (Contact us).',
     badge_ar: 'Top badge (Arabic)',
     badge_ar_ph: 'The leading care provider...',
     badge_en: 'Badge (English)',
@@ -59,7 +65,7 @@ const T = {
 
 const blank = {
   image: '', title_ar: '', title_en: '', subtitle_ar: '', subtitle_en: '',
-  badge_ar: '', badge_en: '', is_published: 1, sort_order: 0,
+  badge_ar: '', badge_en: '', cta_label_ar: '', cta_label_en: '', cta_href: '', is_published: 1, sort_order: 0,
 };
 
 export default function HeroSlidesManager() {
@@ -154,6 +160,16 @@ function SlideEditor({ data, setData, onClose, onSave }) {
             <div className="field"><label>{tt.badge_en}</label>
               <input dir="ltr" value={data.badge_en} onChange={(e) => set('badge_en', e.target.value)} /></div>
           </div>
+          <div className="field-row">
+            <div className="field"><label>{tt.cta_ar}</label>
+              <input value={data.cta_label_ar || ''} onChange={(e) => set('cta_label_ar', e.target.value)} placeholder={tt.cta_ar_ph} /></div>
+            <div className="field"><label>{tt.cta_en_lbl}</label>
+              <input dir="ltr" value={data.cta_label_en || ''} onChange={(e) => set('cta_label_en', e.target.value)} /></div>
+          </div>
+          <div className="field"><label>{tt.cta_href}</label>
+            <input dir="ltr" value={data.cta_href || ''} onChange={(e) => set('cta_href', e.target.value)} placeholder={tt.cta_href_ph} />
+            <small className="muted">{tt.cta_hint}</small></div>
+
           <div className="field-row">
             <div className="field"><label>{tt.sort_order}</label>
               <input type="number" value={data.sort_order} onChange={(e) => set('sort_order', Number(e.target.value))} /></div>
