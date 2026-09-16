@@ -145,6 +145,19 @@
 .tm-room-overlay { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; color: #fff; text-align: center; padding: 24px; z-index: 2; background: #0c1b26; }
 .tm-room-overlay p { margin: 0; font-weight: 600; max-width: 48ch; }
 .tm-room-overlay small { color: #a9c3d0; }
+/* RU-MD branding inside the call */
+.tm-room-logo { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 9px; background: #fff; padding: 2px; flex: none; }
+.tm-room-brand {
+  position: absolute; inset-block-end: 16px; inset-inline-start: 16px; z-index: 1; pointer-events: none;
+  display: flex; align-items: center; gap: 8px; padding: 6px 12px 6px 6px; border-radius: 999px;
+  background: rgba(12, 27, 38, 0.55); backdrop-filter: blur(6px); border: 1px solid rgba(255,255,255,0.18);
+  color: #fff; font-weight: 700; font-size: 0.85rem; letter-spacing: 0.01em;
+}
+.tm-room-brand .logo { border-radius: 7px; background: #fff; padding: 2px; }
+@media (max-width: 640px) {
+  .tm-room-brand { inset-block-end: 12px; inset-inline-start: 12px; font-size: 0.78rem; padding: 5px 10px 5px 5px; }
+  .tm-room-logo { width: 28px; height: 28px; }
+}
 .tm-spin { animation: tm-rot 1s linear infinite; color: #9fd8e3; }
 .tm-warn { color: #f0b429; }
 @keyframes tm-rot { to { transform: rotate(360deg); } }
@@ -303,10 +316,3 @@
 .row-actions button.ok { color: #138a5b; }
 .row-actions button.ok:hover { background: #e4f8ee; }
 
-/* call provider badge (admin) */
-.tm-provider { display: flex; flex-direction: column; gap: 4px; padding: 8px 14px; border-radius: 12px; font-size: 0.82rem; font-weight: 700; max-width: 360px; }
-.tm-provider > span { display: inline; }
-.tm-provider svg { vertical-align: -2px; margin-inline-end: 4px; }
-.tm-provider.ok { background: #e4f8ee; color: #138a5b; }
-.tm-provider.warn { background: #fff7e6; color: #9a5b00; border: 1px solid #f3c77a; }
-.tm-provider small { display: block; font-weight: 500; color: #b42318; }

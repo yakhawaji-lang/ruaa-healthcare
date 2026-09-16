@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from 'react';
 import { PhoneOff, Video, Phone, AlertTriangle, Loader2 } from 'lucide-react';
 import { useLang } from '../i18n.jsx';
 import { modeLabel } from './status.js';
+import Logo from '../components/Logo.jsx';
 import './telemed.css';
 
 const T = {
@@ -143,6 +144,7 @@ export default function VideoRoom({ fetchJoin, onLeave, subtitle, badge }) {
     <div className="tm-room">
       <div className="tm-room-head">
         <div className="tm-room-title">
+          <span className="tm-room-logo"><Logo size={30} /></span>
           <Icon size={18} />
           <div>
             <strong>{state.info?.subject || 'RU-MD'}</strong>
@@ -168,6 +170,9 @@ export default function VideoRoom({ fetchJoin, onLeave, subtitle, badge }) {
           </div>
         )}
         <div ref={boxRef} className="tm-jitsi" />
+        {/* RU-MD mark over the call — video and audio alike. It sits under the connecting/
+            error overlay, so it is only visible once the call itself is showing. */}
+        <div className="tm-room-brand" aria-hidden="true"><Logo size={26} /><span>رؤى</span></div>
       </div>
     </div>
   );
