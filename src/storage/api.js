@@ -78,7 +78,7 @@ export const AccountAPI = {
 export const DoctorAPI = {
   me: () => api.get('/account/doctor/me').then((r) => r.data),
   saveProfile: (data) => api.put('/account/doctor/me', data).then((r) => r.data),
-  setAvailability: (rules) => api.put('/account/doctor/availability', { rules }).then((r) => r.data),
+  setAvailability: (rules, dates) => api.put('/account/doctor/availability', { rules, dates }).then((r) => r.data),
   addDayOff: (date, note) => api.post('/account/doctor/days-off', { date, note }).then((r) => r.data),
   removeDayOff: (id) => api.delete(`/account/doctor/days-off/${id}`).then((r) => r.data),
   consultations: () => api.get('/account/doctor/consultations').then((r) => r.data),

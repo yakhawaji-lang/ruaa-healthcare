@@ -423,6 +423,17 @@ export const Doctors = {
     for (const r of clean) await query('INSERT INTO doctor_availability (doctor_user_id, weekday, start_time, end_time) VALUES (?,?,?,?)', [uid, r.weekday, r.start_time, r.end_time]);
     return clean.length;
   },
+  // date-specific extra hours (future dates only); replace-all like the weekly rules
+  dateAvailability: (uid) => query("SELECT id, DATE_FORMAT(on_date, '%Y-%m-%d') AS on_date, start_time, end_time FROM doctor_date_availability WHERE doctor_user_id=? AND on_date >= CURDATE() - INTERVAL 1 DAY ORDER BY on_date, start_time", [uid]),
+  dateAvailabilityOn: (uid, date) => query('SELECT start_time, end_time FROM doctor_date_availability WHERE doctor_user_id=? AND on_date=?', [uid, date]),
+  setDateAvailability: async (uid, items = []) => {
+    await query('DELETE FROM doctor_date_availability WHERE doctor_user_id=? AND on_date >= CURDATE()', [uid]);
+    const clean = (Array.isArray(items) ? items : [])
+      .map((r) => ({ on_date: String(r.on_date || r.date || '').slice(0, 10), start_time: String(r.start_time || '').slice(0, 5), end_time: String(r.end_time || '').slice(0, 5) }))
+      .filter((r) => /^\d{4}-\d{2}-\d{2}$/.test(r.on_date) && /^\d{2}:\d{2}$/.test(r.start_time) && /^\d{2}:\d{2}$/.test(r.end_time) && r.start_time < r.end_time);
+    for (const r of clean) await query('INSERT INTO doctor_date_availability (doctor_user_id, on_date, start_time, end_time) VALUES (?,?,?,?)', [uid, r.on_date, r.start_time, r.end_time]);
+    return clean.length;
+  },
   daysOff: (uid) => query("SELECT id, DATE_FORMAT(off_date, '%Y-%m-%d') AS off_date, note FROM doctor_days_off WHERE doctor_user_id=? AND off_date >= CURDATE() - INTERVAL 1 DAY ORDER BY off_date", [uid]),
   addDayOff: (uid, date, note) => query('INSERT IGNORE INTO doctor_days_off (doctor_user_id, off_date, note) VALUES (?,?,?)', [uid, date, note || null]),
   removeDayOff: (uid, id) => query('DELETE FROM doctor_days_off WHERE id=? AND doctor_user_id=?', [id, uid]),
@@ -430,6 +441,7 @@ export const Doctors = {
   removeAll: async (uid) => {
     await query('DELETE FROM doctor_availability WHERE doctor_user_id=?', [uid]);
     await query('DELETE FROM doctor_days_off WHERE doctor_user_id=?', [uid]);
+    await query('DELETE FROM doctor_date_availability WHERE doctor_user_id=?', [uid]).catch(() => {});
     await query('DELETE FROM doctors WHERE user_id=?', [uid]);
   },
 };

@@ -22,7 +22,7 @@ router.get('/', async (req, res) => res.json((await Staff.list()).map(shape)));
 router.get('/:id', async (req, res) => {
   const s = await Staff.byId(req.params.id);
   if (!s) return res.status(404).json({ error: 'not_found' });
-  const extra = s.user_id ? { availability: await Doctors.availability(s.user_id), days_off: await Doctors.daysOff(s.user_id) } : {};
+  const extra = s.user_id ? { availability: await Doctors.availability(s.user_id), days_off: await Doctors.daysOff(s.user_id), date_availability: await Doctors.dateAvailability(s.user_id).catch(() => []) } : {};
   res.json({ ...shape(s), ...extra });
 });
 
@@ -52,6 +52,7 @@ router.put('/:id', async (req, res) => {
         await Doctors.upsertProfile(cur.user_id, { slot_minutes: b.slot_minutes ?? cur.slot_minutes, is_published: b.is_published ?? cur.is_published, sort_order: b.sort_order ?? cur.sort_order });
       }
       if (Array.isArray(b.availability)) await Doctors.setAvailability(cur.user_id, b.availability);
+      if (Array.isArray(b.date_availability)) await Doctors.setDateAvailability(cur.user_id, b.date_availability);
     }
     await Audit.log(req.admin.id, 'update', 'staff', cur.id);
     res.json({ ok: true });

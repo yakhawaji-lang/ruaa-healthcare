@@ -46,7 +46,11 @@ export async function freeSlots(doctorId, date, { minLeadMinutes = 30 } = {}) {
   const doc = await Doctors.byId(doctorId);
   if (!doc || !doc.is_active) return [];
   if (await Doctors.isDayOff(doctorId, date)) return [];
-  const rules = (await Doctors.availability(doctorId)).filter((r) => Number(r.weekday) === weekdayOf(date));
+  // weekly rules for that weekday + any date-specific extra hours on that exact date
+  const rules = [
+    ...(await Doctors.availability(doctorId)).filter((r) => Number(r.weekday) === weekdayOf(date)),
+    ...(await Doctors.dateAvailabilityOn(doctorId, date).catch(() => [])),
+  ];
   if (!rules.length) return [];
   const step = Math.max(5, Number(doc.slot_minutes) || 20);
   const booked = new Set((await Consultations.bookedOn(doctorId, date)).map((b) => b.t));
@@ -69,7 +73,10 @@ export async function slotStatus(doctorId, at, excludeId = null) {
   const [date, time] = at.split(' ');
   const taken = await Consultations.isSlotTaken(doctorId, at + ':00', excludeId);
   if (taken) return 'taken';
-  const rules = (await Doctors.availability(doctorId)).filter((r) => Number(r.weekday) === weekdayOf(date));
+  const rules = [
+    ...(await Doctors.availability(doctorId)).filter((r) => Number(r.weekday) === weekdayOf(date)),
+    ...(await Doctors.dateAvailabilityOn(doctorId, date).catch(() => [])),
+  ];
   const inRule = rules.some((r) => time >= r.start_time && time < r.end_time);
   const off = await Doctors.isDayOff(doctorId, date);
   return inRule && !off ? 'free' : 'outside';

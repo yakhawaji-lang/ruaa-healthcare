@@ -232,3 +232,24 @@
 .av-times label { display: flex; flex-direction: column; gap: 4px; font-size: 0.8rem; color: var(--muted); font-weight: 600; }
 .av-times input { padding: 9px 10px; border: 1.5px solid var(--line); border-radius: 10px; font-family: inherit; font-size: 0.95rem; width: 100%; }
 .av-dialog-foot { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; }
+
+/* availability — date-specific ranges + embedded calendar (styles duplicated from admin.css
+   so the doctor portal, which does not load admin.css, renders it too) */
+.av-group-h { display: flex; align-items: center; gap: 6px; font-size: 0.78rem; font-weight: 800; color: var(--muted); text-transform: uppercase; letter-spacing: 0.02em; margin: 6px 0 2px; }
+.av-day-name.av-date { flex-basis: 132px; font-variant-numeric: tabular-nums; text-align: start; }
+.av-count { font-weight: 600; color: var(--teal-dark); margin-inline-start: 6px; font-size: 0.78rem; }
+.av-cal { margin-bottom: 10px; }
+.av-cal .mdc { border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; background: #fff; }
+.av-cal .mdc-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+.av-cal .mdc-head strong { color: var(--navy); font-size: 0.98rem; }
+.av-cal .mdc-nav { width: 32px; height: 32px; border: 1px solid var(--line); background: #fff; border-radius: 8px; display: grid; place-items: center; cursor: pointer; color: var(--navy); }
+.av-cal .mdc-nav:hover { border-color: var(--teal); color: var(--teal-dark); background: var(--teal-light); }
+.av-cal .mdc-wd { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; margin-bottom: 4px; }
+.av-cal .mdc-wd span { text-align: center; font-size: 0.7rem; font-weight: 700; color: var(--muted); padding: 2px 0; }
+.av-cal .mdc-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+.av-cal .mdc-empty { aspect-ratio: 1; }
+.av-cal .mdc-day { aspect-ratio: 1; border: 1px solid transparent; border-radius: 9px; background: #f5f9fa; color: var(--navy); font-family: inherit; font-weight: 700; font-size: 0.86rem; cursor: pointer; transition: all 0.12s; }
+.av-cal .mdc-day:hover:not(:disabled) { background: var(--teal-light); border-color: var(--teal); }
+.av-cal .mdc-day.today { border-color: var(--teal); }
+.av-cal .mdc-day.sel { background: var(--navy); color: #fff; border-color: var(--navy); }
+.av-cal .mdc-day:disabled { color: #c2ccd2; background: #fafbfc; cursor: default; }

@@ -82,19 +82,20 @@ export default function DoctorPortal() {
 
 function AvailabilityPanel({ tt, lang }) {
   const [rules, setRules] = useState(null);
+  const [dates, setDates] = useState([]);
   const [off, setOff] = useState([]);
   const [newOff, setNewOff] = useState({ date: '', note: '' });
   const [saved, setSaved] = useState(false);
-  const load = () => DoctorAPI.me().then((r) => { setRules(r.availability || []); setOff(r.days_off || []); });
+  const load = () => DoctorAPI.me().then((r) => { setRules(r.availability || []); setDates(r.date_availability || []); setOff(r.days_off || []); });
   useEffect(() => { load(); }, []);
-  const save = async () => { await DoctorAPI.setAvailability(rules.filter((r) => r.start_time < r.end_time)); setSaved(true); setTimeout(() => setSaved(false), 2000); load(); };
+  const save = async () => { await DoctorAPI.setAvailability(rules.filter((r) => r.start_time < r.end_time), dates); setSaved(true); setTimeout(() => setSaved(false), 2000); load(); };
   const addOff = async () => { if (!newOff.date) return; await DoctorAPI.addDayOff(newOff.date, newOff.note); setNewOff({ date: '', note: '' }); load(); };
   if (rules === null) return <div className="page-loader"><div className="spinner" /></div>;
   return (
     <section className="portal-section">
       <div className="panel">
         <h2 className="portal-h2"><Settings2 size={20} /> {tt.tab_avail}</h2>
-        <AvailabilityEditor rules={rules} onChange={setRules} />
+        <AvailabilityEditor rules={rules} onChange={setRules} dates={dates} onChangeDates={setDates} />
         <div className="tm-actions-row">
           <button type="button" className="btn btn-primary" onClick={save}><Save size={16} /> {tt.save}</button>
           {saved && <span className="tm-saved">{tt.saved}</span>}

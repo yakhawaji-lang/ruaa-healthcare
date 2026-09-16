@@ -38,7 +38,7 @@ const T = {
     // access cards
     tm_title: 'الطب الاتصالي', tm_off: 'لا يملك حسابًا للطب الاتصالي.', tm_on: 'يملك حسابًا — يدخل من /login ويرى جدوله وينضم للاستشارات.',
     tm_email: 'بريد الدخول', tm_password: 'كلمة المرور', tm_grant: 'منح الصلاحية', tm_revoke: 'سحب الصلاحية', tm_confirm_revoke: 'سحب صلاحية الطب الاتصالي؟ سيُغلق حساب الدخول وتبقى استشاراته السابقة.',
-    slot: 'مدة الاستشارة (دقيقة)', published: 'يظهر للمرضى في الحجز الذاتي', availability: 'أوقات التوفر الأسبوعية', days_off: 'أيام الإجازة', add_off: 'إضافة',
+    slot: 'مدة الاستشارة (دقيقة)', published: 'يظهر للمرضى في الحجز الذاتي', availability: 'أوقات التوفر', days_off: 'أيام الإجازة', add_off: 'إضافة',
     reset_pw: 'تغيير كلمة المرور', new_pw: 'كلمة المرور الجديدة', pw_done: 'تم تحديث كلمة المرور',
     ad_title: 'لوحة التحكم', ad_off: 'لا يملك حساب دخول للوحة التحكم.', ad_on: 'يملك حساب دخول للوحة التحكم.', ad_super_only: 'منح صلاحية لوحة التحكم متاح لمدير النظام فقط.',
     ad_link: 'ربط بحساب موجود', ad_pick: 'اختر مستخدمًا...', ad_create: 'إنشاء حساب جديد', ad_email: 'بريد الدخول', ad_password: 'كلمة المرور', ad_grant: 'منح الصلاحية',
@@ -66,7 +66,7 @@ const T = {
     email_taken: 'Email already used by another account', weak: 'Password too short (6 chars)', failed: 'Could not save', save_first: 'Save the details first, then grant access from the "Access & accounts" tab.',
     tm_title: 'Telemedicine', tm_off: 'No telemedicine account.', tm_on: 'Has an account — signs in at /login to see the schedule and join consultations.',
     tm_email: 'Login email', tm_password: 'Password', tm_grant: 'Grant access', tm_revoke: 'Revoke access', tm_confirm_revoke: 'Revoke telemedicine access? The login is closed; past consultations stay.',
-    slot: 'Consultation length (min)', published: 'Visible to patients for self-booking', availability: 'Weekly availability', days_off: 'Days off', add_off: 'Add',
+    slot: 'Consultation length (min)', published: 'Visible to patients for self-booking', availability: 'Availability', days_off: 'Days off', add_off: 'Add',
     reset_pw: 'Change password', new_pw: 'New password', pw_done: 'Password updated',
     ad_title: 'Control panel', ad_off: 'No control-panel login.', ad_on: 'Has a control-panel login.', ad_super_only: 'Granting control-panel access is for the super admin only.',
     ad_link: 'Link an existing user', ad_pick: 'Pick a user...', ad_create: 'Create a new user', ad_email: 'Login email', ad_password: 'Password', ad_grant: 'Grant access',
@@ -311,6 +311,7 @@ function AccessPanel({ s, tt, lang, isSuper, canEdit, reload }) {
   const [slot, setSlot] = useState(s.slot_minutes || 20);
   const [pub, setPub] = useState(s.is_published == null ? true : !!s.is_published);
   const [rules, setRules] = useState(s.availability || []);
+  const [dates, setDates] = useState(s.date_availability || []);
   const [off, setOff] = useState(s.days_off || []);
   const [newOff, setNewOff] = useState('');
   const [admins, setAdmins] = useState([]);
@@ -319,13 +320,13 @@ function AccessPanel({ s, tt, lang, isSuper, canEdit, reload }) {
   const [msg, setMsg] = useState('');
   const [busy, setBusy] = useState(false);
   useEffect(() => { if (isSuper) AdminAPI.admins().then(setAdmins).catch(() => {}); }, [isSuper]);
-  useEffect(() => { setRules(s.availability || []); setOff(s.days_off || []); setSlot(s.slot_minutes || 20); setPub(s.is_published == null ? true : !!s.is_published); }, [s.id, s.user_id]);
+  useEffect(() => { setRules(s.availability || []); setDates(s.date_availability || []); setOff(s.days_off || []); setSlot(s.slot_minutes || 20); setPub(s.is_published == null ? true : !!s.is_published); }, [s.id, s.user_id]);
   const linkedAdminIds = new Set();
   const err = (e) => { const c = e?.response?.data?.error; setMsg(c === 'email_taken' ? tt.email_taken : c === 'weak_password' ? tt.weak : c === 'admin_linked' ? tt.linked : tt.failed); };
 
-  const grantTm = async () => { setBusy(true); setMsg(''); try { await AdminAPI.staffGrantTelemed(s.id, { email: tm.email, password: tm.password, slot_minutes: slot, is_published: pub ? 1 : 0, availability: rules }); await reload(); } catch (e) { err(e); } finally { setBusy(false); } };
+  const grantTm = async () => { setBusy(true); setMsg(''); try { await AdminAPI.staffGrantTelemed(s.id, { email: tm.email, password: tm.password, slot_minutes: slot, is_published: pub ? 1 : 0, availability: rules, date_availability: dates }); await reload(); } catch (e) { err(e); } finally { setBusy(false); } };
   const revokeTm = async () => { if (!confirm(tt.tm_confirm_revoke)) return; await AdminAPI.staffRevokeTelemed(s.id); await reload(); };
-  const saveTm = async () => { setBusy(true); setMsg(''); try { await AdminAPI.updateStaff(s.id, { ...s, slot_minutes: slot, is_published: pub ? 1 : 0, availability: rules.filter((r) => r.start_time < r.end_time) }); setMsg(tt.saved); await reload(); } catch (e) { err(e); } finally { setBusy(false); } };
+  const saveTm = async () => { setBusy(true); setMsg(''); try { await AdminAPI.updateStaff(s.id, { ...s, slot_minutes: slot, is_published: pub ? 1 : 0, availability: rules.filter((r) => r.start_time < r.end_time), date_availability: dates }); setMsg(tt.saved); await reload(); } catch (e) { err(e); } finally { setBusy(false); } };
   const addOff = async () => { if (!newOff || !s.user_id) return; await AdminAPI.addDoctorDayOff(s.user_id, newOff); setNewOff(''); await reload(); };
   const removeOff = async (oid) => { await AdminAPI.removeDoctorDayOff(s.user_id, oid); await reload(); };
   const grantAd = async () => { setBusy(true); setMsg(''); try { await AdminAPI.staffGrantAdmin(s.id, ad.mode === 'link' ? { admin_id: ad.admin_id } : { email: ad.email, password: ad.password }); await reload(); } catch (e) { err(e); } finally { setBusy(false); } };
@@ -364,7 +365,7 @@ function AccessPanel({ s, tt, lang, isSuper, canEdit, reload }) {
                   <div className="field"><label>&nbsp;</label><label className="tm-check"><input type="checkbox" checked={pub} onChange={(e) => setPub(e.target.checked)} /> <span>{tt.published}</span></label></div>
                 </div>
                 <h4 className="st-h4"><Clock size={14} /> {tt.availability}</h4>
-                <AvailabilityEditor rules={rules} onChange={setRules} />
+                <AvailabilityEditor rules={rules} onChange={setRules} dates={dates} onChangeDates={setDates} />
                 <div className="tm-actions-row"><button type="button" className="btn btn-primary" disabled={busy || !tm.email || !tm.password} onClick={grantTm}><Video size={15} /> {tt.tm_grant}</button></div>
               </>
             )}
@@ -380,7 +381,7 @@ function AccessPanel({ s, tt, lang, isSuper, canEdit, reload }) {
                   <div className="field"><label>&nbsp;</label><label className="tm-check"><input type="checkbox" checked={pub} onChange={(e) => setPub(e.target.checked)} /> <span>{tt.published}</span></label></div>
                 </div>
                 <h4 className="st-h4"><Clock size={14} /> {tt.availability}</h4>
-                <AvailabilityEditor rules={rules} onChange={setRules} />
+                <AvailabilityEditor rules={rules} onChange={setRules} dates={dates} onChangeDates={setDates} />
                 <h4 className="st-h4">{tt.days_off}</h4>
                 {off.length > 0 && <ul className="tm-off-list">{off.map((o) => <li key={o.id}><b dir="ltr">{o.off_date}</b>{o.note && <span> — {o.note}</span>}<button type="button" className="tm-icon-btn danger" onClick={() => removeOff(o.id)}><Trash size={15} /></button></li>)}</ul>}
                 <div className="tm-off-add" style={{ gridTemplateColumns: 'auto auto' }}>

@@ -122,8 +122,8 @@ export const doctorRouter = Router();
 doctorRouter.use(requireUser, requireRole('doctor'));
 
 doctorRouter.get('/me', async (req, res) => {
-  const [doc, rules, off] = await Promise.all([Doctors.byId(req.user.uid), Doctors.availability(req.user.uid), Doctors.daysOff(req.user.uid)]);
-  res.json({ profile: doc || {}, availability: rules, days_off: off });
+  const [doc, rules, off, dates] = await Promise.all([Doctors.byId(req.user.uid), Doctors.availability(req.user.uid), Doctors.daysOff(req.user.uid), Doctors.dateAvailability(req.user.uid).catch(() => [])]);
+  res.json({ profile: doc || {}, availability: rules, days_off: off, date_availability: dates });
 });
 doctorRouter.put('/me', async (req, res) => {
   const cur = await Doctors.byId(req.user.uid);
@@ -135,7 +135,9 @@ doctorRouter.put('/me', async (req, res) => {
 });
 doctorRouter.put('/availability', async (req, res) => {
   const n = await Doctors.setAvailability(req.user.uid, req.body?.rules || []);
-  res.json({ ok: true, rules: n });
+  let d = 0;
+  if (Array.isArray(req.body?.dates)) d = await Doctors.setDateAvailability(req.user.uid, req.body.dates);
+  res.json({ ok: true, rules: n, dates: d });
 });
 doctorRouter.post('/days-off', async (req, res) => {
   const { date, note } = req.body || {};
@@ -211,9 +213,9 @@ export const adminRouter = Router();
 /* ---- Doctors (accounts + profile + availability) ---- */
 adminRouter.get('/doctors', async (req, res) => res.json(await Doctors.listAdmin()));
 adminRouter.get('/doctors/:id', async (req, res) => {
-  const [doc, rules, off] = await Promise.all([Doctors.byId(req.params.id), Doctors.availability(req.params.id), Doctors.daysOff(req.params.id)]);
+  const [doc, rules, off, dates] = await Promise.all([Doctors.byId(req.params.id), Doctors.availability(req.params.id), Doctors.daysOff(req.params.id), Doctors.dateAvailability(req.params.id).catch(() => [])]);
   if (!doc) return res.status(404).json({ error: 'not_found' });
-  res.json({ ...doc, availability: rules, days_off: off });
+  res.json({ ...doc, availability: rules, days_off: off, date_availability: dates });
 });
 adminRouter.post('/doctors', async (req, res) => {
   const b = req.body || {};
@@ -257,7 +259,9 @@ adminRouter.put('/doctors/:id', async (req, res) => {
 });
 adminRouter.put('/doctors/:id/availability', async (req, res) => {
   const n = await Doctors.setAvailability(req.params.id, req.body?.rules || []);
-  res.json({ ok: true, rules: n });
+  let d = 0;
+  if (Array.isArray(req.body?.dates)) d = await Doctors.setDateAvailability(req.params.id, req.body.dates);
+  res.json({ ok: true, rules: n, dates: d });
 });
 adminRouter.post('/doctors/:id/days-off', async (req, res) => {
   const { date, note } = req.body || {};

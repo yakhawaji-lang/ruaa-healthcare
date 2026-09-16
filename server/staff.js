@@ -63,7 +63,7 @@ export async function ensureStaffImported() {
 
 /* ---------------- Telemedicine access ---------------- */
 // Creates (or links) the users.role='doctor' account + doctors row for a staff record.
-export async function grantTelemed(staffId, { email, password, slot_minutes, is_published, availability }) {
+export async function grantTelemed(staffId, { email, password, slot_minutes, is_published, availability, date_availability }) {
   const st = await Staff.byId(staffId);
   if (!st) throw Object.assign(new Error('not_found'), { code: 'not_found' });
   if (st.user_id) return { user_id: st.user_id, existed: true };
@@ -80,6 +80,7 @@ export async function grantTelemed(staffId, { email, password, slot_minutes, is_
   }
   await Doctors.upsertProfile(user.id, { slot_minutes: slot_minutes || 20, is_published: is_published === 0 || is_published === false ? 0 : 1, sort_order: st.sort_order });
   if (Array.isArray(availability)) await Doctors.setAvailability(user.id, availability);
+  if (Array.isArray(date_availability)) await Doctors.setDateAvailability(user.id, date_availability);
   await Staff.setUser(staffId, user.id);
   if (!st.email) await query('UPDATE staff SET email=? WHERE id=?', [mail, staffId]);
   return { user_id: user.id, existed: false };
