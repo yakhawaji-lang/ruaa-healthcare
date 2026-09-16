@@ -30,15 +30,29 @@ export const WEEKDAYS_SHORT = {
 };
 
 // Doctor display name with title (د. / Dr.)
+// Provider display name. "د./Dr." prefix only for physicians (profession contains طبيب / doctor)
+// or when an explicit title is set; nurses, physiotherapists etc. are shown by name.
+export const isPhysician = (c) => {
+  const p = `${c?.doctor_profession_ar || c?.profession_ar || ''} ${c?.doctor_profession_en || c?.profession_en || ''}`.toLowerCase();
+  return !p.trim() || p.includes('طبيب') || p.includes('doctor') || p.includes('physician');
+};
 export const doctorName = (c, lang = 'ar') => {
   const name = c?.doctor_name || c?.name || '';
   if (!name) return '';
   const title = lang === 'en' ? (c.doctor_title_en || c.title_en) : (c.doctor_title_ar || c.title_ar);
-  return title ? `${title} ${name}` : (lang === 'en' ? `Dr. ${name}` : `د. ${name}`);
+  if (title) return `${title} ${name}`;
+  return isPhysician(c) ? (lang === 'en' ? `Dr. ${name}` : `د. ${name}`) : name;
 };
-export const doctorSpecialty = (c, lang = 'ar') =>
-  (lang === 'en' ? (c?.doctor_specialty_en || c?.specialty_en || c?.doctor_specialty_ar || c?.specialty_ar)
+export const doctorProfession = (c, lang = 'ar') =>
+  (lang === 'en' ? (c?.doctor_profession_en || c?.profession_en || c?.doctor_profession_ar || c?.profession_ar)
+    : (c?.doctor_profession_ar || c?.profession_ar || c?.doctor_profession_en || c?.profession_en)) || '';
+// "profession — specialty" (e.g. ممرض/ة — عناية جروح), falling back to whichever exists
+export const doctorSpecialty = (c, lang = 'ar') => {
+  const spec = (lang === 'en' ? (c?.doctor_specialty_en || c?.specialty_en || c?.doctor_specialty_ar || c?.specialty_ar)
     : (c?.doctor_specialty_ar || c?.specialty_ar || c?.doctor_specialty_en || c?.specialty_en)) || '';
+  const prof = doctorProfession(c, lang);
+  return [prof, spec].filter(Boolean).join(' — ');
+};
 
 // 'YYYY-MM-DD HH:MM' (local wall-clock) → readable pieces, Latin numerals.
 export const splitAt = (at) => {

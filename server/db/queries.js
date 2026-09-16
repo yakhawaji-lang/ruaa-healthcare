@@ -375,24 +375,31 @@ export const PromoCodes = {
 
 /* ---------------- Telemedicine: doctors ---------------- */
 const DOCTOR_COLS = `u.id, u.name, u.email, u.phone, u.is_active, u.created_at,
-  d.title_ar, d.title_en, d.specialty_ar, d.specialty_en, d.bio_ar, d.bio_en, d.photo, d.slot_minutes, d.is_published, d.sort_order`;
+  d.title_ar, d.title_en, d.specialty_ar, d.specialty_en, d.bio_ar, d.bio_en, d.photo, d.slot_minutes, d.is_published, d.sort_order,
+  d.profession_ar, d.profession_en, d.provider_type, d.staff_ref, d.organization, d.license_no,
+  DATE_FORMAT(d.contract_start, '%Y-%m-%d') AS contract_start, DATE_FORMAT(d.contract_end, '%Y-%m-%d') AS contract_end, d.contract_notes`;
 export const Doctors = {
   // all doctor accounts (admin)
   listAdmin: () => query(`SELECT ${DOCTOR_COLS} FROM users u LEFT JOIN doctors d ON d.user_id = u.id
     WHERE u.role='doctor' AND u.deleted_at IS NULL ORDER BY d.sort_order, u.name`),
   // published + active doctors (patients' self-booking list)
-  listPublic: () => query(`SELECT u.id, u.name, d.title_ar, d.title_en, d.specialty_ar, d.specialty_en, d.bio_ar, d.bio_en, d.photo, d.slot_minutes
+  listPublic: () => query(`SELECT u.id, u.name, d.title_ar, d.title_en, d.specialty_ar, d.specialty_en, d.profession_ar, d.profession_en, d.bio_ar, d.bio_en, d.photo, d.slot_minutes
     FROM users u JOIN doctors d ON d.user_id = u.id
     WHERE u.role='doctor' AND u.deleted_at IS NULL AND u.is_active=1 AND d.is_published=1 ORDER BY d.sort_order, u.name`),
   byId: (id) => query(`SELECT ${DOCTOR_COLS} FROM users u LEFT JOIN doctors d ON d.user_id = u.id
     WHERE u.id=? AND u.role='doctor' AND u.deleted_at IS NULL LIMIT 1`, [id]).then((r) => r[0] || null),
   upsertProfile: (uid, p) => query(
-    `INSERT INTO doctors (user_id, title_ar, title_en, specialty_ar, specialty_en, bio_ar, bio_en, photo, slot_minutes, is_published, sort_order)
-     VALUES (?,?,?,?,?,?,?,?,?,?,?)
+    `INSERT INTO doctors (user_id, title_ar, title_en, specialty_ar, specialty_en, bio_ar, bio_en, photo, slot_minutes, is_published, sort_order,
+       profession_ar, profession_en, provider_type, staff_ref, organization, license_no, contract_start, contract_end, contract_notes)
+     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
      ON DUPLICATE KEY UPDATE title_ar=VALUES(title_ar), title_en=VALUES(title_en), specialty_ar=VALUES(specialty_ar), specialty_en=VALUES(specialty_en),
-       bio_ar=VALUES(bio_ar), bio_en=VALUES(bio_en), photo=VALUES(photo), slot_minutes=VALUES(slot_minutes), is_published=VALUES(is_published), sort_order=VALUES(sort_order)`,
+       bio_ar=VALUES(bio_ar), bio_en=VALUES(bio_en), photo=VALUES(photo), slot_minutes=VALUES(slot_minutes), is_published=VALUES(is_published), sort_order=VALUES(sort_order),
+       profession_ar=VALUES(profession_ar), profession_en=VALUES(profession_en), provider_type=VALUES(provider_type), staff_ref=VALUES(staff_ref),
+       organization=VALUES(organization), license_no=VALUES(license_no), contract_start=VALUES(contract_start), contract_end=VALUES(contract_end), contract_notes=VALUES(contract_notes)`,
     [uid, p.title_ar || null, p.title_en || null, p.specialty_ar || null, p.specialty_en || null, p.bio_ar || null, p.bio_en || null, p.photo || null,
-      Math.max(5, Number(p.slot_minutes) || 20), (p.is_published === 0 || p.is_published === false) ? 0 : 1, Number(p.sort_order) || 0]),
+      Math.max(5, Number(p.slot_minutes) || 20), (p.is_published === 0 || p.is_published === false) ? 0 : 1, Number(p.sort_order) || 0,
+      p.profession_ar || null, p.profession_en || null, p.provider_type === 'visiting' ? 'visiting' : 'staff', p.staff_ref || null,
+      p.organization || null, p.license_no || null, p.contract_start || null, p.contract_end || null, p.contract_notes || null]),
   // weekly availability rules
   availability: (uid) => query('SELECT id, weekday, start_time, end_time FROM doctor_availability WHERE doctor_user_id=? ORDER BY weekday, start_time', [uid]),
   setAvailability: async (uid, rules = []) => {
@@ -421,7 +428,7 @@ const CONS_COLS = `c.id, c.ref, c.user_id, c.doctor_user_id, c.mode, c.source, c
   DATE_FORMAT(c.scheduled_at, '%Y-%m-%d %H:%i') AS scheduled_at, c.duration_min, c.patient_name, c.phone, c.complaint, c.preferred_note,
   c.price, c.room, DATE_FORMAT(c.started_at, '%Y-%m-%d %H:%i') AS started_at, DATE_FORMAT(c.ended_at, '%Y-%m-%d %H:%i') AS ended_at,
   c.doctor_notes, c.diagnosis, c.prescription, c.follow_up, c.created_at, c.updated_at,
-  du.name AS doctor_name, d.title_ar AS doctor_title_ar, d.title_en AS doctor_title_en, d.specialty_ar AS doctor_specialty_ar, d.specialty_en AS doctor_specialty_en, d.photo AS doctor_photo,
+  du.name AS doctor_name, d.title_ar AS doctor_title_ar, d.title_en AS doctor_title_en, d.specialty_ar AS doctor_specialty_ar, d.specialty_en AS doctor_specialty_en, d.profession_ar AS doctor_profession_ar, d.profession_en AS doctor_profession_en, d.photo AS doctor_photo,
   pu.name AS user_name, pu.email AS user_email, pu.phone AS user_phone`;
 const CONS_FROM = `FROM consultations c
   LEFT JOIN users du ON du.id = c.doctor_user_id

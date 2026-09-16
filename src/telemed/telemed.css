@@ -165,6 +165,9 @@
 .tm-mode-toggle button.active { border-color: var(--teal); background: var(--teal-light); color: var(--navy); }
 .tm-doc-card { display: flex; align-items: center; gap: 12px; }
 .tm-doc-card small { color: var(--muted); display: block; }
+.tm-badge-visiting { background: #fff3e6; color: #b45f06; display: inline-flex; align-items: center; gap: 4px; }
+.tm-badge-visiting small { font-weight: 600; opacity: 0.8; }
+.badge.ok { display: inline-flex; align-items: center; gap: 4px; }
 
 @media (max-width: 760px) {
   .tm-choice-grid, .tm-summary, .tm-admin-layout { grid-template-columns: 1fr; }

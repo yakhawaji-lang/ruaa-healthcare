@@ -13,16 +13,16 @@ import './telemed.css';
 
 const T = {
   ar: {
-    back: 'رجوع لحسابي', consultation: 'استشارة عن بُعد', doctor: 'الطبيب', when: 'الموعد', tbd: 'يُحدَّد لاحقًا', mode: 'النوع', price: 'الرسوم', sar: 'ريال',
+    back: 'رجوع لحسابي', consultation: 'استشارة عن بُعد', doctor: 'الممارس الصحي', when: 'الموعد', tbd: 'يُحدَّد لاحقًا', mode: 'النوع', price: 'الرسوم', sar: 'ريال',
     complaint: 'سبب الاستشارة', join: 'دخول غرفة الاستشارة', join_hint: (m) => (m > 0 ? `يمكنك الدخول قبل الموعد بـ 15 دقيقة (متبقٍ ${m} دقيقة)` : 'الغرفة مفتوحة الآن'),
     cancel: 'إلغاء الاستشارة', confirm_cancel: 'هل تريد إلغاء هذه الاستشارة؟', tracking: 'متابعة الاستشارة', thread: 'المراسلات مع إدارة رؤى',
-    summary: 'ملخص الطبيب', diagnosis: 'التشخيص', notes: 'الملاحظات الطبية', prescription: 'الوصفة / التوصيات', follow_up: 'المتابعة', preferred: 'الوقت المفضّل',
+    summary: 'ملخص الممارس', diagnosis: 'التشخيص', notes: 'الملاحظات الطبية', prescription: 'الوصفة / التوصيات', follow_up: 'المتابعة', preferred: 'الوقت المفضّل',
   },
   en: {
-    back: 'Back to my account', consultation: 'Remote consultation', doctor: 'Doctor', when: 'Appointment', tbd: 'To be set', mode: 'Type', price: 'Fee', sar: 'SAR',
+    back: 'Back to my account', consultation: 'Remote consultation', doctor: 'Provider', when: 'Appointment', tbd: 'To be set', mode: 'Type', price: 'Fee', sar: 'SAR',
     complaint: 'Reason', join: 'Join the consultation room', join_hint: (m) => (m > 0 ? `You can join 15 minutes before the start (${m} minutes left)` : 'The room is open now'),
     cancel: 'Cancel consultation', confirm_cancel: 'Cancel this consultation?', tracking: 'Consultation tracking', thread: 'Messages with RU-MD administration',
-    summary: "Doctor's summary", diagnosis: 'Diagnosis', notes: 'Clinical notes', prescription: 'Prescription / advice', follow_up: 'Follow-up', preferred: 'Preferred time',
+    summary: "Provider's summary", diagnosis: 'Diagnosis', notes: 'Clinical notes', prescription: 'Prescription / advice', follow_up: 'Follow-up', preferred: 'Preferred time',
   },
 };
 

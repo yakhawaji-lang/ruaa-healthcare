@@ -13,8 +13,8 @@ import NotificationBell from '../notifications/NotificationBell.jsx';
 import './account.css';
 
 const T = {
-  ar: { insurance_account: 'حساب شركة تأمين', visitor_account: 'حساب عميل', doctor_account: 'حساب طبيب', site: 'الموقع', logout: 'خروج' },
-  en: { insurance_account: 'Insurance company account', visitor_account: 'Client account', doctor_account: 'Doctor account', site: 'Website', logout: 'Logout' },
+  ar: { insurance_account: 'حساب شركة تأمين', visitor_account: 'حساب عميل', doctor_account: 'حساب ممارس صحي — الطب الاتصالي', site: 'الموقع', logout: 'خروج' },
+  en: { insurance_account: 'Insurance company account', visitor_account: 'Client account', doctor_account: 'Provider account — Telemedicine', site: 'Website', logout: 'Logout' },
 };
 
 export default function Portal() {
@@ -35,7 +35,7 @@ export default function Portal() {
           <div className="portal-id">
             <Logo size={40} />
             <div>
-              <strong>{isInsurance ? (user.company_name || user.name) : isDoctor ? `د. ${user.name}` : user.name}</strong>
+              <strong>{isInsurance ? (user.company_name || user.name) : user.name}</strong>
               <span className="portal-role">
                 {isInsurance ? <><Building2 size={13} /> {tt.insurance_account}</>
                   : isDoctor ? <><Stethoscope size={13} /> {tt.doctor_account}</>

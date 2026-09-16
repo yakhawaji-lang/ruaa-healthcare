@@ -11,8 +11,8 @@ export function ConsPill({ status }) {
 }
 
 const T = {
-  ar: { join: 'دخول الغرفة', tbd: 'الموعد يُحدَّد لاحقًا', patient: 'المريض', doctor: 'الطبيب' },
-  en: { join: 'Join room', tbd: 'Time to be set', patient: 'Patient', doctor: 'Doctor' },
+  ar: { join: 'دخول الغرفة', tbd: 'الموعد يُحدَّد لاحقًا', patient: 'المريض', doctor: 'الممارس' },
+  en: { join: 'Join room', tbd: 'Time to be set', patient: 'Patient', doctor: 'Provider' },
 };
 
 // audience: 'patient' | 'doctor' | 'admin' — controls the counter-party shown and the link target.
