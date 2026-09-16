@@ -22,7 +22,7 @@ export const Admins = {
 // Is this admin a super admin (full access)? NULL permissions = legacy super.
 export const isSuperAdmin = (a) => !!a && (a.role === 'super' || a.permissions == null);
 export const parsePerms = (a) => { try { return a?.permissions ? JSON.parse(a.permissions) : null; } catch { return null; } };
-export const ADMIN_PAGES = ['dashboard', 'requests', 'cases', 'visits', 'telemed', 'insurers', 'clients', 'hero', 'partners', 'services', 'pages', 'messages', 'settings'];
+export const ADMIN_PAGES = ['dashboard', 'requests', 'cases', 'visits', 'telemed', 'staff', 'insurers', 'clients', 'hero', 'partners', 'services', 'pages', 'messages', 'settings'];
 
 /* ---------------- Settings ---------------- */
 export const Settings = {
@@ -374,19 +374,32 @@ export const PromoCodes = {
 };
 
 /* ---------------- Telemedicine: doctors ---------------- */
-const DOCTOR_COLS = `u.id, u.name, u.email, u.phone, u.is_active, u.created_at,
-  d.title_ar, d.title_en, d.specialty_ar, d.specialty_en, d.bio_ar, d.bio_en, d.photo, d.slot_minutes, d.is_published, d.sort_order,
-  d.profession_ar, d.profession_en, d.provider_type, d.staff_ref, d.organization, d.license_no,
-  DATE_FORMAT(d.contract_start, '%Y-%m-%d') AS contract_start, DATE_FORMAT(d.contract_end, '%Y-%m-%d') AS contract_end, d.contract_notes`;
+// Profile fields are read from the staff directory (master) with a fallback to the
+// legacy doctors columns for rows created before the directory existed.
+const DOCTOR_COLS = `u.id, u.name, u.email, u.phone, u.is_active, u.created_at, s.id AS staff_id,
+  COALESCE(s.title_ar, d.title_ar) AS title_ar, COALESCE(s.title_en, d.title_en) AS title_en,
+  COALESCE(s.specialty_ar, d.specialty_ar) AS specialty_ar, COALESCE(s.specialty_en, d.specialty_en) AS specialty_en,
+  COALESCE(s.bio_ar, d.bio_ar) AS bio_ar, COALESCE(s.bio_en, d.bio_en) AS bio_en, COALESCE(s.photo, d.photo) AS photo,
+  d.slot_minutes, d.is_published, d.sort_order,
+  COALESCE(s.profession_ar, d.profession_ar) AS profession_ar, COALESCE(s.profession_en, d.profession_en) AS profession_en,
+  COALESCE(s.staff_type, d.provider_type, 'staff') AS provider_type, COALESCE(s.organization, d.organization) AS organization,
+  COALESCE(s.license_no, d.license_no) AS license_no,
+  DATE_FORMAT(COALESCE(s.contract_start, d.contract_start), '%Y-%m-%d') AS contract_start,
+  DATE_FORMAT(COALESCE(s.contract_end, d.contract_end), '%Y-%m-%d') AS contract_end,
+  COALESCE(s.contract_notes, d.contract_notes) AS contract_notes`;
+const DOCTOR_FROM = `FROM users u LEFT JOIN doctors d ON d.user_id = u.id LEFT JOIN staff s ON s.user_id = u.id AND s.deleted_at IS NULL`;
 export const Doctors = {
   // all doctor accounts (admin)
-  listAdmin: () => query(`SELECT ${DOCTOR_COLS} FROM users u LEFT JOIN doctors d ON d.user_id = u.id
+  listAdmin: () => query(`SELECT ${DOCTOR_COLS} ${DOCTOR_FROM}
     WHERE u.role='doctor' AND u.deleted_at IS NULL ORDER BY d.sort_order, u.name`),
   // published + active doctors (patients' self-booking list)
-  listPublic: () => query(`SELECT u.id, u.name, d.title_ar, d.title_en, d.specialty_ar, d.specialty_en, d.profession_ar, d.profession_en, d.bio_ar, d.bio_en, d.photo, d.slot_minutes
-    FROM users u JOIN doctors d ON d.user_id = u.id
-    WHERE u.role='doctor' AND u.deleted_at IS NULL AND u.is_active=1 AND d.is_published=1 ORDER BY d.sort_order, u.name`),
-  byId: (id) => query(`SELECT ${DOCTOR_COLS} FROM users u LEFT JOIN doctors d ON d.user_id = u.id
+  listPublic: () => query(`SELECT u.id, u.name, COALESCE(s.title_ar, d.title_ar) AS title_ar, COALESCE(s.title_en, d.title_en) AS title_en,
+      COALESCE(s.specialty_ar, d.specialty_ar) AS specialty_ar, COALESCE(s.specialty_en, d.specialty_en) AS specialty_en,
+      COALESCE(s.profession_ar, d.profession_ar) AS profession_ar, COALESCE(s.profession_en, d.profession_en) AS profession_en,
+      COALESCE(s.bio_ar, d.bio_ar) AS bio_ar, COALESCE(s.bio_en, d.bio_en) AS bio_en, COALESCE(s.photo, d.photo) AS photo, d.slot_minutes
+    FROM users u JOIN doctors d ON d.user_id = u.id LEFT JOIN staff s ON s.user_id = u.id AND s.deleted_at IS NULL
+    WHERE u.role='doctor' AND u.deleted_at IS NULL AND u.is_active=1 AND d.is_published=1 AND (s.id IS NULL OR s.is_active=1) ORDER BY d.sort_order, u.name`),
+  byId: (id) => query(`SELECT ${DOCTOR_COLS} ${DOCTOR_FROM}
     WHERE u.id=? AND u.role='doctor' AND u.deleted_at IS NULL LIMIT 1`, [id]).then((r) => r[0] || null),
   upsertProfile: (uid, p) => query(
     `INSERT INTO doctors (user_id, title_ar, title_en, specialty_ar, specialty_en, bio_ar, bio_en, photo, slot_minutes, is_published, sort_order,
@@ -421,6 +434,49 @@ export const Doctors = {
   },
 };
 
+/* ---------------- Staff directory (الكادر الطبي) ---------------- */
+const STAFF_COLS = `st.id, st.name_ar, st.name_en, st.email, st.phone, st.photo, st.profession_ar, st.profession_en, st.roles_json,
+  st.title_ar, st.title_en, st.specialty_ar, st.specialty_en, st.bio_ar, st.bio_en, st.staff_type, st.organization, st.license_no,
+  DATE_FORMAT(st.contract_start, '%Y-%m-%d') AS contract_start, DATE_FORMAT(st.contract_end, '%Y-%m-%d') AS contract_end, st.contract_notes,
+  st.home_visits, st.admin_id, st.user_id, st.is_active, st.sort_order, st.created_at,
+  a.email AS admin_email, a.is_active AS admin_active, a.role AS admin_role,
+  u.email AS telemed_email, u.is_active AS telemed_active, d.slot_minutes, d.is_published`;
+const STAFF_FROM = `FROM staff st
+  LEFT JOIN admins a ON a.id = st.admin_id
+  LEFT JOIN users u ON u.id = st.user_id AND u.deleted_at IS NULL
+  LEFT JOIN doctors d ON d.user_id = st.user_id`;
+const STAFF_FIELDS = ['name_ar', 'name_en', 'email', 'phone', 'photo', 'profession_ar', 'profession_en', 'roles_json', 'title_ar', 'title_en',
+  'specialty_ar', 'specialty_en', 'bio_ar', 'bio_en', 'staff_type', 'organization', 'license_no', 'contract_start', 'contract_end', 'contract_notes',
+  'home_visits', 'is_active', 'sort_order'];
+const staffVals = (p) => STAFF_FIELDS.map((f) => {
+  if (f === 'roles_json') return Array.isArray(p.roles) ? JSON.stringify(p.roles) : (p.roles_json ?? null);
+  if (f === 'staff_type') return p.staff_type === 'visiting' ? 'visiting' : 'staff';
+  if (f === 'home_visits') return (p.home_visits === 0 || p.home_visits === false) ? 0 : 1;
+  if (f === 'is_active') return (p.is_active === 0 || p.is_active === false) ? 0 : 1;
+  if (f === 'sort_order') return Number(p.sort_order) || 0;
+  const v = p[f];
+  return v === '' || v === undefined ? null : v;
+});
+export const Staff = {
+  list: () => query(`SELECT ${STAFF_COLS} ${STAFF_FROM} WHERE st.deleted_at IS NULL ORDER BY st.sort_order, st.name_ar`),
+  byId: (id) => query(`SELECT ${STAFF_COLS} ${STAFF_FROM} WHERE st.id=? AND st.deleted_at IS NULL LIMIT 1`, [id]).then((r) => r[0] || null),
+  byUser: (uid) => query(`SELECT ${STAFF_COLS} ${STAFF_FROM} WHERE st.user_id=? AND st.deleted_at IS NULL LIMIT 1`, [uid]).then((r) => r[0] || null),
+  byAdmin: (aid) => query(`SELECT ${STAFF_COLS} ${STAFF_FROM} WHERE st.admin_id=? AND st.deleted_at IS NULL LIMIT 1`, [aid]).then((r) => r[0] || null),
+  count: () => query('SELECT COUNT(*) AS n FROM staff').then((r) => r[0].n),
+  create: (p) => query(`INSERT INTO staff (${STAFF_FIELDS.join(', ')}) VALUES (${STAFF_FIELDS.map(() => '?').join(', ')})`, staffVals(p)),
+  update: (id, p) => query(`UPDATE staff SET ${STAFF_FIELDS.map((f) => `${f}=?`).join(', ')} WHERE id=?`, [...staffVals(p), id]),
+  // partial profile update from the provider portal (doctor edits own bio / specialty)
+  updateProfileByUser: (uid, p) => query('UPDATE staff SET title_ar=?, title_en=?, specialty_ar=?, specialty_en=?, bio_ar=?, bio_en=?, photo=COALESCE(?, photo) WHERE user_id=? AND deleted_at IS NULL',
+    [p.title_ar || null, p.title_en || null, p.specialty_ar || null, p.specialty_en || null, p.bio_ar || null, p.bio_en || null, p.photo || null, uid]),
+  setUser: (id, uid) => query('UPDATE staff SET user_id=? WHERE id=?', [uid, id]),
+  setAdmin: (id, aid) => query('UPDATE staff SET admin_id=? WHERE id=?', [aid, id]),
+  setActive: (id, active) => query('UPDATE staff SET is_active=? WHERE id=?', [active ? 1 : 0, id]),
+  softDelete: (id) => query('UPDATE staff SET deleted_at=NOW(), user_id=NULL, admin_id=NULL WHERE id=?', [id]),
+  // compact list for the home-visit scheduler: active people with their roles
+  directory: () => query(`SELECT id, name_ar, name_en, profession_ar, profession_en, roles_json, staff_type FROM staff
+    WHERE deleted_at IS NULL AND is_active=1 AND home_visits=1 ORDER BY sort_order, name_ar`),
+};
+
 /* ---------------- Telemedicine: consultations ---------------- */
 // scheduled_at is returned as 'YYYY-MM-DD HH:MM' text (local wall-clock) to
 // avoid timezone shifts between the DB server and the browser.
@@ -428,11 +484,14 @@ const CONS_COLS = `c.id, c.ref, c.user_id, c.doctor_user_id, c.mode, c.source, c
   DATE_FORMAT(c.scheduled_at, '%Y-%m-%d %H:%i') AS scheduled_at, c.duration_min, c.patient_name, c.phone, c.complaint, c.preferred_note,
   c.price, c.room, DATE_FORMAT(c.started_at, '%Y-%m-%d %H:%i') AS started_at, DATE_FORMAT(c.ended_at, '%Y-%m-%d %H:%i') AS ended_at,
   c.doctor_notes, c.diagnosis, c.prescription, c.follow_up, c.created_at, c.updated_at,
-  du.name AS doctor_name, d.title_ar AS doctor_title_ar, d.title_en AS doctor_title_en, d.specialty_ar AS doctor_specialty_ar, d.specialty_en AS doctor_specialty_en, d.profession_ar AS doctor_profession_ar, d.profession_en AS doctor_profession_en, d.photo AS doctor_photo,
+  du.name AS doctor_name, COALESCE(ds.title_ar, d.title_ar) AS doctor_title_ar, COALESCE(ds.title_en, d.title_en) AS doctor_title_en,
+  COALESCE(ds.specialty_ar, d.specialty_ar) AS doctor_specialty_ar, COALESCE(ds.specialty_en, d.specialty_en) AS doctor_specialty_en,
+  COALESCE(ds.profession_ar, d.profession_ar) AS doctor_profession_ar, COALESCE(ds.profession_en, d.profession_en) AS doctor_profession_en, COALESCE(ds.photo, d.photo) AS doctor_photo,
   pu.name AS user_name, pu.email AS user_email, pu.phone AS user_phone`;
 const CONS_FROM = `FROM consultations c
   LEFT JOIN users du ON du.id = c.doctor_user_id
   LEFT JOIN doctors d ON d.user_id = c.doctor_user_id
+  LEFT JOIN staff ds ON ds.user_id = c.doctor_user_id AND ds.deleted_at IS NULL
   LEFT JOIN users pu ON pu.id = c.user_id`;
 export const Consultations = {
   create: (c) => query(

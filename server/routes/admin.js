@@ -9,6 +9,7 @@ import { Settings, Pages, Services, Messages, HeroSlides, Partners, Users, Servi
 import { saveDataUrl } from '../upload.js';
 import { publicKey as vapidPublicKey } from '../push.js';
 import { adminRouter as telemedAdminRoutes } from './telemed.js';
+import staffRoutes from './staff.js';
 import { Consultations } from '../db/queries.js';
 import { nowStr as telemedNow } from '../telemed.js';
 
@@ -19,7 +20,7 @@ const PAGE_PREFIX = [
   ['/requests', 'requests'], ['/cases', 'cases'], ['/visits', 'visits'], ['/insurers', 'insurers'],
   ['/clients', 'clients'], ['/hero', 'hero'], ['/partners', 'partners'], ['/services', 'services'],
   ['/pages', 'pages'], ['/messages', 'messages'], ['/settings', 'settings'], ['/promos', 'promos'],
-  ['/telemed', 'telemed'],
+  ['/telemed', 'telemed'], ['/staff', 'staff'],
 ];
 const ACTION_BY_METHOD = { GET: 'view', POST: 'create', PUT: 'edit', PATCH: 'edit', DELETE: 'delete' };
 const pageFromPath = (p) => { for (const [pre, page] of PAGE_PREFIX) if (p.startsWith(pre)) return page; return 'dashboard'; };
@@ -34,6 +35,12 @@ router.use(async (req, res, next) => {
     req.isSuper = sup;
     const p = req.path;
     if (p.startsWith('/upload') || p.startsWith('/notifications') || p.startsWith('/push')) return next(); // shared (any active admin)
+    if (p === '/staff/directory') {                       // clinician names list: visits / telemed / staff viewers
+      if (sup) return next();
+      const pg = parsePerms(a)?.pages || {};
+      if (pg.visits?.view || pg.telemed?.view || pg.staff?.view || pg.cases?.view || pg.requests?.view) return next();
+      return res.status(403).json({ error: 'forbidden' });
+    }
     if (p.startsWith('/admins')) {                        // user management = super only
       if (!sup) return res.status(403).json({ error: 'forbidden' });
       return next();
@@ -102,6 +109,7 @@ router.post('/upload-file', (req, res) => {
 
 /* ---- Telemedicine (doctors, availability, consultations) — page key "telemed" ---- */
 router.use('/telemed', telemedAdminRoutes);
+router.use('/staff', staffRoutes);
 
 /* ---- Dashboard summary ---- */
 router.get('/stats', async (req, res) => {

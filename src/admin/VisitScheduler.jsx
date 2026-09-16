@@ -48,7 +48,9 @@ export default function VisitScheduler({ refType, refId, visits = [], onChange }
       const get = (k) => rs.find((r) => r.key === k)?.value_ar;
       setVTypes(normBiList(parseJSON(get('visit_types')), VISIT_TYPES_BI));
       setVRoles(normBiList(parseJSON(get('clinician_roles')), CLINICIAN_ROLES_BI));
-      setVStaff(normStaffList(parseJSON(get('clinical_staff')) || []));
+      const legacy = normStaffList(parseJSON(get('clinical_staff')) || []);
+      // clinician names come from the unified staff directory; the old Settings list is only a fallback
+      AdminAPI.staffDirectory().then((dir) => setVStaff(dir.length ? dir.map((d) => ({ name_ar: d.name_ar, name_en: d.name_en || d.name_ar, roles: d.roles || [] })) : legacy)).catch(() => setVStaff(legacy));
     }).catch(() => {});
   }, []);
 

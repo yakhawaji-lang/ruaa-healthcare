@@ -19,6 +19,7 @@ const GROUPS = [
     { to: '/admin/messages', page: 'messages', icon: Mail, ar: 'الرسائل', en: 'Messages' },
   ] },
   { ar: 'الحسابات', en: 'Accounts', items: [
+    { to: '/admin/staff', page: 'staff', icon: Stethoscope, ar: 'الكادر الطبي', en: 'Clinical Staff' },
     { to: '/admin/clients', page: 'clients', icon: UserRound, ar: 'حسابات العملاء', en: 'Client Accounts' },
     { to: '/admin/insurers', page: 'insurers', icon: Building2, ar: 'شركات التأمين', en: 'Insurance Companies' },
   ] },

@@ -30,11 +30,11 @@ export const WEEKDAYS_SHORT = {
 };
 
 // Doctor display name with title (د. / Dr.)
-// Provider display name. "د./Dr." prefix only for physicians (profession contains طبيب / doctor)
-// or when an explicit title is set; nurses, physiotherapists etc. are shown by name.
+// Provider display name. "د./Dr." prefix only for physicians (profession contains طبيب / doctor);
+// an explicit title (استشاري…) replaces it; nurses, physiotherapists etc. are shown by name.
 export const isPhysician = (c) => {
   const p = `${c?.doctor_profession_ar || c?.profession_ar || ''} ${c?.doctor_profession_en || c?.profession_en || ''}`.toLowerCase();
-  return !p.trim() || p.includes('طبيب') || p.includes('doctor') || p.includes('physician');
+  return p.includes('طبيب') || p.includes('doctor') || p.includes('physician');
 };
 export const doctorName = (c, lang = 'ar') => {
   const name = c?.doctor_name || c?.name || '';

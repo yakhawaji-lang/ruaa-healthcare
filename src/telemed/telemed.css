@@ -179,3 +179,32 @@
   .tm-card { flex-wrap: wrap; }
   .tm-card-end { width: 100%; justify-content: flex-end; }
 }
+
+/* staff directory */
+.st-search { display: flex; align-items: center; gap: 8px; border: 1.5px solid var(--line); border-radius: 10px; padding: 6px 10px; background: #fff; min-width: 260px; }
+.st-search input { border: none; outline: none; font-family: inherit; font-size: 0.9rem; width: 100%; }
+.st-search svg { color: var(--muted); }
+.st-table small { display: block; }
+.st-row-off td { opacity: 0.6; }
+.st-chips { display: flex; gap: 6px; flex-wrap: wrap; }
+.st-chip { display: inline-flex; align-items: center; gap: 4px; padding: 3px 9px; border-radius: 999px; border: 1px solid var(--line); background: #fff; font-size: 0.78rem; color: var(--muted); font-weight: 600; font-family: inherit; }
+.st-chip.main { border-color: var(--teal); background: var(--teal-light); color: var(--teal-dark); }
+.st-chips.pick .st-chip { cursor: pointer; padding: 6px 12px; }
+.st-contact { font-size: 0.82rem; color: var(--muted); }
+.st-access { display: flex; gap: 6px; flex-wrap: wrap; }
+.st-acc { display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px; border-radius: 999px; font-size: 0.74rem; font-weight: 700; background: #f1f4f5; color: #9aa7ad; }
+.st-acc.on { background: #e4f8ee; color: #138a5b; }
+.st-info-grid { display: grid; grid-template-columns: 1fr 180px; gap: 16px; align-items: start; }
+.st-access-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.st-card { border: 1.5px solid var(--line); border-radius: 14px; padding: 16px; background: #fff; }
+.st-card.on { border-color: #bfe3cf; background: #f7fcf9; }
+.st-card-head { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+.st-card-head h3 { margin: 0; font-size: 1rem; color: var(--navy); flex: 1; }
+.st-card-head svg { color: var(--teal); }
+.st-card p.muted { margin: 0 0 10px; font-size: 0.86rem; }
+.st-h4 { display: flex; align-items: center; gap: 6px; font-size: 0.85rem; color: var(--navy); margin: 12px 0 6px; }
+.st-kv { display: flex; gap: 10px; align-items: center; font-size: 0.88rem; margin-bottom: 6px; }
+.st-kv span { color: var(--muted); }
+.st-kv b { color: var(--navy); }
+.st-card .tm-avail-row { grid-template-columns: 1.2fr 1fr 1fr auto; }
+@media (max-width: 900px) { .st-access-grid, .st-info-grid { grid-template-columns: 1fr; } .st-search { min-width: 0; width: 100%; } }

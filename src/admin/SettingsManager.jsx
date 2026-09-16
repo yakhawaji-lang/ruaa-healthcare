@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { Save, Plus, X } from 'lucide-react';
 import { AdminAPI } from '../storage/api.js';
 import ImageUpload from './ImageUpload.jsx';
 import { useLang } from '../i18n.jsx';
-import { VISIT_TYPES_BI, CLINICIAN_ROLES_BI, normBiList, normStaffList, biLabel } from '../account/status.js';
+import { VISIT_TYPES_BI, CLINICIAN_ROLES_BI, normBiList } from '../account/status.js';
 
 const labels = {
   ar: {
@@ -27,7 +28,7 @@ const T = {
   ar: {
     site_settings: 'إعدادات الموقع', save: 'حفظ', saved: 'تم حفظ الإعدادات',
     ph_ar: 'عربي', ph_en: 'English', banners_subhead: 'صور الموقع والبنرات',
-    lists_subhead: 'قوائم الزيارات والكادر الطبي',
+    lists_subhead: 'قوائم الزيارات والمهن',
     visit_types: 'قائمة نوع الزيارة',
     specialties: 'قائمة تخصص الكادر الطبي',
     staff: 'الكادر الطبي (الأسماء)',
@@ -40,7 +41,7 @@ const T = {
   en: {
     site_settings: 'Site Settings', save: 'Save', saved: 'Settings saved',
     ph_ar: 'Arabic', ph_en: 'English', banners_subhead: 'Site images & banners',
-    lists_subhead: 'Visit & clinical staff lists',
+    lists_subhead: 'Visit & profession lists',
     visit_types: 'Visit type list',
     specialties: 'Clinician specialty list',
     staff: 'Clinical staff (names)',
@@ -63,7 +64,6 @@ export default function SettingsManager() {
   const [rows, setRows] = useState([]);
   const [visitTypes, setVisitTypes] = useState([]);
   const [roles, setRoles] = useState([]);
-  const [staff, setStaff] = useState([]);
   const [saved, setSaved] = useState(false);
 
   useEffect(() => {
@@ -72,7 +72,6 @@ export default function SettingsManager() {
       const get = (k) => rs.find((r) => r.key === k)?.value_ar;
       setVisitTypes(normBiList(parse(get('visit_types')), VISIT_TYPES_BI));
       setRoles(normBiList(parse(get('clinician_roles')), CLINICIAN_ROLES_BI));
-      setStaff(normStaffList(parse(get('clinical_staff'))));
     });
   }, []);
 
@@ -83,12 +82,10 @@ export default function SettingsManager() {
     const base = rows.filter((r) => !LIST_KEYS.includes(r.key));
     const vt = visitTypes.filter((x) => x.ar || x.en);
     const vr = roles.filter((x) => x.ar || x.en);
-    const st = staff.filter((s) => (s.name_ar || s.name_en || '').trim());
     const payload = [
       ...base,
       { key: 'visit_types', value_ar: JSON.stringify(vt), value_en: JSON.stringify(vt) },
       { key: 'clinician_roles', value_ar: JSON.stringify(vr), value_en: JSON.stringify(vr) },
-      { key: 'clinical_staff', value_ar: JSON.stringify(st), value_en: JSON.stringify(st) },
     ];
     await AdminAPI.saveSettings(payload);
     setSaved(true);
@@ -125,7 +122,11 @@ export default function SettingsManager() {
           <BiListEditor title={tt.visit_types} items={visitTypes} setItems={setVisitTypes} tt={tt} />
           <BiListEditor title={tt.specialties} items={roles} setItems={setRoles} tt={tt} />
         </div>
-        <StaffEditor staff={staff} setStaff={setStaff} roles={roles.filter((r) => r.ar || r.en)} tt={tt} lang={lang} />
+        <div className="form-alert" style={{ background: 'var(--teal-light)', color: 'var(--navy)', marginTop: 16, marginBottom: 0 }}>
+          {lang === 'en'
+            ? <>Clinical staff names moved to the unified <Link to="/admin/staff"><b>Clinical Staff</b></Link> page (professions, contracts and access grants).</>
+            : <>انتقلت أسماء الكادر الطبي إلى صفحة <Link to="/admin/staff"><b>الكادر الطبي</b></Link> الموحّدة (المهن، التعاقدات، ومنح الصلاحيات).</>}
+        </div>
       </div>
 
       <h2 className="settings-subhead">{tt.banners_subhead}</h2>
@@ -161,52 +162,6 @@ function BiListEditor({ title, items, setItems, tt }) {
           </div>
         ))}
         <button type="button" className="btn btn-outline btn-sm" onClick={add} style={{ justifySelf: 'start' }}><Plus size={15} /> {tt.add_item}</button>
-      </div>
-    </div>
-  );
-}
-
-function StaffEditor({ staff, setStaff, roles, tt, lang }) {
-  const setField = (i, field, v) => setStaff((arr) => arr.map((s, idx) => (idx === i ? { ...s, [field]: v } : s)));
-  const toggleRole = (i, roleKey) => setStaff((arr) => arr.map((s, idx) => {
-    if (idx !== i) return s;
-    const cur = new Set(s.roles || []);
-    cur.has(roleKey) ? cur.delete(roleKey) : cur.add(roleKey);
-    return { ...s, roles: [...cur] };
-  }));
-  const remove = (i) => setStaff((arr) => arr.filter((_, idx) => idx !== i));
-  const add = () => setStaff((arr) => [...arr, { name_ar: '', name_en: '', roles: [] }]);
-
-  return (
-    <div style={{ marginTop: 18 }}>
-      <label className="setting-label">{tt.staff}</label>
-      <p className="muted" style={{ marginTop: 2 }}>{tt.staff_hint}</p>
-      {roles.length === 0 && <p className="empty small">{tt.no_specialties}</p>}
-      <div style={{ display: 'grid', gap: 12 }}>
-        {staff.map((s, i) => (
-          <div key={i} style={{ border: '1px solid var(--line)', borderRadius: 12, padding: 12 }}>
-            <div style={{ display: 'flex', gap: 8, marginBottom: 10, alignItems: 'center' }}>
-              <input className="fld-input" style={{ flex: 1, minWidth: 0 }} value={s.name_ar || ''} onChange={(e) => setField(i, 'name_ar', e.target.value)} placeholder={tt.name_ar} />
-              <input className="fld-input" style={{ flex: 1, minWidth: 0 }} dir="ltr" value={s.name_en || ''} onChange={(e) => setField(i, 'name_en', e.target.value)} placeholder={tt.name_en} />
-              <button type="button" className="icon-act danger" title={tt.remove} onClick={() => remove(i)}
-                style={{ flex: '0 0 auto', display: 'grid', placeItems: 'center', width: 38, height: 38 }}><X size={16} /></button>
-            </div>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-              {roles.map((role) => {
-                const key = role.ar || role.en; // ar value is the stable link key
-                const on = (s.roles || []).includes(key);
-                return (
-                  <button type="button" key={key} onClick={() => toggleRole(i, key)}
-                    style={{ padding: '5px 11px', borderRadius: 999, cursor: 'pointer', fontFamily: 'inherit', fontWeight: 600, fontSize: '.82rem',
-                      border: on ? '1px solid var(--teal)' : '1px solid var(--line)', background: on ? 'var(--teal-light)' : '#fff', color: on ? 'var(--teal-dark)' : 'var(--muted)' }}>
-                    {biLabel(role, lang)}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        ))}
-        <button type="button" className="btn btn-outline btn-sm" onClick={add} style={{ justifySelf: 'start' }}><Plus size={15} /> {tt.add_staff}</button>
       </div>
     </div>
   );

@@ -24,6 +24,7 @@ const PERM_GROUPS = [
     { key: 'messages', ar: 'الرسائل', en: 'Messages', icon: Mail, actions: ['view', 'edit', 'delete'] },
   ] },
   { ar: 'الحسابات', en: 'Accounts', pages: [
+    { key: 'staff', ar: 'الكادر الطبي', en: 'Clinical Staff', icon: Stethoscope, actions: ['view', 'create', 'edit', 'delete'] },
     { key: 'clients', ar: 'حسابات العملاء', en: 'Client Accounts', icon: UserRound, actions: ['view', 'create', 'edit', 'delete'] },
     { key: 'insurers', ar: 'شركات التأمين', en: 'Insurance Companies', icon: Building2, actions: ['view', 'create', 'edit', 'delete'] },
   ] },

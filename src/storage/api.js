@@ -200,6 +200,20 @@ export const AdminAPI = {
   deleteConsultation: (id) => api.delete(`/admin/telemed/consultations/${id}`).then((r) => r.data),
   sendConsultationMessage: (id, payload) => api.post(`/admin/telemed/consultations/${id}/messages`, payload).then((r) => r.data),
   joinConsultation: (id) => api.get(`/admin/telemed/consultations/${id}/join`).then((r) => r.data),
+  // staff directory (الكادر الطبي)
+  staff: () => api.get('/admin/staff').then((r) => r.data),
+  staffDirectory: () => api.get('/admin/staff/directory').then((r) => r.data),
+  staffOne: (id) => api.get(`/admin/staff/${id}`).then((r) => r.data),
+  createStaff: (data) => api.post('/admin/staff', data).then((r) => r.data),
+  updateStaff: (id, data) => api.put(`/admin/staff/${id}`, data).then((r) => r.data),
+  setStaffActive: (id, isActive) => api.put(`/admin/staff/${id}/active`, { is_active: isActive }).then((r) => r.data),
+  deleteStaff: (id) => api.delete(`/admin/staff/${id}`).then((r) => r.data),
+  staffGrantTelemed: (id, data) => api.post(`/admin/staff/${id}/telemed`, data).then((r) => r.data),
+  staffRevokeTelemed: (id) => api.delete(`/admin/staff/${id}/telemed`).then((r) => r.data),
+  staffTelemedPassword: (id, password) => api.put(`/admin/staff/${id}/telemed/password`, { password }).then((r) => r.data),
+  staffGrantAdmin: (id, data) => api.post(`/admin/staff/${id}/admin`, data).then((r) => r.data),
+  staffRevokeAdmin: (id, remove = false) => api.delete(`/admin/staff/${id}/admin`, { params: remove ? { remove: 1 } : {} }).then((r) => r.data),
+  staffAdminPassword: (id, password) => api.put(`/admin/staff/${id}/admin/password`, { password }).then((r) => r.data),
 };
 
 

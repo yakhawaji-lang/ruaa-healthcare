@@ -2,7 +2,7 @@
 // and doctor accounts (profile, availability, password, activation).
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Video, Phone, Plus, X, Pencil, KeyRound, Power, Trash2, Stethoscope, CalendarDays, Clock, UserRound, Save, ExternalLink, Trash, Users2, Briefcase, ShieldCheck } from 'lucide-react';
+import { Video, Phone, Plus, X, Pencil, Trash2, Stethoscope, CalendarDays, UserRound, Save, ExternalLink, Users2 } from 'lucide-react';
 import { AdminAPI } from '../storage/api.js';
 import { useAdminAuth } from './AdminApp.jsx';
 import { useLang } from '../i18n.jsx';
@@ -11,10 +11,9 @@ import Tracking from '../account/Tracking.jsx';
 import Thread from '../account/Thread.jsx';
 import DobInput from '../components/DobInput.jsx';
 import { ConsPill } from '../telemed/ConsultationCard.jsx';
-import AvailabilityEditor from '../telemed/AvailabilityEditor.jsx';
+import StaffManager from './StaffManager.jsx';
 import VideoRoom from '../telemed/VideoRoom.jsx';
 import { CONS_FLOW, CONS_STATUSES, consLabel, modeLabel, doctorName, doctorSpecialty, fmtAt, fmtTime12, splitAt, canJoinNow, isClosed } from '../telemed/status.js';
-import { CLINICIAN_ROLES_BI, normBiList, normStaffList, biLabel } from '../account/status.js';
 import '../telemed/telemed.css';
 
 const T = {
@@ -84,7 +83,7 @@ export default function TelemedManager() {
         <button type="button" className={tab === 'cons' ? 'active' : ''} onClick={() => setTab('cons')}><Video size={16} /> {tt.tab_cons}</button>
         <button type="button" className={tab === 'docs' ? 'active' : ''} onClick={() => setTab('docs')}><Users2 size={16} /> {tt.tab_docs}</button>
       </div>
-      {tab === 'cons' ? <ConsultationsTab tt={tt} lang={lang} /> : <DoctorsTab tt={tt} lang={lang} />}
+      {tab === 'cons' ? <ConsultationsTab tt={tt} lang={lang} /> : <StaffManager embedded filter="telemed" />}
     </div>
   );
 }
@@ -351,280 +350,6 @@ function NewConsultationModal({ tt, lang, onClose, onDone }) {
         <div className="modal-foot">
           <button className="btn btn-ghost" onClick={onClose}>{tt.cancel}</button>
           <button className="btn btn-primary" onClick={save} disabled={busy}>{busy ? '...' : tt.create}</button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-/* =============================== Doctors =============================== */
-function DoctorsTab({ tt, lang }) {
-  const { can } = useAdminAuth();
-  const [list, setList] = useState([]);
-  const [modal, setModal] = useState(null);
-  const [pwUser, setPwUser] = useState(null);
-  const [typeFilter, setTypeFilter] = useState('all');
-  const load = () => AdminAPI.doctors().then(setList).catch(() => {});
-  useEffect(() => { load(); }, []);
-  const toggle = async (d) => { await AdminAPI.setDoctorActive(d.id, !d.is_active); load(); };
-  const remove = async (id) => { if (confirm(tt.confirm_del_doc)) { await AdminAPI.deleteDoctor(id); load(); } };
-  const shown = list.filter((d) => typeFilter === 'all' || (d.provider_type || 'staff') === typeFilter);
-  return (
-    <>
-      <div className="page-head" style={{ marginBottom: 10 }}>
-        <div className="tm-filters">
-          {[['all', tt.filter_all], ['staff', tt.type_staff], ['visiting', tt.type_visiting]].map(([k, l]) => (
-            <button key={k} type="button" className={typeFilter === k ? 'active' : ''} onClick={() => setTypeFilter(k)}>{l}</button>
-          ))}
-        </div>
-        {can('telemed', 'create') && <button className="btn btn-primary" onClick={() => setModal({ mode: 'create' })}><Plus size={18} /> {tt.add_doctor}</button>}
-      </div>
-      <div className="panel">
-        {shown.length === 0 ? <p className="empty">{tt.no_docs}</p> : (
-          <table className="admin-table">
-            <thead><tr><th>{tt.th_name}</th><th>{tt.th_email}</th><th>{tt.th_spec}</th><th>{tt.th_type}</th><th>{tt.th_slot}</th><th>{tt.th_pub}</th><th>{tt.th_status}</th><th>{tt.th_actions}</th></tr></thead>
-            <tbody>
-              {shown.map((d) => (
-                <tr key={d.id}>
-                  <td><div className="tm-doc-card"><span className="tm-avatar">{d.photo ? <img src={d.photo} alt="" /> : <UserRound size={18} />}</span><div>{doctorName(d, lang)}<small dir="ltr">{d.phone || ''}</small></div></div></td>
-                  <td dir="ltr">{d.email}</td>
-                  <td>{doctorSpecialty(d, lang) || '—'}</td>
-                  <td>{(d.provider_type || 'staff') === 'visiting'
-                    ? <span className="badge tm-badge-visiting" title={d.organization || ''}><Briefcase size={12} /> {tt.type_visiting}{d.contract_end ? <small dir="ltr"> · {d.contract_end}</small> : null}</span>
-                    : <span className="badge ok"><ShieldCheck size={12} /> {tt.type_staff}</span>}</td>
-                  <td dir="ltr">{d.slot_minutes || 20} {tt.min}</td>
-                  <td>{d.is_published ? <span className="badge ok">{tt.yes}</span> : <span className="badge off">{tt.no}</span>}</td>
-                  <td>{d.is_active ? <span className="badge ok">{tt.active}</span> : <span className="badge off">{tt.suspended}</span>}</td>
-                  <td className="row-actions">
-                    {can('telemed', 'edit') && <button onClick={() => setModal({ mode: 'edit', doctor: d })} title={tt.edit}><Pencil size={16} /></button>}
-                    {can('telemed', 'edit') && <button onClick={() => setPwUser(d)} title={tt.reset_password}><KeyRound size={16} /></button>}
-                    {can('telemed', 'edit') && <button onClick={() => toggle(d)} title={tt.toggle}><Power size={16} /></button>}
-                    {can('telemed', 'delete') && <button onClick={() => remove(d.id)} className="danger" title={tt.delete}><Trash2 size={16} /></button>}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </div>
-      {modal && <DoctorModal mode={modal.mode} doctor={modal.doctor} tt={tt} lang={lang} onClose={() => setModal(null)} onDone={() => { setModal(null); load(); }} />}
-      {pwUser && <PasswordModal user={pwUser} tt={tt} onClose={() => setPwUser(null)} />}
-    </>
-  );
-}
-
-function DoctorModal({ mode, doctor, tt, lang, onClose, onDone }) {
-  const isEdit = mode === 'edit';
-  const [f, setF] = useState({
-    name: doctor?.name || '', email: doctor?.email || '', phone: doctor?.phone || '', password: '',
-    profession_ar: doctor?.profession_ar || '', profession_en: doctor?.profession_en || '',
-    provider_type: doctor?.provider_type || 'staff', staff_ref: doctor?.staff_ref || '',
-    organization: doctor?.organization || '', license_no: doctor?.license_no || '', contract_start: doctor?.contract_start || '', contract_end: doctor?.contract_end || '', contract_notes: doctor?.contract_notes || '',
-    title_ar: doctor?.title_ar || '', title_en: doctor?.title_en || '', specialty_ar: doctor?.specialty_ar || '', specialty_en: doctor?.specialty_en || '',
-    bio_ar: doctor?.bio_ar || '', bio_en: doctor?.bio_en || '', slot_minutes: doctor?.slot_minutes || 20, is_published: doctor ? !!doctor.is_published : true, sort_order: doctor?.sort_order || 0,
-  });
-  const [source, setSource] = useState(isEdit ? 'new' : 'staff'); // staff | admin | new
-  const [roles, setRoles] = useState(CLINICIAN_ROLES_BI);
-  const [staff, setStaff] = useState([]);
-  const [admins, setAdmins] = useState([]);
-  const [rules, setRules] = useState([]);
-  const [off, setOff] = useState([]);
-  const [newOff, setNewOff] = useState('');
-  const [error, setError] = useState('');
-  const [busy, setBusy] = useState(false);
-  const parse = (v) => { try { return JSON.parse(v); } catch { return null; } };
-
-  useEffect(() => {
-    if (isEdit) AdminAPI.doctor(doctor.id).then((r) => { setRules(r.availability || []); setOff(r.days_off || []); });
-    // professions + staff names come from Settings (same lists used for home visits)
-    AdminAPI.settings().then((rs) => {
-      const get = (k) => rs.find((r) => r.key === k)?.value_ar;
-      setRoles(normBiList(parse(get('clinician_roles')), CLINICIAN_ROLES_BI));
-      setStaff(normStaffList(parse(get('clinical_staff')) || []));
-    }).catch(() => {});
-    AdminAPI.admins().then(setAdmins).catch(() => setAdmins([])); // super admin only; silently empty otherwise
-  }, [doctor?.id]);
-
-  const set = (k) => (e) => setF((p) => ({ ...p, [k]: e.target.value }));
-  const roleEn = (ar) => roles.find((r) => r.ar === ar)?.en || ar;
-  const pickStaff = (key) => {
-    const st = staff.find((x) => (x.name_ar || x.name_en) === key);
-    if (!st) { setF((p) => ({ ...p, staff_ref: '' })); return; }
-    const prof = (st.roles || [])[0] || '';
-    setF((p) => ({ ...p, name: st.name_ar || st.name_en, staff_ref: st.name_ar || st.name_en, profession_ar: prof, profession_en: roleEn(prof), provider_type: 'staff' }));
-  };
-  const pickAdmin = (id) => {
-    const a = admins.find((x) => String(x.id) === String(id));
-    if (!a) return;
-    setF((p) => ({ ...p, name: a.name, email: a.email, provider_type: 'staff' }));
-  };
-  const setProfession = (ar) => setF((p) => ({ ...p, profession_ar: ar, profession_en: roleEn(ar) }));
-
-  const save = async () => {
-    if (!f.name || !f.email || (!isEdit && !f.password)) { setError(tt.required); return; }
-    if (!f.profession_ar) { setError(tt.need_profession); return; }
-    if (f.phone && !isSaudiMobile(f.phone)) { setError(tt.phone_invalid); return; }
-    setBusy(true); setError('');
-    try {
-      const payload = { ...f, is_published: f.is_published ? 1 : 0, availability: rules.filter((r) => r.start_time < r.end_time) };
-      if (isEdit) await AdminAPI.updateDoctor(doctor.id, payload); else await AdminAPI.createDoctor(payload);
-      onDone();
-    } catch (e) {
-      const code = e?.response?.data?.error;
-      setError(code === 'email_taken' ? tt.email_taken : code === 'weak_password' ? tt.weak : tt.failed);
-    } finally { setBusy(false); }
-  };
-  const addOff = async () => { if (!newOff) return; await AdminAPI.addDoctorDayOff(doctor.id, newOff); setNewOff(''); AdminAPI.doctor(doctor.id).then((r) => setOff(r.days_off || [])); };
-  const removeOff = async (id) => { await AdminAPI.removeDoctorDayOff(doctor.id, id); AdminAPI.doctor(doctor.id).then((r) => setOff(r.days_off || [])); };
-  const visiting = f.provider_type === 'visiting';
-
-  return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal" style={{ maxWidth: 900 }} onClick={(e) => e.stopPropagation()}>
-        <div className="modal-head"><h2>{isEdit ? tt.edit_doc : tt.new_doc}</h2><button onClick={onClose}><X size={20} /></button></div>
-        <div className="modal-body">
-          {error && <div className="form-alert error">{error}</div>}
-
-          {/* 1) who: existing staff name, control-panel user, or a brand-new / external person */}
-          {!isEdit && (
-            <div className="tm-sched-box" style={{ marginTop: 0, marginBottom: 14 }}>
-              <div className="field"><label>{tt.source}</label>
-                <div className="tm-mode-toggle">
-                  <button type="button" className={source === 'staff' ? 'active' : ''} onClick={() => setSource('staff')}><Stethoscope size={15} /> {tt.src_staff}</button>
-                  {admins.length > 0 && <button type="button" className={source === 'admin' ? 'active' : ''} onClick={() => setSource('admin')}><Users2 size={15} /> {tt.src_admin}</button>}
-                  <button type="button" className={source === 'new' ? 'active' : ''} onClick={() => { setSource('new'); setF((p) => ({ ...p, staff_ref: '' })); }}><Briefcase size={15} /> {tt.src_new}</button>
-                </div>
-              </div>
-              {source === 'staff' && (
-                <div className="field"><label>{tt.pick_staff}</label>
-                  <select value={f.staff_ref} onChange={(e) => pickStaff(e.target.value)}>
-                    <option value="">{tt.pick_staff}</option>
-                    {staff.map((st) => { const k = st.name_ar || st.name_en; return <option key={k} value={k}>{biLabel({ ar: st.name_ar, en: st.name_en }, lang)}{st.roles?.length ? ` — ${st.roles.map((r) => biLabel(roles.find((x) => x.ar === r) || { ar: r }, lang)).join('، ')}` : ''}</option>; })}
-                  </select>
-                </div>
-              )}
-              {source === 'admin' && (
-                <div className="field"><label>{tt.pick_admin}</label>
-                  <select defaultValue="" onChange={(e) => pickAdmin(e.target.value)}>
-                    <option value="">{tt.pick_admin}</option>
-                    {admins.map((a) => <option key={a.id} value={a.id}>{a.name} — {a.email}</option>)}
-                  </select>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* 2) profession + type */}
-          <div className="field-row">
-            <div className="field"><label>{tt.profession}</label>
-              <select value={f.profession_ar} onChange={(e) => setProfession(e.target.value)}>
-                <option value="">{tt.profession_ph}</option>
-                {f.profession_ar && !roles.some((r) => r.ar === f.profession_ar) && <option value={f.profession_ar}>{f.profession_ar}</option>}
-                {roles.map((r) => <option key={r.ar} value={r.ar}>{biLabel(r, lang)}</option>)}
-              </select>
-            </div>
-            <div className="field"><label>{tt.provider_type}</label>
-              <div className="tm-mode-toggle">
-                <button type="button" className={!visiting ? 'active' : ''} title={tt.staff_hint} onClick={() => setF((p) => ({ ...p, provider_type: 'staff' }))}><ShieldCheck size={15} /> {tt.type_staff}</button>
-                <button type="button" className={visiting ? 'active' : ''} title={tt.visiting_hint} onClick={() => setF((p) => ({ ...p, provider_type: 'visiting' }))}><Briefcase size={15} /> {tt.type_visiting}</button>
-              </div>
-            </div>
-          </div>
-
-          {/* 3) visiting / contracted details */}
-          {visiting && (
-            <div className="tm-sched-box" style={{ marginTop: 0, marginBottom: 14 }}>
-              <div className="field-row">
-                <div className="field"><label>{tt.organization}</label><input value={f.organization} onChange={set('organization')} /></div>
-                <div className="field"><label>{tt.license_no}</label><input dir="ltr" value={f.license_no} onChange={set('license_no')} /></div>
-              </div>
-              <div className="field-row">
-                <div className="field"><label>{tt.contract_start}</label><DobInput iso value={f.contract_start} onChange={(v) => setF((p) => ({ ...p, contract_start: v }))} /></div>
-                <div className="field"><label>{tt.contract_end}</label><DobInput iso value={f.contract_end} onChange={(v) => setF((p) => ({ ...p, contract_end: v }))} /></div>
-              </div>
-              <div className="field"><label>{tt.contract_notes}</label><textarea rows={2} value={f.contract_notes} onChange={set('contract_notes')} /></div>
-            </div>
-          )}
-
-          {/* 4) identity + login */}
-          <h3 className="block-label"><KeyRound size={16} /> {tt.login_section}</h3>
-          <p className="muted" style={{ marginTop: 0, fontSize: '0.85rem' }}>{tt.login_hint}</p>
-          <div className="field-row">
-            <div className="field"><label>{tt.name}</label><input value={f.name} onChange={set('name')} /></div>
-            <div className="field"><label>{tt.email}</label><input type="email" dir="ltr" value={f.email} onChange={set('email')} /></div>
-          </div>
-          <div className="field-row">
-            <div className="field"><label>{tt.phone}</label><input {...phoneInputProps} value={f.phone} onChange={(e) => setF((p) => ({ ...p, phone: digits10(e.target.value) }))} /></div>
-            {!isEdit && <div className="field"><label>{tt.password}</label><input type="text" dir="ltr" value={f.password} onChange={set('password')} placeholder={tt.password_ph} /></div>}
-          </div>
-
-          {/* 5) profile shown to patients */}
-          <div className="field-row">
-            <div className="field"><label>{tt.title_ar}</label><input value={f.title_ar} onChange={set('title_ar')} placeholder="استشاري / أخصائي" /></div>
-            <div className="field"><label>{tt.title_en}</label><input dir="ltr" value={f.title_en} onChange={set('title_en')} placeholder="Consultant / Specialist" /></div>
-          </div>
-          <div className="field-row">
-            <div className="field"><label>{tt.spec_ar}</label><input value={f.specialty_ar} onChange={set('specialty_ar')} /></div>
-            <div className="field"><label>{tt.spec_en}</label><input dir="ltr" value={f.specialty_en} onChange={set('specialty_en')} /></div>
-          </div>
-          <div className="field-row">
-            <div className="field"><label>{tt.bio_ar}</label><textarea rows={2} value={f.bio_ar} onChange={set('bio_ar')} /></div>
-            <div className="field"><label>{tt.bio_en}</label><textarea rows={2} dir="ltr" value={f.bio_en} onChange={set('bio_en')} /></div>
-          </div>
-          <div className="field-row">
-            <div className="field"><label>{tt.slot}</label><input type="number" dir="ltr" min={5} step={5} value={f.slot_minutes} onChange={set('slot_minutes')} /></div>
-            <div className="field"><label>&nbsp;</label><label className="tm-check"><input type="checkbox" checked={f.is_published} onChange={(e) => setF((p) => ({ ...p, is_published: e.target.checked }))} /> <span>{tt.published}</span></label></div>
-          </div>
-          <h3 className="block-label"><Clock size={16} /> {tt.availability}</h3>
-          <AvailabilityEditor rules={rules} onChange={setRules} />
-          {isEdit && (
-            <div style={{ marginTop: 16 }}>
-              <h3 className="block-label">{lang === 'en' ? 'Days off' : 'أيام الإجازة'}</h3>
-              {off.length > 0 && <ul className="tm-off-list">{off.map((o) => <li key={o.id}><b dir="ltr">{o.off_date}</b>{o.note && <span> — {o.note}</span>}<button type="button" className="tm-icon-btn danger" onClick={() => removeOff(o.id)}><Trash size={15} /></button></li>)}</ul>}
-              <div className="tm-off-add" style={{ gridTemplateColumns: 'auto auto' }}>
-                <DobInput iso value={newOff} onChange={setNewOff} />
-                <button type="button" className="btn btn-outline btn-sm" onClick={addOff} disabled={!newOff}><Plus size={15} /> {lang === 'en' ? 'Add' : 'إضافة'}</button>
-              </div>
-            </div>
-          )}
-        </div>
-        <div className="modal-foot">
-          <button className="btn btn-ghost" onClick={onClose}>{tt.cancel}</button>
-          <button className="btn btn-primary" onClick={save} disabled={busy}>{busy ? '...' : tt.save}</button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function PasswordModal({ user, tt, onClose }) {
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
-  const [done, setDone] = useState(false);
-  const [busy, setBusy] = useState(false);
-  const save = async () => {
-    if (password.length < 6) { setError(tt.weak); return; }
-    setBusy(true); setError('');
-    try { await AdminAPI.setDoctorPassword(user.id, password); setDone(true); }
-    catch { setError(tt.failed); } finally { setBusy(false); }
-  };
-  return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal" onClick={(e) => e.stopPropagation()}>
-        <div className="modal-head"><h2>{tt.pw_modal}</h2><button onClick={onClose}><X size={20} /></button></div>
-        <div className="modal-body">
-          {done ? <div className="form-alert ok">{tt.pw_done}</div> : (
-            <>
-              {error && <div className="form-alert error">{error}</div>}
-              <p className="muted" style={{ marginTop: 0 }}>{user.name} — <span dir="ltr">{user.email}</span></p>
-              <div className="field"><label>{tt.new_password}</label>
-                <input type="text" dir="ltr" value={password} onChange={(e) => setPassword(e.target.value)} placeholder={tt.password_ph} autoFocus /></div>
-            </>
-          )}
-        </div>
-        <div className="modal-foot">
-          <button className="btn btn-ghost" onClick={onClose}>{tt.cancel}</button>
-          {!done && <button className="btn btn-primary" onClick={save} disabled={busy}>{busy ? '...' : tt.save}</button>}
         </div>
       </div>
     </div>

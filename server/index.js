@@ -11,6 +11,7 @@ import adminRoutes from './routes/admin.js';
 import accountRoutes from './routes/account.js';
 import { patientRouter as telemedPatientRoutes, doctorRouter as telemedDoctorRoutes } from './routes/telemed.js';
 import { requireAuth } from './auth.js';
+import { ensureStaffImported } from './staff.js';
 
 dotenv.config();
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -47,4 +48,8 @@ app.get('*', (req, res, next) => {
 });
 
 const PORT = process.env.PORT || 4000;
-app.listen(PORT, () => console.log(`RU-MD API running on http://localhost:${PORT}`));
+app.listen(PORT, () => {
+  console.log(`RU-MD API running on http://localhost:${PORT}`);
+  // one-time import of the legacy staff list + telemedicine providers into the staff directory
+  ensureStaffImported().catch((e) => console.warn('[staff] import skipped:', e.message));
+});

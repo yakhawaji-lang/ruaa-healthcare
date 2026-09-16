@@ -4,7 +4,7 @@
 //   adminRouter   → /api/admin/telemed     (mounted inside admin.js, page key "telemed")
 import { Router } from 'express';
 import bcrypt from 'bcryptjs';
-import { Users, Doctors, Consultations, RequestEvents, Threads, Patients, Notifications, Audit, Settings } from '../db/queries.js';
+import { Users, Doctors, Consultations, RequestEvents, Threads, Patients, Notifications, Audit, Settings, Staff } from '../db/queries.js';
 import { requireUser, requireRole } from '../auth.js';
 import { freeSlots, slotStatus, joinWindow, joinInfo, nowLocal, normDateTime, isIsoDate, createConsultation, addEvent, notifyParties, consStatusLabel, modeLabelAr } from '../telemed.js';
 
@@ -128,7 +128,9 @@ doctorRouter.get('/me', async (req, res) => {
 doctorRouter.put('/me', async (req, res) => {
   const cur = await Doctors.byId(req.user.uid);
   const b = req.body || {};
-  await Doctors.upsertProfile(req.user.uid, { ...cur, ...b, is_published: cur?.is_published ?? 1, sort_order: cur?.sort_order ?? 0 });
+  const merged = { ...cur, ...b, is_published: cur?.is_published ?? 1, sort_order: cur?.sort_order ?? 0 };
+  await Doctors.upsertProfile(req.user.uid, merged);
+  await Staff.updateProfileByUser(req.user.uid, merged).catch(() => {});   // staff directory is the master profile
   res.json({ ok: true });
 });
 doctorRouter.put('/availability', async (req, res) => {
@@ -227,6 +229,9 @@ adminRouter.post('/doctors', async (req, res) => {
     const r = await Users.create({ role: 'doctor', name: b.name, email, phone: b.phone }, hash);
     await Doctors.upsertProfile(r.insertId, b);
     if (Array.isArray(b.availability)) await Doctors.setAvailability(r.insertId, b.availability);
+    // mirror into the staff directory (master record for people)
+    const sr = await Staff.create({ ...b, name_ar: b.name, name_en: b.name_en || '', email, roles: b.profession_ar ? [b.profession_ar] : [], staff_type: b.provider_type }).catch(() => null);
+    if (sr) await Staff.setUser(sr.insertId, r.insertId);
     await Audit.log(req.admin.id, 'create', 'doctor', r.insertId);
     res.status(201).json({ id: r.insertId });
   } catch (e) {
@@ -245,6 +250,8 @@ adminRouter.put('/doctors/:id', async (req, res) => {
   await Users.updateAccount(cur.id, { name: b.name, email, phone: b.phone });
   await Doctors.upsertProfile(cur.id, { ...cur, ...b });
   if (Array.isArray(b.availability)) await Doctors.setAvailability(cur.id, b.availability);
+  const st = await Staff.byUser(cur.id);
+  if (st) await Staff.update(st.id, { ...st, ...b, name_ar: b.name, roles: (() => { try { return JSON.parse(st.roles_json) || []; } catch { return []; } })(), staff_type: b.provider_type || st.staff_type });
   await Audit.log(req.admin.id, 'update', 'doctor', cur.id);
   res.json({ ok: true });
 });
@@ -274,6 +281,8 @@ adminRouter.put('/doctors/:id/password', async (req, res) => {
   res.json({ ok: true });
 });
 adminRouter.delete('/doctors/:id', async (req, res) => {
+  const st = await Staff.byUser(req.params.id);
+  if (st) await Staff.setUser(st.id, null);   // keep the person in the directory, drop the access
   await Doctors.removeAll(req.params.id);
   await Users.softDelete(req.params.id);
   await Audit.log(req.admin.id, 'delete', 'doctor', req.params.id);
