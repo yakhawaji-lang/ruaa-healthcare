@@ -16,7 +16,6 @@ const T = {
     failed: 'تعذّر فتح غرفة الاستشارة. تأكد من اتصالك بالإنترنت وحاول مجددًا.', retry: 'إعادة المحاولة',
     script_failed: 'تعذّر تحميل مشغّل المكالمات (Jitsi). تحقق من الاتصال أو من إعداد النطاق في لوحة التحكم.',
     tip: 'اسمح للمتصفح باستخدام الكاميرا والميكروفون عند الطلب.',
-    moderator_hint: 'إذا ظهرت رسالة "بانتظار المشرف" فهذا لأن خادم meet.jit.si العام يتطلب تسجيل دخول الطبيب كمشرف. الحل النهائي: تفعيل 8x8 JaaS أو خادم Jitsi خاص من إعدادات الخادم.',
   },
   en: {
     connecting: 'Preparing the consultation room...', leave: 'End call', not_yet: 'The consultation has not started yet.',
@@ -25,7 +24,6 @@ const T = {
     failed: 'Could not open the consultation room. Check your connection and try again.', retry: 'Retry',
     script_failed: 'Could not load the call engine (Jitsi). Check the connection or the domain setting in the admin panel.',
     tip: 'Allow the browser to use your camera and microphone when asked.',
-    moderator_hint: 'If you see "waiting for the moderator", the public meet.jit.si server requires the doctor to sign in as moderator. The permanent fix is enabling 8x8 JaaS or a private Jitsi server in the server settings.',
   },
 };
 
@@ -96,8 +94,14 @@ export default function VideoRoom({ fetchJoin, onLeave, subtitle, badge }) {
               'microphone', 'camera', 'hangup', 'chat', 'tileview', 'fullscreen', 'settings', 'select-background', 'desktop', 'raisehand',
             ],
           },
+          // Branding: honoured by a self-hosted Jitsi or 8x8 JaaS. The public meet.jit.si
+          // ignores these keys (its terms keep the Jitsi watermark), so the fallback there is
+          // the RU-MD header our room draws above the iframe.
           interfaceConfigOverwrite: {
-            SHOW_JITSI_WATERMARK: false, SHOW_WATERMARK_FOR_GUESTS: false, SHOW_BRAND_WATERMARK: false,
+            SHOW_JITSI_WATERMARK: false, SHOW_WATERMARK_FOR_GUESTS: false,
+            SHOW_BRAND_WATERMARK: true, BRAND_WATERMARK_LINK: window.location.origin,
+            DEFAULT_LOGO_URL: `${window.location.origin}/logo-mark.png`, DEFAULT_WELCOME_PAGE_LOGO_URL: `${window.location.origin}/logo-full.png`,
+            SHOW_POWERED_BY: false, DISPLAY_WELCOME_FOOTER: false,
             DEFAULT_REMOTE_DISPLAY_NAME: lang === 'ar' ? 'مشارك' : 'Participant',
             MOBILE_APP_PROMO: false, HIDE_INVITE_MORE_HEADER: true, DISABLE_JOIN_LEAVE_NOTIFICATIONS: true,
           },
@@ -165,9 +169,6 @@ export default function VideoRoom({ fetchJoin, onLeave, subtitle, badge }) {
         )}
         <div ref={boxRef} className="tm-jitsi" />
       </div>
-      {state.info?.provider === 'jitsi' && state.info?.domain === 'meet.jit.si' && (
-        <p className="tm-room-hint">{tt.moderator_hint}</p>
-      )}
     </div>
   );
 }
