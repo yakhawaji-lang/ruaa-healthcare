@@ -12,6 +12,7 @@ import accountRoutes from './routes/account.js';
 import { patientRouter as telemedPatientRoutes, doctorRouter as telemedDoctorRoutes } from './routes/telemed.js';
 import { requireAuth } from './auth.js';
 import { ensureStaffImported } from './staff.js';
+import { runMigrations } from './db/migrate.js';
 
 dotenv.config();
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -48,8 +49,10 @@ app.get('*', (req, res, next) => {
 });
 
 const PORT = process.env.PORT || 4000;
-app.listen(PORT, () => {
-  console.log(`RU-MD API running on http://localhost:${PORT}`);
-  // one-time import of the legacy staff list + telemedicine providers into the staff directory
-  ensureStaffImported().catch((e) => console.warn('[staff] import skipped:', e.message));
-});
+// Apply pending DB migrations automatically on every start (each file runs once),
+// then import legacy lists into the staff directory (first run only), then listen.
+(async () => {
+  try { await runMigrations(); } catch (e) { console.error('[migrate] failed:', e.message); }
+  try { await ensureStaffImported(); } catch (e) { console.warn('[staff] import skipped:', e.message); }
+  app.listen(PORT, () => console.log(`RU-MD API running on http://localhost:${PORT}`));
+})();

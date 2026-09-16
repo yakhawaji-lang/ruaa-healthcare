@@ -11,7 +11,9 @@ dotenv.config();
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const dir = path.join(__dirname, 'migrations');
 
-async function run() {
+// Applies pending migrations. Used by `npm run migrate` and automatically by the
+// server on startup (server/index.js), so a deploy never runs with a stale schema.
+export async function runMigrations() {
   await ensureDatabase();
   const conn = await mysql.createConnection({
     host: process.env.DB_HOST || '127.0.0.1',
@@ -48,7 +50,11 @@ async function run() {
   console.log('Migrations complete.');
 }
 
-run().catch((e) => {
-  console.error('Migration failed:', e.message);
-  process.exit(1);
-});
+// CLI entry: `node server/db/migrate.js`
+const isCli = process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.argv[1]);
+if (isCli) {
+  runMigrations().catch((e) => {
+    console.error('Migration failed:', e.message);
+    process.exit(1);
+  });
+}
