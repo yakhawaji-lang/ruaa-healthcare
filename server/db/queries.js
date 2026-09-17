@@ -194,25 +194,33 @@ export const Messages = {
 };
 
 /* ---------------- Hero slides ---------------- */
-const SLIDE_COLS = 'id, image, title_ar, title_en, subtitle_ar, subtitle_en, badge_ar, badge_en, cta_label_ar, cta_label_en, cta_href, is_published, sort_order';
+// The per-slide CTA columns are added at startup (server/hero.js). Until they
+// exist the slide queries must still work, so reads use * and writes only name
+// the CTA columns once we have seen them.
+let heroHasCta = false;
+export const setHeroHasCta = (v) => { heroHasCta = !!v; };
+const SLIDE_BASE = 'image, title_ar, title_en, subtitle_ar, subtitle_en, badge_ar, badge_en';
+const SLIDE_VALS = (s) => [s.image || null, s.title_ar, s.title_en, s.subtitle_ar, s.subtitle_en, s.badge_ar, s.badge_en];
+const CTA_SET = () => (heroHasCta ? ', cta_label_ar, cta_label_en, cta_href' : '');
+const CTA_VALS = (s) => (heroHasCta ? [s.cta_label_ar || null, s.cta_label_en || null, s.cta_href || null] : []);
 export const HeroSlides = {
   listPublic: () =>
-    query(`SELECT ${SLIDE_COLS} FROM hero_slides WHERE deleted_at IS NULL AND is_published = 1 ORDER BY sort_order, id`),
+    query('SELECT * FROM hero_slides WHERE deleted_at IS NULL AND is_published = 1 ORDER BY sort_order, id'),
   listAdmin: () =>
-    query(`SELECT ${SLIDE_COLS}, updated_at FROM hero_slides WHERE deleted_at IS NULL ORDER BY sort_order, id`),
+    query('SELECT * FROM hero_slides WHERE deleted_at IS NULL ORDER BY sort_order, id'),
   byId: (id) =>
     query('SELECT * FROM hero_slides WHERE id = ? AND deleted_at IS NULL LIMIT 1', [id]).then((r) => r[0] || null),
   create: (s) =>
     query(
-      'INSERT INTO hero_slides (image, title_ar, title_en, subtitle_ar, subtitle_en, badge_ar, badge_en, cta_label_ar, cta_label_en, cta_href, is_published, sort_order) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)',
-      [s.image || null, s.title_ar, s.title_en, s.subtitle_ar, s.subtitle_en, s.badge_ar, s.badge_en,
-        s.cta_label_ar || null, s.cta_label_en || null, s.cta_href || null, s.is_published ? 1 : 0, s.sort_order || 0]
+      `INSERT INTO hero_slides (${SLIDE_BASE}${CTA_SET()}, is_published, sort_order)
+       VALUES (${'?,'.repeat(7 + (heroHasCta ? 3 : 0))}?,?)`,
+      [...SLIDE_VALS(s), ...CTA_VALS(s), s.is_published ? 1 : 0, s.sort_order || 0]
     ),
   update: (id, s) =>
     query(
-      'UPDATE hero_slides SET image=?, title_ar=?, title_en=?, subtitle_ar=?, subtitle_en=?, badge_ar=?, badge_en=?, cta_label_ar=?, cta_label_en=?, cta_href=?, is_published=?, sort_order=? WHERE id=?',
-      [s.image || null, s.title_ar, s.title_en, s.subtitle_ar, s.subtitle_en, s.badge_ar, s.badge_en,
-        s.cta_label_ar || null, s.cta_label_en || null, s.cta_href || null, s.is_published ? 1 : 0, s.sort_order || 0, id]
+      `UPDATE hero_slides SET image=?, title_ar=?, title_en=?, subtitle_ar=?, subtitle_en=?, badge_ar=?, badge_en=?${
+        heroHasCta ? ', cta_label_ar=?, cta_label_en=?, cta_href=?' : ''}, is_published=?, sort_order=? WHERE id=?`,
+      [...SLIDE_VALS(s), ...CTA_VALS(s), s.is_published ? 1 : 0, s.sort_order || 0, id]
     ),
   softDelete: (id) => query('UPDATE hero_slides SET deleted_at = NOW() WHERE id = ?', [id]),
   count: () => query('SELECT COUNT(*) AS n FROM hero_slides WHERE deleted_at IS NULL').then((r) => r[0].n),
