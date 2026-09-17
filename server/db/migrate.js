@@ -41,7 +41,13 @@ export async function runMigrations() {
       continue;
     }
     const sql = fs.readFileSync(path.join(dir, file), 'utf8');
-    await conn.query(sql);
+    try {
+      await conn.query(sql);
+    } catch (e) {
+      e.message = `${file} — ${e.message}`;   // the file name is what you need first
+      await conn.end().catch(() => {});
+      throw e;
+    }
     await conn.query('INSERT INTO _migrations (name) VALUES (?)', [file]);
     console.log(`+ applied ${file}`);
   }

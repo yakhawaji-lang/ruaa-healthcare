@@ -649,6 +649,7 @@ function normalizeSlide(b) {
     title_ar: b.title_ar || '', title_en: b.title_en || '',
     subtitle_ar: b.subtitle_ar || '', subtitle_en: b.subtitle_en || '',
     badge_ar: b.badge_ar || '', badge_en: b.badge_en || '',
+    cta_label_ar: b.cta_label_ar || null, cta_label_en: b.cta_label_en || null, cta_href: b.cta_href || null,
     is_published: b.is_published ? 1 : 0,
     sort_order: Number(b.sort_order) || 0,
   };

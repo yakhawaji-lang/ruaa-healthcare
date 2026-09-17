@@ -11,7 +11,7 @@ const T = {
     slider_hint: 'تحكّم في صور الشريحة المتحركة وعباراتها الدعائية. عدد الشرائح غير محدود.',
     new_slide: 'شريحة جديدة',
     empty: 'لا توجد شرائح بعد. أضف أول شريحة.',
-    no_image: 'بدون صورة',
+    no_image: 'بدون صورة', load_failed: 'تعذّر تحميل الشرائح. حدّث الصفحة، وإن تكرر الخطأ راجع سجل الخادم.',
     hidden: 'مخفية',
     edit: 'تعديل',
     delete: 'حذف',
@@ -39,7 +39,7 @@ const T = {
     slider_hint: 'Manage the carousel images and their promotional captions. Unlimited number of slides.',
     new_slide: 'New slide',
     empty: 'No slides yet. Add the first one.',
-    no_image: 'No image',
+    no_image: 'No image', load_failed: 'Could not load the slides. Refresh, and if it persists check the server log.',
     hidden: 'Hidden',
     edit: 'Edit',
     delete: 'Delete',
@@ -75,7 +75,11 @@ export default function HeroSlidesManager() {
   const [editing, setEditing] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  const load = () => AdminAPI.heroSlides().then((r) => { setList(r); setLoading(false); });
+  const [error, setError] = useState('');
+  const load = () => AdminAPI.heroSlides()
+    .then((r) => { setList(r); setError(''); })
+    .catch(() => setError(tt.load_failed))
+    .finally(() => setLoading(false));
   useEffect(() => { load(); }, []);
 
   const openNew = () => setEditing({ ...blank, sort_order: list.length });
@@ -91,6 +95,7 @@ export default function HeroSlidesManager() {
   };
 
   if (loading) return <div className="spinner" />;
+  if (error) return <div className="form-alert error">{error}</div>;
 
   return (
     <div>
