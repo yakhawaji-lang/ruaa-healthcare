@@ -87,7 +87,8 @@ export async function grantTelemed(staffId, { email, password, slot_minutes, is_
   const mail = norm(email || st.email);
   if (!mail) throw Object.assign(new Error('email_required'), { code: 'email_required' });
   let user = await Users.byEmail(mail);
-  if (user && user.role !== 'doctor') throw Object.assign(new Error('email_taken'), { code: 'email_taken' });
+  if (user && user.role !== 'doctor')
+    throw Object.assign(new Error('email_taken'), { code: 'email_taken', owner: { kind: 'user', role: user.role, name: user.name } });
   if (!user) {
     // One password for the person: when they already have a control-panel login
     // and no new password is given, reuse that login's password hash.
@@ -133,7 +134,8 @@ export async function grantAdmin(staffId, { admin_id, email, password, permissio
   }
   const mail = norm(email || st.email);
   if (!mail) throw Object.assign(new Error('email_required'), { code: 'email_required' });
-  if (await Admins.byEmail(mail)) throw Object.assign(new Error('email_taken'), { code: 'email_taken' });
+  const clash = await Admins.byEmail(mail);
+  if (clash) throw Object.assign(new Error('email_taken'), { code: 'email_taken', owner: { kind: 'admin', role: clash.role, name: clash.name } });
   let hash = null;
   if (!password && st.user_id) hash = await userHash(st.user_id);   // reuse the telemedicine password
   if (!hash) {

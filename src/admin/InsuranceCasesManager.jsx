@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Eye, X, Save, Pencil, LayoutGrid, Trash2 } from 'lucide-react';
+import { Eye, X, Save, Pencil, LayoutGrid, Trash2, Building2 } from 'lucide-react';
 import { AdminAPI } from '../storage/api.js';
 import { useAdminAuth } from './AdminApp.jsx';
 import Tracking, { StatusPill } from '../account/Tracking.jsx';
@@ -98,8 +98,9 @@ function CaseDrawer({ data, onClose, onSaved }) {
   const [editing, setEditing] = useState(false);
   const reload = async () => { const fresh = await AdminAPI.case(data.id); onSaved(fresh); };
 
+  const insurerName = data.company_name || data.user_name;
   const rows = [
-    [tt.hospital, data.hospital_name], [tt.patient, data.patient_name], [tt.national_id, data.national_id],
+    [tt.insurer, insurerName], [tt.hospital, data.hospital_name], [tt.patient, data.patient_name], [tt.national_id, data.national_id],
     [tt.mobile, data.mobile], [tt.city, data.city], [tt.dob, data.dob], [tt.requested_service, data.requested_service],
   ];
 
@@ -107,7 +108,10 @@ function CaseDrawer({ data, onClose, onSaved }) {
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal wide-modal" onClick={(e) => e.stopPropagation()}>
         <div className="modal-head">
-          <h2>{tt.case} {data.ref}</h2>
+          <div className="case-head-title">
+            <h2>{tt.case} {data.ref}</h2>
+            {insurerName && <span className="case-insurer-chip" title={tt.insurer}><Building2 size={14} /> {insurerName}</span>}
+          </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <button className="btn btn-outline btn-sm" onClick={() => setEditing(true)}><Pencil size={14} /> {tt.edit}</button>
             <button onClick={onClose}><X size={20} /></button>

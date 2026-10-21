@@ -34,7 +34,9 @@ const T = {
     type: 'نوع الفرد', staff_hint: 'موظف ضمن كادر رؤى', visiting_hint: 'طبيب/ممارس زائر أو متعاقد',
     organization: 'الجهة / المنشأة', license_no: 'رقم الترخيص المهني', contract_start: 'بداية التعاقد', contract_end: 'نهاية التعاقد', contract_notes: 'ملاحظات التعاقد (الرسوم، النسبة، الشروط...)',
     home_visits: 'يظهر في قائمة الزيارات المنزلية', save: 'حفظ', saved: 'تم الحفظ', cancel: 'إلغاء', close: 'إغلاق', required: 'أدخل الاسم على الأقل.', phone_invalid: 'رقم الجوال يجب أن يكون 10 أرقام ويبدأ بـ 05.',
-    email_taken: 'البريد مستخدم في حساب آخر', weak: 'كلمة المرور قصيرة (6 أحرف)', failed: 'تعذّر الحفظ', save_first: 'احفظ البيانات أولًا ثم امنح الصلاحيات من تبويب «الصلاحيات والحسابات».',
+    email_taken: 'البريد مستخدم في حساب آخر',
+    owner_visitor: 'حساب عميل', owner_insurance: 'حساب شركة تأمين', owner_doctor: 'حساب طب اتصالي', owner_admin: 'حساب لوحة تحكم',
+    email_taken_by: (who, name) => `هذا البريد مسجَّل في ${who}${name ? ` باسم «${name}»` : ''}. استخدم بريدًا آخر لهذا الحساب، أو عدّل البريد في ذلك الحساب أولًا.`, weak: 'كلمة المرور قصيرة (6 أحرف)', failed: 'تعذّر الحفظ', save_first: 'احفظ البيانات أولًا ثم امنح الصلاحيات من تبويب «الصلاحيات والحسابات».',
     // access cards
     tm_title: 'الطب الاتصالي', tm_off: 'لا يملك حسابًا للطب الاتصالي.', tm_on: 'يملك حسابًا — يدخل من /login ويرى جدوله وينضم للاستشارات.',
     tm_email: 'بريد الدخول', tm_password: 'كلمة المرور', tm_grant: 'منح الصلاحية', tm_revoke: 'سحب الصلاحية', tm_confirm_revoke: 'سحب صلاحية الطب الاتصالي؟ سيُغلق حساب الدخول وتبقى استشاراته السابقة.',
@@ -64,7 +66,9 @@ const T = {
     type: 'Type', staff_hint: 'Employee of RU-MD', visiting_hint: 'Visiting or contracted clinician',
     organization: 'Organization / facility', license_no: 'Professional license no.', contract_start: 'Contract start', contract_end: 'Contract end', contract_notes: 'Contract notes (fees, share, terms...)',
     home_visits: 'Listed for home-visit scheduling', save: 'Save', saved: 'Saved', cancel: 'Cancel', close: 'Close', required: 'Enter at least a name.', phone_invalid: 'Mobile number must be 10 digits starting with 05.',
-    email_taken: 'Email already used by another account', weak: 'Password too short (6 chars)', failed: 'Could not save', save_first: 'Save the details first, then grant access from the "Access & accounts" tab.',
+    email_taken: 'Email already used by another account',
+    owner_visitor: 'a client account', owner_insurance: 'an insurer account', owner_doctor: 'a telemedicine account', owner_admin: 'a control-panel account',
+    email_taken_by: (who, name) => `This address already belongs to ${who}${name ? ` (${name})` : ''}. Use a different address here, or change it on that account first.`, weak: 'Password too short (6 chars)', failed: 'Could not save', save_first: 'Save the details first, then grant access from the "Access & accounts" tab.',
     tm_title: 'Telemedicine', tm_off: 'No telemedicine account.', tm_on: 'Has an account — signs in at /login to see the schedule and join consultations.',
     tm_email: 'Login email', tm_password: 'Password', tm_grant: 'Grant access', tm_revoke: 'Revoke access', tm_confirm_revoke: 'Revoke telemedicine access? The login is closed; past consultations stay.',
     slot: 'Consultation length (min)', published: 'Visible to patients for self-booking', availability: 'Availability', days_off: 'Days off', add_off: 'Add',
@@ -324,7 +328,15 @@ function AccessPanel({ s, tt, lang, isSuper, canEdit, reload }) {
   useEffect(() => { if (isSuper) AdminAPI.admins().then(setAdmins).catch(() => {}); }, [isSuper]);
   useEffect(() => { setRules(s.availability || []); setDates(s.date_availability || []); setOff(s.days_off || []); setSlot(s.slot_minutes || 20); setPub(s.is_published == null ? true : !!s.is_published); }, [s.id, s.user_id]);
   const linkedAdminIds = new Set();
-  const err = (e) => { const c = e?.response?.data?.error; setMsg(c === 'email_taken' ? tt.email_taken : c === 'weak_password' ? tt.weak : c === 'admin_linked' ? tt.linked : tt.failed); };
+  const err = (e) => {
+    const d = e?.response?.data || {};
+    if (d.error === 'email_taken') {
+      const who = d.owner && (d.owner.kind === 'admin' ? tt.owner_admin : tt['owner_' + d.owner.role]);
+      setMsg(who ? tt.email_taken_by(who, d.owner.name) : tt.email_taken);
+      return;
+    }
+    setMsg(d.error === 'weak_password' ? tt.weak : d.error === 'admin_linked' ? tt.linked : tt.failed);
+  };
 
   const grantTm = async () => { setBusy(true); setMsg(''); try { await AdminAPI.staffGrantTelemed(s.id, { email: tm.email, password: tm.password || undefined, slot_minutes: slot, is_published: pub ? 1 : 0, availability: rules, date_availability: dates }); await reload(); } catch (e) { err(e); } finally { setBusy(false); } };
   const revokeTm = async () => { if (!confirm(tt.tm_confirm_revoke)) return; await AdminAPI.staffRevokeTelemed(s.id); await reload(); };

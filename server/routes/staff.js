@@ -11,7 +11,7 @@ const fail = (res, e) => {
   const code = e?.code || 'failed';
   const status = ['email_taken', 'admin_linked'].includes(code) ? 409 : code === 'not_found' || code === 'admin_not_found' ? 404 : code === 'failed' ? 500 : 400;
   if (status === 500) console.error('[staff]', e?.sqlMessage || e?.message || e);
-  res.status(status).json({ error: code });
+  res.status(status).json({ error: code, owner: e?.owner });
 };
 const shape = (s) => s && ({ ...s, roles: (() => { try { return s.roles_json ? JSON.parse(s.roles_json) : []; } catch { return []; } })(), has_admin: !!s.admin_id, has_telemed: !!s.user_id });
 

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { CalendarPlus, Trash2, Check, X, UserRound, Stethoscope, Clock, Pencil } from 'lucide-react';
+import { CalendarPlus, Trash2, Check, X, UserRound, Stethoscope, Clock, Pencil, Plus } from 'lucide-react';
 import { AdminAPI } from '../storage/api.js';
 import { VISIT_STATUSES, visitStatusLabel, visitStatusColor, fmtDate,
   VISIT_TYPES_BI, CLINICIAN_ROLES_BI, normBiList, normStaffList, biLabel } from '../account/status.js';
@@ -16,6 +16,9 @@ const T = {
     notes: 'ملاحظات الزيارة', notes_ph: 'تفاصيل إضافية عن الزيارة (اختياري)', cancel: 'إلغاء', add_visit: 'إضافة الزيارة',
     no_visits: 'لا توجد زيارات. أضف أول زيارة منزلية.',
     complete: 'إتمام', cancel_visit: 'إلغاء', delete: 'حذف', edit: 'تعديل', save: 'حفظ التعديل', edit_visit: 'تعديل الزيارة',
+    times: 'أوقات الزيارة في اليوم', add_time: 'إضافة زيارة أخرى في نفس اليوم', remove_time: 'حذف هذا الوقت',
+    summary: (n, d, t) => `سيتم إنشاء ${n} ${n === 1 ? 'زيارة' : n === 2 ? 'زيارتين' : n <= 10 ? 'زيارات' : 'زيارة'} (${d} ${d === 1 ? 'يوم' : d === 2 ? 'يومين' : d <= 10 ? 'أيام' : 'يومًا'} × ${t} ${t === 1 ? 'زيارة' : t === 2 ? 'زيارتين' : 'زيارات'} في اليوم)`,
+    add_visits: (n) => (n > 1 ? `إضافة ${n} زيارات` : 'إضافة الزيارة'),
   },
   en: {
     confirm_delete: 'Delete the visit?', home_visits: 'Home Visits', schedule_visit: 'Schedule visit',
@@ -24,6 +27,9 @@ const T = {
     notes: 'Visit notes', notes_ph: 'Extra details about the visit (optional)', cancel: 'Cancel', add_visit: 'Add visit',
     no_visits: 'No visits. Add the first home visit.',
     complete: 'Complete', cancel_visit: 'Cancel', delete: 'Delete', edit: 'Edit', save: 'Save changes', edit_visit: 'Edit visit',
+    times: 'Visit times per day', add_time: 'Add another visit on the same day', remove_time: 'Remove this time',
+    summary: (n, d, t) => `${n} visit${n === 1 ? '' : 's'} will be created (${d} day${d === 1 ? '' : 's'} × ${t} per day)`,
+    add_visits: (n) => (n > 1 ? `Add ${n} visits` : 'Add visit'),
   },
 };
 
@@ -36,6 +42,7 @@ export default function VisitScheduler({ refType, refId, visits = [], onChange }
   const [adding, setAdding] = useState(false);
   const [f, setF] = useState(blank);
   const [dates, setDates] = useState([]); // multiple visit days
+  const [times, setTimes] = useState(['']); // one or more visits within the same day (add mode)
   const [editing, setEditing] = useState(null); // visit being edited, or null
   const [busy, setBusy] = useState(false);
   const [vTypes, setVTypes] = useState(VISIT_TYPES_BI);
@@ -81,7 +88,15 @@ export default function VisitScheduler({ refType, refId, visits = [], onChange }
     setDates(v.visit_date ? [v.visit_date] : []);
     setAdding(true);
   };
-  const closeForm = () => { setAdding(false); setF(blank); setDates([]); setEditing(null); };
+  const closeForm = () => { setAdding(false); setF(blank); setDates([]); setTimes(['']); setEditing(null); };
+  const setTime = (i, val) => setTimes((arr) => arr.map((t, j) => (j === i ? val : t)));
+  const addTime = () => setTimes((arr) => [...arr, '']);
+  const removeTime = (i) => setTimes((arr) => (arr.length > 1 ? arr.filter((_, j) => j !== i) : arr));
+  // distinct times for the day; an empty list means one visit with no fixed time
+  const dayTimes = (() => { const u = [...new Set(times.map((t) => t.trim()).filter(Boolean))].sort(); return u.length ? u : ['']; })();
+  const totalNew = dates.length * dayTimes.length;
+  // existing visits per day, shown on the calendar
+  const dayCounts = visits.reduce((m, v) => { const k = (v.visit_date || '').slice(0, 10); if (k && v.status !== 'cancelled') m[k] = (m[k] || 0) + 1; return m; }, {});
 
   const add = async () => {
     if (dates.length === 0) return;
@@ -90,8 +105,8 @@ export default function VisitScheduler({ refType, refId, visits = [], onChange }
       if (editing) {
         await AdminAPI.updateVisit(editing.id, { ...editing, ...f, visit_date: dates[0] });
       } else {
-        // create one visit per selected day (shared time / clinician / notes)
-        for (const d of dates) await AdminAPI.createVisit({ ref_type: refType, ref_id: refId, ...f, visit_date: d });
+        // one visit per selected day × per time of day (shared clinician / notes)
+        for (const d of dates) for (const t of dayTimes) await AdminAPI.createVisit({ ref_type: refType, ref_id: refId, ...f, visit_time: t, visit_date: d });
       }
       closeForm(); onChange();
     } finally { setBusy(false); }
@@ -108,7 +123,22 @@ export default function VisitScheduler({ refType, refId, visits = [], onChange }
 
       {adding && (
         <div className="vs-form">
-          <div className="field"><label>{tt.time}</label><input type="time" dir="ltr" value={f.visit_time} onChange={set('visit_time')} /></div>
+          {editing ? (
+            <div className="field"><label>{tt.time}</label><input type="time" dir="ltr" value={f.visit_time} onChange={set('visit_time')} /></div>
+          ) : (
+            <div className="field">
+              <label>{times.length > 1 ? `${tt.times} (${times.length})` : tt.time}</label>
+              <div className="vs-times">
+                {times.map((t, i) => (
+                  <div key={i} className="vs-time-row">
+                    <input type="time" dir="ltr" value={t} onChange={(e) => setTime(i, e.target.value)} />
+                    {times.length > 1 && <button type="button" className="vs-time-del" title={tt.remove_time} aria-label={tt.remove_time} onClick={() => removeTime(i)}><X size={14} /></button>}
+                  </div>
+                ))}
+              </div>
+              <button type="button" className="vs-add-time" onClick={addTime}><Plus size={14} /> {tt.add_time}</button>
+            </div>
+          )}
           <div className="field-row">
             <div className="field"><label>{tt.visit_type}</label>
               <select value={f.visit_type} onChange={set('visit_type')}>{biOptions(vTypes, f.visit_type).map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}</select></div>
@@ -130,7 +160,7 @@ export default function VisitScheduler({ refType, refId, visits = [], onChange }
           {/* Calendar at the bottom — tap days to select more than one */}
           <div className="field">
             <label>{editing ? tt.date : `${tt.dates}${dates.length > 0 ? ` (${dates.length})` : ''}`}</label>
-            <MultiDateCalendar selected={dates} onToggle={toggleDate} lang={lang} />
+            <MultiDateCalendar selected={dates} onToggle={toggleDate} lang={lang} counts={dayCounts} />
             {dates.length > 0 && (
               <div className="vs-date-chips">
                 {dates.map((d) => (
@@ -140,9 +170,11 @@ export default function VisitScheduler({ refType, refId, visits = [], onChange }
             )}
           </div>
 
+          {!editing && totalNew > 1 && <p className="vs-summary">{tt.summary(totalNew, dates.length, dayTimes.length)}</p>}
+
           <div className="vs-form-actions">
             <button className="btn btn-ghost btn-sm" onClick={closeForm}>{tt.cancel}</button>
-            <button className="btn btn-primary btn-sm" onClick={add} disabled={busy || dates.length === 0} title={dates.length === 0 ? tt.need_day : undefined}>{busy ? '...' : (editing ? tt.save : tt.add_visit)}</button>
+            <button className="btn btn-primary btn-sm" onClick={add} disabled={busy || dates.length === 0} title={dates.length === 0 ? tt.need_day : undefined}>{busy ? '...' : (editing ? tt.save : tt.add_visits(totalNew))}</button>
           </div>
         </div>
       )}

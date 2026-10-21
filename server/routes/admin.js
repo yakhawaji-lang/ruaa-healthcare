@@ -278,7 +278,7 @@ router.delete('/requests/:id', async (req, res) => {
 /* ---- Insurance cases ---- */
 router.get('/cases', async (req, res) => res.json(await InsuranceCases.listAll()));
 router.get('/cases/:id', async (req, res) => {
-  const c = await InsuranceCases.byId(req.params.id);
+  const c = await InsuranceCases.byIdWithInsurer(req.params.id);
   if (!c) return res.status(404).json({ error: 'not_found' });
   const [events, visits, messages, attachments] = await Promise.all([
     RequestEvents.list('insurance_case', c.id),

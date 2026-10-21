@@ -203,7 +203,9 @@ router.post('/cases', requireUser, requireRole('insurance'), async (req, res) =>
   await query('UPDATE insurance_cases SET ref=? WHERE id=?', [ref, r.insertId]);
   if (Array.isArray(b.attachments) && b.attachments.length) await Attachments.addMany('insurance_case', r.insertId, b.attachments);
   await RequestEvents.add({ ref_type: 'insurance_case', ref_id: r.insertId, status: 'submitted', title_ar: 'تم استلام الحالة', note: `تم استلام بيانات المريض${Array.isArray(b.attachments) && b.attachments.length ? ' مع ' + b.attachments.length + ' مرفق' : ''} وستُحوَّل للمراجعة الطبية.`, actor: 'النظام' });
-  await Notifications.notifyAdmin('case', 'حالة تأمين جديدة', `${b.patient_name} — ${b.requested_service || ''}`, `/admin/cases?open=${r.insertId}`);
+  const co = await Users.byId(await companyId(req));
+  const coName = co?.company_name || co?.name || '';
+  await Notifications.notifyAdmin('case', `حالة تأمين جديدة${coName ? ' من ' + coName : ''}`, `${b.patient_name}${b.requested_service ? ' — ' + b.requested_service : ''}${coName ? ' · ' + coName : ''}`, `/admin/cases?open=${r.insertId}`);
   res.status(201).json({ id: r.insertId, ref });
 });
 
@@ -243,7 +245,8 @@ router.put('/cases/:id', requireUser, requireRole('insurance'), async (req, res)
   });
   const u = await Users.byId(req.user.uid);
   await RequestEvents.add({ ref_type: 'insurance_case', ref_id: c.id, status: null, title_ar: 'تم تعديل بيانات الحالة', note: null, actor: u?.company_name || u?.name || 'الإدارة' });
-  await Notifications.notifyAdmin('case', 'تعديل بيانات حالة تأمين', `${b.patient_name} — ${c.ref}`, `/admin/cases?open=${c.id}`);
+  const coName = u?.company_name || u?.name || '';
+  await Notifications.notifyAdmin('case', `تعديل بيانات حالة تأمين${coName ? ' — ' + coName : ''}`, `${b.patient_name} — ${c.ref}`, `/admin/cases?open=${c.id}`);
   res.json({ ok: true });
 });
 

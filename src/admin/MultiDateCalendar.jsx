@@ -10,7 +10,8 @@ const MON = {
 };
 
 // Inline month calendar that lets the user pick MULTIPLE days (tap to toggle).
-export default function MultiDateCalendar({ selected = [], onToggle, lang = 'ar' }) {
+// `counts` (optional): { 'YYYY-MM-DD': n } — existing items on a day, shown as a small badge.
+export default function MultiDateCalendar({ selected = [], onToggle, lang = 'ar', counts = {} }) {
   const today = new Date(); today.setHours(0, 0, 0, 0);
   const [cur, setCur] = useState({ y: today.getFullYear(), m: today.getMonth() });
 
@@ -47,6 +48,7 @@ export default function MultiDateCalendar({ selected = [], onToggle, lang = 'ar'
               onClick={() => onToggle(val)}
             >
               {d}
+              {counts[val] > 0 && <span className="mdc-count">{counts[val]}</span>}
             </button>
           );
         })}

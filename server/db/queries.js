@@ -159,6 +159,9 @@ export const InsuranceCases = {
   listAll: () =>
     query(`SELECT ic.*, u.company_name, u.name AS user_name FROM insurance_cases ic JOIN users u ON u.id = ic.user_id WHERE ic.deleted_at IS NULL ORDER BY ic.created_at DESC`),
   byId: (id) => query('SELECT * FROM insurance_cases WHERE id = ? AND deleted_at IS NULL LIMIT 1', [id]).then((r) => r[0] || null),
+  // admin view: the case plus the insurance company that referred it
+  byIdWithInsurer: (id) => query(`SELECT ic.*, u.company_name, u.name AS user_name, u.phone AS company_phone, u.email AS company_email
+    FROM insurance_cases ic LEFT JOIN users u ON u.id = ic.user_id WHERE ic.id = ? AND ic.deleted_at IS NULL LIMIT 1`, [id]).then((r) => r[0] || null),
   byIdForUser: (id, uid) => query('SELECT * FROM insurance_cases WHERE id = ? AND user_id = ? AND deleted_at IS NULL LIMIT 1', [id, uid]).then((r) => r[0] || null),
   update: (id, f) => query('UPDATE insurance_cases SET status=? WHERE id=?', [f.status, id]),
   updateFields: (id, f) => query(
