@@ -212,18 +212,21 @@ router.post('/cases', requireUser, requireRole('insurance'), async (req, res) =>
 
 /* ---- Excel import (insurance company uploads a batch of cases) ---- */
 router.get('/cases-import/template', requireUser, requireRole('insurance'), async (req, res) => {
+  try {
   const cid = await companyId(req);
   const co = await Users.byId(cid);
   const buf = await buildTemplate({ services: await servicesFor(cid), companyName: co?.company_name || co?.name || '' });
   res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
   res.setHeader('Content-Disposition', 'attachment; filename="RU-MD-cases-template.xlsx"');
   res.send(Buffer.from(buf));
+  } catch (e) { console.error('[cases-import] template:', e.message); res.status(500).json({ error: e.code || 'failed' }); }
 });
 router.post('/cases-import/preview', requireUser, requireRole('insurance'), async (req, res) => {
   try { res.json(await previewImport(await companyId(req), req.body?.file)); }
   catch (e) { res.status(400).json({ error: e.code || 'bad_file', max: e.max }); }
 });
 router.post('/cases-import', requireUser, requireRole('insurance'), async (req, res) => {
+  try {
   const cid = await companyId(req);
   const [me, co] = await Promise.all([Users.byId(req.user.uid), Users.byId(cid)]);
   const r = await runImport({ companyId: cid, submitter: { user_id: req.user.uid, name: me?.name || me?.company_name || null }, rows: req.body?.rows, status: 'submitted' });
@@ -233,6 +236,7 @@ router.post('/cases-import', requireUser, requireRole('insurance'), async (req, 
       `${r.created.slice(0, 3).map((c) => c.patient_name).join('، ')}${r.created.length > 3 ? ' …' : ''}${me?.name ? ' · رفعها ' + me.name : ''}`, `/admin/cases?insurer=${cid}`);
   }
   res.status(201).json(r);
+  } catch (e) { console.error('[cases-import]', e.message); res.status(500).json({ error: e.code || 'failed' }); }
 });
 
 router.get('/cases', requireUser, requireRole('insurance'), async (req, res) => {

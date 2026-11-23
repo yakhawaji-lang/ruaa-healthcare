@@ -291,12 +291,14 @@ router.get('/cases-import/insurers', async (req, res) => {
   res.json(list.map((u) => ({ id: u.id, name: u.company_name || u.name })));
 });
 router.get('/cases-import/template', async (req, res) => {
+  try {
   const co = req.query.insurer_id ? await Users.byId(req.query.insurer_id) : null;
   const cid = co && co.role === 'insurance' ? co.id : null;
   const buf = await buildTemplate({ services: await servicesFor(cid), companyName: co?.company_name || co?.name || '' });
   res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
   res.setHeader('Content-Disposition', 'attachment; filename="RU-MD-cases-template.xlsx"');
   res.send(Buffer.from(buf));
+  } catch (e) { console.error('[cases-import] template:', e.message); res.status(500).json({ error: e.code || 'failed' }); }
 });
 router.post('/cases-import/preview', async (req, res) => {
   const co = await insurerOr400(req.body?.insurer_id, res); if (!co) return;
@@ -304,6 +306,7 @@ router.post('/cases-import/preview', async (req, res) => {
   catch (e) { res.status(400).json({ error: e.code || 'bad_file', max: e.max }); }
 });
 router.post('/cases-import', async (req, res) => {
+  try {
   const co = await insurerOr400(req.body?.insurer_id, res); if (!co) return;
   const status = req.body?.status === 'approved' ? 'approved' : 'submitted';
   const who = req.adminFull?.name || 'الإدارة';
@@ -313,6 +316,7 @@ router.post('/cases-import', async (req, res) => {
   }
   await Audit.log(req.admin.id, 'create', 'insurance_case_import', co.id);
   res.status(201).json(r);
+  } catch (e) { console.error('[cases-import]', e.message); res.status(500).json({ error: e.code || 'failed' }); }
 });
 router.get('/cases/:id', async (req, res) => {
   const c = await InsuranceCases.byIdWithInsurer(req.params.id);

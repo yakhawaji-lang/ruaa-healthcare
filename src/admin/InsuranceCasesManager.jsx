@@ -32,6 +32,7 @@ const T = {
     all_insurers: 'كل شركات التأمين', all_statuses: 'كل المراحل', search_ph: 'بحث بالاسم أو الهوية أو الجوال أو رقم الحالة',
     showing: (a, b) => `عرض ${a} من ${b}`, clear: 'مسح الفلتر', no_match: 'لا توجد حالات مطابقة للفلتر.',
     referred_by: 'المحوِّل', coordinator: 'المنسّق', coordinator_name: 'اسم المنسّق', coordinator_phone: 'جوال المنسّق', not_recorded: 'غير مسجّل',
+    load_failed: 'تعذّر تحميل الحالات من الخادم.', retry: 'إعادة المحاولة',
     import_xl: 'استيراد من Excel', share: 'مشاركة واتساب', via_excel: 'Excel', created: 'تاريخ الإرسال',
   },
   en: {
@@ -49,6 +50,7 @@ const T = {
     all_insurers: 'All insurance companies', all_statuses: 'All stages', search_ph: 'Search name, ID, mobile or case number',
     showing: (a, b) => `Showing ${a} of ${b}`, clear: 'Clear filters', no_match: 'No cases match the filter.',
     referred_by: 'Referred by', coordinator: 'Coordinator', coordinator_name: 'Coordinator name', coordinator_phone: 'Coordinator mobile', not_recorded: 'Not recorded',
+    load_failed: 'Could not load cases from the server.', retry: 'Retry',
     import_xl: 'Import from Excel', share: 'Share on WhatsApp', via_excel: 'Excel', created: 'Submitted',
   },
 };
@@ -67,7 +69,8 @@ export default function InsuranceCasesManager() {
   const [insurers, setInsurers] = useState([]);
   const [params, setParams] = useSearchParams();
 
-  const load = () => AdminAPI.cases().then(setList);
+  const [loadErr, setLoadErr] = useState(false);
+  const load = () => AdminAPI.cases().then((r) => { setList(r); setLoadErr(false); }).catch(() => setLoadErr(true));
   useEffect(() => { load(); }, []);
   const open = async (id) => setActive(await AdminAPI.case(id));
   const remove = async (e, id) => { e.stopPropagation(); if (confirm(tt.confirm_delete)) { await AdminAPI.deleteCase(id); load(); } };
@@ -142,7 +145,7 @@ export default function InsuranceCasesManager() {
           <span className="cf-count">{tt.showing(shown.length, list.length)}</span>
         </div>
 
-        {list.length === 0 ? <p className="empty">{tt.no_cases}</p> : shown.length === 0 ? <p className="empty">{tt.no_match}</p> : (
+        {loadErr ? <div className="form-alert error">{tt.load_failed} <button className="btn btn-ghost btn-sm" onClick={load}>{tt.retry}</button></div> : list.length === 0 ? <p className="empty">{tt.no_cases}</p> : shown.length === 0 ? <p className="empty">{tt.no_match}</p> : (
           <table className="admin-table cases-table">
             <thead><tr><th>{tt.ref}</th><th>{tt.insurer}</th><th>{tt.patient}</th><th>{tt.service}</th><th>{tt.status}</th><th></th></tr></thead>
             <tbody>

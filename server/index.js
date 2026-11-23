@@ -14,6 +14,7 @@ import { requireAuth } from './auth.js';
 import { ensureStaffImported } from './staff.js';
 import { ensureHeroSlides } from './hero.js';
 import { setHeroHasCta } from './db/queries.js';
+import { ensureCaseColumns } from './caseColumns.js';
 import { runMigrations } from './db/migrate.js';
 
 dotenv.config();
@@ -56,6 +57,7 @@ const PORT = process.env.PORT || 4000;
 (async () => {
   try { await runMigrations(); } catch (e) { console.error('[migrate] failed:', e.message); }
   try { await ensureStaffImported(); } catch (e) { console.warn('[staff] import skipped:', e.message); }
+  try { await ensureCaseColumns(); } catch (e) { console.warn('[cases] setup skipped:', e.message); }
   try {
     const cols = await ensureHeroSlides();
     setHeroHasCta(['cta_label_ar', 'cta_label_en', 'cta_href'].every((c) => cols.has(c)));

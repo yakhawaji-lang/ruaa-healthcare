@@ -1,9 +1,18 @@
 // Insurance-case creation shared by the insurer form, the admin form and the
 // Excel import (template, parsing, validation).
-import ExcelJS from 'exceljs';
+// exceljs is loaded on first use so the API still starts if the package is missing
+let ExcelJSmod = null;
+async function excel() {
+  if (!ExcelJSmod) {
+    try { ExcelJSmod = (await import('exceljs')).default; }
+    catch { throw Object.assign(new Error('excel_unavailable'), { code: 'excel_unavailable' }); }
+  }
+  return ExcelJSmod;
+}
 import bcrypt from 'bcryptjs';
 import { query } from './db/pool.js';
 import { Users, Services, InsuranceCases, RequestEvents, Attachments, InsurerServices } from './db/queries.js';
+import { caseReferrerReady } from './caseColumns.js';
 
 export const refCode = (prefix, id) => `${prefix}-${new Date().getFullYear()}-${String(id).padStart(5, '0')}`;
 const OPEN_STATUSES = ['submitted', 'reviewing', 'approved', 'visit_scheduled', 'in_progress'];
@@ -14,11 +23,16 @@ export const MAX_IMPORT_ROWS = 500;
 //         requested_service, coordinator_name, coordinator_phone
 export async function createCase({ companyId, submitter = {}, fields, attachments, source = 'form', status = 'submitted', receivedNote }) {
   const f = fields || {};
-  const r = await query(
+  const tmpRef = 'TMP-' + Date.now() + Math.floor(Math.random() * 100000);
+  const r = !caseReferrerReady()
+    ? await query(
+      'INSERT INTO insurance_cases (ref, user_id, hospital_name, patient_name, national_id, mobile, city, dob, diagnosis, requested_service, status) VALUES (?,?,?,?,?,?,?,?,?,?,?)',
+      [tmpRef, companyId, f.hospital_name || null, f.patient_name, f.national_id || null, f.mobile || null, f.city || null, f.dob || null, f.diagnosis || null, f.requested_service || null, 'submitted'])
+    : await query(
     `INSERT INTO insurance_cases (ref, user_id, submitted_by_user_id, submitted_by_name, hospital_name, patient_name, national_id, mobile, city, dob,
        diagnosis, requested_service, coordinator_name, coordinator_phone, source, status)
      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
-    ['TMP-' + Date.now() + Math.floor(Math.random() * 100000), companyId, submitter.user_id || null, submitter.name || null,
+    [tmpRef, companyId, submitter.user_id || null, submitter.name || null,
       f.hospital_name || null, f.patient_name, f.national_id || null, f.mobile || null, f.city || null, f.dob || null,
       f.diagnosis || null, f.requested_service || null, f.coordinator_name || null, f.coordinator_phone || null, source, 'submitted']);
   const id = r.insertId;
@@ -149,7 +163,7 @@ export async function servicesFor(companyId) {
 }
 
 export async function buildTemplate({ services = [], companyName = '' } = {}) {
-  const wb = new ExcelJS.Workbook();
+  const wb = new (await excel()).Workbook();
   wb.creator = 'RU-MD';
   const ws = wb.addWorksheet('الحالات', { views: [{ rightToLeft: true, state: 'frozen', ySplit: 1 }] });
   ws.columns = COLUMNS.map(([key, ar, en, width]) => ({ key, width, header: `${ar}\n${en}` }));
@@ -230,7 +244,7 @@ export async function parseWorkbook(base64) {
   const b64 = String(base64 || '').replace(/^data:[^,]*,/, '');
   const buf = Buffer.from(b64, 'base64');
   if (!buf.length) throw Object.assign(new Error('empty_file'), { code: 'empty_file' });
-  const wb = new ExcelJS.Workbook();
+  const wb = new (await excel()).Workbook();
   try { await wb.xlsx.load(buf); } catch { throw Object.assign(new Error('bad_file'), { code: 'bad_file' }); }
   const ws = wb.getWorksheet('الحالات') || wb.worksheets.find((w) => w.state === 'visible') || wb.worksheets[0];
   if (!ws) throw Object.assign(new Error('bad_file'), { code: 'bad_file' });

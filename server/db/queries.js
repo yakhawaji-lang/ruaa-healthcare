@@ -1,5 +1,6 @@
 // Centralized data-access layer. All SQL lives here; routes call these helpers.
 import { query, getPool } from './pool.js';
+import { caseReferrerReady } from '../caseColumns.js';
 
 /* ---------------- Admins ---------------- */
 export const Admins = {
@@ -156,21 +157,30 @@ export const InsuranceCases = {
     query('INSERT INTO insurance_cases (ref, user_id, hospital_name, patient_name, national_id, mobile, city, dob, diagnosis, requested_service, status) VALUES (?,?,?,?,?,?,?,?,?,?,?)',
       [c.ref, c.user_id, c.hospital_name || null, c.patient_name, c.national_id || null, c.mobile || null, c.city || null, c.dob || null, c.diagnosis || null, c.requested_service || null, c.status || 'submitted']),
   listByUser: (uid) => query('SELECT * FROM insurance_cases WHERE user_id = ? AND deleted_at IS NULL ORDER BY created_at DESC', [uid]),
-  listAll: () =>
-    query(`SELECT ic.*, u.company_name, u.name AS user_name, sb.email AS submitted_by_email
+  listAll: () => (caseReferrerReady()
+    ? query(`SELECT ic.*, u.company_name, u.name AS user_name, sb.email AS submitted_by_email
       FROM insurance_cases ic JOIN users u ON u.id = ic.user_id LEFT JOIN users sb ON sb.id = ic.submitted_by_user_id
-      WHERE ic.deleted_at IS NULL ORDER BY ic.created_at DESC`),
+      WHERE ic.deleted_at IS NULL ORDER BY ic.created_at DESC`)
+    : query(`SELECT ic.*, u.company_name, u.name AS user_name FROM insurance_cases ic JOIN users u ON u.id = ic.user_id WHERE ic.deleted_at IS NULL ORDER BY ic.created_at DESC`)),
   byId: (id) => query('SELECT * FROM insurance_cases WHERE id = ? AND deleted_at IS NULL LIMIT 1', [id]).then((r) => r[0] || null),
   // admin view: the case plus the insurance company that referred it
-  byIdWithInsurer: (id) => query(`SELECT ic.*, u.company_name, u.name AS user_name, u.phone AS company_phone, u.email AS company_email,
+  byIdWithInsurer: (id) => (caseReferrerReady()
+    ? query(`SELECT ic.*, u.company_name, u.name AS user_name, u.phone AS company_phone, u.email AS company_email,
       sb.email AS submitted_by_email, sb.phone AS submitted_by_phone
     FROM insurance_cases ic LEFT JOIN users u ON u.id = ic.user_id LEFT JOIN users sb ON sb.id = ic.submitted_by_user_id
-    WHERE ic.id = ? AND ic.deleted_at IS NULL LIMIT 1`, [id]).then((r) => r[0] || null),
+    WHERE ic.id = ? AND ic.deleted_at IS NULL LIMIT 1`, [id])
+    : query(`SELECT ic.*, u.company_name, u.name AS user_name, u.phone AS company_phone, u.email AS company_email
+    FROM insurance_cases ic LEFT JOIN users u ON u.id = ic.user_id WHERE ic.id = ? AND ic.deleted_at IS NULL LIMIT 1`, [id])
+  ).then((r) => r[0] || null),
   byIdForUser: (id, uid) => query('SELECT * FROM insurance_cases WHERE id = ? AND user_id = ? AND deleted_at IS NULL LIMIT 1', [id, uid]).then((r) => r[0] || null),
   update: (id, f) => query('UPDATE insurance_cases SET status=? WHERE id=?', [f.status, id]),
-  updateFields: (id, f) => query(
-    'UPDATE insurance_cases SET hospital_name=?, patient_name=?, national_id=?, mobile=?, city=?, dob=?, diagnosis=?, requested_service=?, coordinator_name=?, coordinator_phone=? WHERE id=?',
-    [f.hospital_name || null, f.patient_name, f.national_id || null, f.mobile || null, f.city || null, f.dob || null, f.diagnosis || null, f.requested_service || null, f.coordinator_name || null, f.coordinator_phone || null, id]),
+  updateFields: (id, f) => (caseReferrerReady()
+    ? query(
+      'UPDATE insurance_cases SET hospital_name=?, patient_name=?, national_id=?, mobile=?, city=?, dob=?, diagnosis=?, requested_service=?, coordinator_name=?, coordinator_phone=? WHERE id=?',
+      [f.hospital_name || null, f.patient_name, f.national_id || null, f.mobile || null, f.city || null, f.dob || null, f.diagnosis || null, f.requested_service || null, f.coordinator_name || null, f.coordinator_phone || null, id])
+    : query(
+      'UPDATE insurance_cases SET hospital_name=?, patient_name=?, national_id=?, mobile=?, city=?, dob=?, diagnosis=?, requested_service=? WHERE id=?',
+      [f.hospital_name || null, f.patient_name, f.national_id || null, f.mobile || null, f.city || null, f.dob || null, f.diagnosis || null, f.requested_service || null, id])),
   setPatientUser: (id, uid) => query('UPDATE insurance_cases SET patient_user_id=? WHERE id=?', [uid, id]),
   softDelete: (id) => query('UPDATE insurance_cases SET deleted_at = NOW() WHERE id=?', [id]),
   count: () => query('SELECT COUNT(*) AS n FROM insurance_cases WHERE deleted_at IS NULL').then((r) => r[0].n),
