@@ -3,6 +3,9 @@ import { Plus, X, Trash2, Power, KeyRound, Pencil } from 'lucide-react';
 import { AdminAPI } from '../storage/api.js';
 import { useAdminAuth } from './AdminApp.jsx';
 import { useLang } from '../i18n.jsx';
+import DataTable from '../components/DataTable.jsx';
+import { useColLabels } from '../components/colLabels.js';
+import { fmtDate } from '../account/status.js';
 import { isSaudiMobile, digits10 } from '../validation.js';
 
 const T = {
@@ -38,6 +41,16 @@ export default function ClientsManager() {
   const { lang } = useLang();
   const { can } = useAdminAuth();
   const tt = T[lang];
+  const L = useColLabels();
+  const clientCols = [
+    { key: 'name', label: tt.th_name, required: true },
+    { key: 'email', label: tt.th_email, dir: 'ltr' },
+    { key: 'phone', label: tt.th_phone, dir: 'ltr', render: (u) => u.phone || '—' },
+    { key: 'requests', label: L.requests, value: (u) => Number(u.requests_count) || 0, render: (u) => Number(u.requests_count) || '—' },
+    { key: 'last_request', label: L.last_request, default: false, value: (u) => u.last_request_at, render: (u) => <span dir="ltr">{u.last_request_at ? fmtDate(u.last_request_at) : '—'}</span> },
+    { key: 'created_at', label: L.created, default: false, render: (u) => <span dir="ltr">{fmtDate(u.created_at)}</span> },
+    { key: 'status', label: tt.th_status, value: (u) => (u.is_active ? 0 : 1), render: (u) => (u.is_active ? <span className="badge ok">{tt.active}</span> : <span className="badge off">{tt.suspended}</span>) },
+  ];
   const [list, setList] = useState([]);
   const [modal, setModal] = useState(null);
   const [pwUser, setPwUser] = useState(null);
@@ -64,25 +77,19 @@ export default function ClientsManager() {
 
       <div className="panel">
         {list.length === 0 ? <p className="empty">{tt.empty}</p> : (
-          <table className="admin-table">
-            <thead><tr><th>{tt.th_name}</th><th>{tt.th_email}</th><th>{tt.th_phone}</th><th>{tt.th_status}</th><th>{tt.th_actions}</th></tr></thead>
-            <tbody>
-              {list.map((u) => (
-                <tr key={u.id}>
-                  <td>{u.name}</td>
-                  <td dir="ltr">{u.email}</td>
-                  <td dir="ltr">{u.phone || '—'}</td>
-                  <td>{u.is_active ? <span className="badge ok">{tt.active}</span> : <span className="badge off">{tt.suspended}</span>}</td>
-                  <td className="row-actions">
-                    {canEdit && <button onClick={() => setModal({ mode: 'edit', user: u })} title={tt.edit}><Pencil size={16} /></button>}
-                    {canEdit && <button onClick={() => setPwUser(u)} title={tt.reset_password}><KeyRound size={16} /></button>}
-                    {canEdit && <button onClick={() => toggle(u)} title={tt.toggle}><Power size={16} /></button>}
-                    {canDelete && <button onClick={() => remove(u.id)} className="danger" title={tt.delete}><Trash2 size={16} /></button>}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <DataTable
+            id="clients"
+            columns={clientCols}
+            rows={list}
+            actions={(u) => (
+              <>
+                {canEdit && <button onClick={() => setModal({ mode: 'edit', user: u })} title={tt.edit}><Pencil size={16} /></button>}
+                {canEdit && <button onClick={() => setPwUser(u)} title={tt.reset_password}><KeyRound size={16} /></button>}
+                {canEdit && <button onClick={() => toggle(u)} title={tt.toggle}><Power size={16} /></button>}
+                {canDelete && <button onClick={() => remove(u.id)} className="danger" title={tt.delete}><Trash2 size={16} /></button>}
+              </>
+            )}
+          />
         )}
       </div>
 

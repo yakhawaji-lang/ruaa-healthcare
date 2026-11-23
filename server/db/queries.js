@@ -124,7 +124,14 @@ export const Users = {
     query('INSERT INTO users (role, parent_user_id, name, company_name, email, phone, password_hash) VALUES (?,?,?,?,?,?,?)',
       [u.role || 'visitor', u.parent_user_id || null, u.name, u.company_name || null, u.email, u.phone || null, hash]),
   listByRole: (role) =>
-    query('SELECT id, role, name, company_name, email, phone, is_active, created_at FROM users WHERE role = ? AND parent_user_id IS NULL AND deleted_at IS NULL ORDER BY created_at DESC', [role]),
+    query(`SELECT u.id, u.role, u.name, u.company_name, u.email, u.phone, u.is_active, u.created_at,
+      (SELECT COUNT(*) FROM insurance_cases ic WHERE ic.user_id = u.id AND ic.deleted_at IS NULL) AS cases_count,
+      (SELECT COUNT(*) FROM insurance_cases ic WHERE ic.user_id = u.id AND ic.deleted_at IS NULL AND ic.status NOT IN ('completed','rejected','cancelled')) AS open_cases,
+      (SELECT MAX(ic.created_at) FROM insurance_cases ic WHERE ic.user_id = u.id AND ic.deleted_at IS NULL) AS last_case_at,
+      (SELECT COUNT(*) FROM users m WHERE m.parent_user_id = u.id AND m.deleted_at IS NULL) AS members_count,
+      (SELECT COUNT(*) FROM service_requests sr WHERE sr.user_id = u.id AND sr.deleted_at IS NULL) AS requests_count,
+      (SELECT MAX(sr.created_at) FROM service_requests sr WHERE sr.user_id = u.id AND sr.deleted_at IS NULL) AS last_request_at
+      FROM users u WHERE u.role = ? AND u.parent_user_id IS NULL AND u.deleted_at IS NULL ORDER BY u.created_at DESC`, [role]),
   // members (sub-users) under a parent insurance company account
   subUsers: (parentId) =>
     query('SELECT id, role, name, company_name, email, phone, is_active, created_at FROM users WHERE parent_user_id = ? AND deleted_at IS NULL ORDER BY created_at DESC', [parentId]),
@@ -142,7 +149,10 @@ export const ServiceRequests = {
       [r.ref, r.user_id, r.service_id || null, r.service_title || null, r.price ?? null, r.status || 'pending', r.patient_name || null, r.phone || null, r.city || null, r.preferred_date || null, r.notes || null, r.promo_code || null, r.discount ?? null]),
   listByUser: (uid) => query('SELECT * FROM service_requests WHERE user_id = ? AND deleted_at IS NULL ORDER BY created_at DESC', [uid]),
   listAll: () =>
-    query(`SELECT sr.*, u.name AS user_name, u.email AS user_email FROM service_requests sr JOIN users u ON u.id = sr.user_id WHERE sr.deleted_at IS NULL ORDER BY sr.created_at DESC`),
+    query(`SELECT sr.*, u.name AS user_name, u.email AS user_email, u.phone AS user_phone,
+      (SELECT COUNT(*) FROM visits v WHERE v.ref_type = 'service_request' AND v.ref_id = sr.id) AS visits_count,
+      (SELECT MIN(CONCAT(v.visit_date, ' ', COALESCE(v.visit_time, ''))) FROM visits v WHERE v.ref_type = 'service_request' AND v.ref_id = sr.id AND v.status = 'scheduled' AND v.visit_date >= CURDATE()) AS next_visit
+      FROM service_requests sr JOIN users u ON u.id = sr.user_id WHERE sr.deleted_at IS NULL ORDER BY sr.created_at DESC`),
   byId: (id) => query('SELECT * FROM service_requests WHERE id = ? AND deleted_at IS NULL LIMIT 1', [id]).then((r) => r[0] || null),
   byIdForUser: (id, uid) => query('SELECT * FROM service_requests WHERE id = ? AND user_id = ? AND deleted_at IS NULL LIMIT 1', [id, uid]).then((r) => r[0] || null),
   update: (id, f) => query('UPDATE service_requests SET status=?, price=? WHERE id=?', [f.status, f.price ?? null, id]),
@@ -158,10 +168,17 @@ export const InsuranceCases = {
       [c.ref, c.user_id, c.hospital_name || null, c.patient_name, c.national_id || null, c.mobile || null, c.city || null, c.dob || null, c.diagnosis || null, c.requested_service || null, c.status || 'submitted']),
   listByUser: (uid) => query('SELECT * FROM insurance_cases WHERE user_id = ? AND deleted_at IS NULL ORDER BY created_at DESC', [uid]),
   listAll: () => (caseReferrerReady()
-    ? query(`SELECT ic.*, u.company_name, u.name AS user_name, sb.email AS submitted_by_email
+    ? query(`SELECT ic.*, u.company_name, u.name AS user_name, sb.email AS submitted_by_email,
+      (SELECT COUNT(*) FROM visits v WHERE v.ref_type = 'insurance_case' AND v.ref_id = ic.id) AS visits_count,
+      (SELECT MIN(CONCAT(v.visit_date, ' ', COALESCE(v.visit_time, ''))) FROM visits v WHERE v.ref_type = 'insurance_case' AND v.ref_id = ic.id AND v.status = 'scheduled' AND v.visit_date >= CURDATE()) AS next_visit,
+      (SELECT COUNT(*) FROM attachments a WHERE a.ref_type = 'insurance_case' AND a.ref_id = ic.id) AS attachments_count
       FROM insurance_cases ic JOIN users u ON u.id = ic.user_id LEFT JOIN users sb ON sb.id = ic.submitted_by_user_id
       WHERE ic.deleted_at IS NULL ORDER BY ic.created_at DESC`)
-    : query(`SELECT ic.*, u.company_name, u.name AS user_name FROM insurance_cases ic JOIN users u ON u.id = ic.user_id WHERE ic.deleted_at IS NULL ORDER BY ic.created_at DESC`)),
+    : query(`SELECT ic.*, u.company_name, u.name AS user_name,
+      (SELECT COUNT(*) FROM visits v WHERE v.ref_type = 'insurance_case' AND v.ref_id = ic.id) AS visits_count,
+      (SELECT MIN(CONCAT(v.visit_date, ' ', COALESCE(v.visit_time, ''))) FROM visits v WHERE v.ref_type = 'insurance_case' AND v.ref_id = ic.id AND v.status = 'scheduled' AND v.visit_date >= CURDATE()) AS next_visit,
+      (SELECT COUNT(*) FROM attachments a WHERE a.ref_type = 'insurance_case' AND a.ref_id = ic.id) AS attachments_count
+      FROM insurance_cases ic JOIN users u ON u.id = ic.user_id WHERE ic.deleted_at IS NULL ORDER BY ic.created_at DESC`)),
   byId: (id) => query('SELECT * FROM insurance_cases WHERE id = ? AND deleted_at IS NULL LIMIT 1', [id]).then((r) => r[0] || null),
   // admin view: the case plus the insurance company that referred it
   byIdWithInsurer: (id) => (caseReferrerReady()
@@ -389,7 +406,8 @@ export const PushSubs = {
 
 /* ---------------- Promo (discount) codes ---------------- */
 export const PromoCodes = {
-  listAdmin: () => query('SELECT * FROM promo_codes ORDER BY created_at DESC'),
+  listAdmin: () => query(`SELECT p.*, (SELECT COUNT(*) FROM service_requests sr WHERE sr.promo_code = p.code AND sr.deleted_at IS NULL) AS uses
+    FROM promo_codes p ORDER BY p.created_at DESC`),
   byId: (id) => query('SELECT * FROM promo_codes WHERE id=? LIMIT 1', [id]).then((r) => r[0] || null),
   byCode: (code) => query('SELECT * FROM promo_codes WHERE code=? LIMIT 1', [String(code || '').trim()]).then((r) => r[0] || null),
   create: (p) => query(

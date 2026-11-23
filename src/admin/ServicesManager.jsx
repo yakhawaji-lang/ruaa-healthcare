@@ -5,6 +5,9 @@ import { iconKeys } from '../components/ServiceIcon.jsx';
 import ServiceIcon from '../components/ServiceIcon.jsx';
 import ImageUpload from './ImageUpload.jsx';
 import { useLang } from '../i18n.jsx';
+import DataTable from '../components/DataTable.jsx';
+import { useColLabels } from '../components/colLabels.js';
+import { fmtDate } from '../account/status.js';
 
 const T = {
   ar: {
@@ -74,6 +77,17 @@ const blank = { slug: '', icon: 'stethoscope', image: '', price: '', price_publi
 export default function ServicesManager() {
   const { lang } = useLang();
   const tt = T[lang];
+  const L = useColLabels();
+  const serviceCols = [
+    { key: 'image', label: L.image, sortable: false, render: (s) => (s.image ? <img className="tbl-thumb" src={s.image} alt="" /> : <span className="tbl-icon"><ServiceIcon name={s.icon} size={20} /></span>) },
+    { key: 'title_ar', label: tt.title_ar, required: true },
+    { key: 'title_en', label: tt.title_en, dir: 'ltr' },
+    { key: 'price', label: L.price, default: false, value: (s) => Number(s.price) || 0, render: (s) => (s.price != null ? `${Number(s.price).toLocaleString('en-US')} ${L.sar}` : '—') },
+    { key: 'slug', label: L.slug, default: false, dir: 'ltr' },
+    { key: 'order', label: L.order, default: false, value: (s) => Number(s.sort_order) || 0, render: (s) => s.sort_order ?? '—' },
+    { key: 'updated_at', label: L.updated, default: false, render: (s) => <span dir="ltr">{fmtDate(s.updated_at)}</span> },
+    { key: 'status', label: tt.status, value: (s) => (s.is_published ? 0 : 1), render: (s) => (s.is_published ? <span className="badge ok">{tt.published}</span> : <span className="badge off">{tt.hidden}</span>) },
+  ];
   const [list, setList] = useState([]);
   const [editing, setEditing] = useState(null); // service object or null
   const [loading, setLoading] = useState(true);
@@ -115,23 +129,17 @@ export default function ServicesManager() {
       </div>
 
       <div className="panel">
-        <table className="admin-table">
-          <thead><tr><th></th><th>{tt.title_ar}</th><th>{tt.title_en}</th><th>{tt.status}</th><th>{tt.actions}</th></tr></thead>
-          <tbody>
-            {list.map((s) => (
-              <tr key={s.id}>
-                <td>{s.image ? <img className="tbl-thumb" src={s.image} alt="" /> : <span className="tbl-icon"><ServiceIcon name={s.icon} size={20} /></span>}</td>
-                <td>{s.title_ar}</td>
-                <td dir="ltr">{s.title_en}</td>
-                <td>{s.is_published ? <span className="badge ok">{tt.published}</span> : <span className="badge off">{tt.hidden}</span>}</td>
-                <td className="row-actions">
-                  <button onClick={() => openEdit(s.id)} title={tt.edit}><Pencil size={16} /></button>
-                  <button onClick={() => remove(s.id)} title={tt.delete} className="danger"><Trash2 size={16} /></button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <DataTable
+          id="services"
+          columns={serviceCols}
+          rows={list}
+          actions={(s) => (
+            <>
+              <button onClick={() => openEdit(s.id)} title={tt.edit}><Pencil size={16} /></button>
+              <button onClick={() => remove(s.id)} title={tt.delete} className="danger"><Trash2 size={16} /></button>
+            </>
+          )}
+        />
       </div>
 
       {editing && (

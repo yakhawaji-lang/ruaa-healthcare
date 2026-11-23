@@ -1,13 +1,16 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Eye, X, Save, Trash2 } from 'lucide-react';
+import { Eye, X, Save, Trash2, Search } from 'lucide-react';
 import { AdminAPI } from '../storage/api.js';
 import { useAdminAuth } from './AdminApp.jsx';
 import Tracking, { StatusPill } from '../account/Tracking.jsx';
 import Thread from '../account/Thread.jsx';
 import VisitScheduler from './VisitScheduler.jsx';
 import WorkflowPanel from './WorkflowPanel.jsx';
-import { REQUEST_FLOW } from '../account/status.js';
+import { REQUEST_FLOW, REQUEST_STATUSES, statusLabel, fmtDate } from '../account/status.js';
+import DataTable from '../components/DataTable.jsx';
+import { useColLabels } from '../components/colLabels.js';
+import { phonesIn } from '../share/whatsapp.js';
 import { useLang } from '../i18n.jsx';
 import ShareButtons from '../components/ShareButtons.jsx';
 import { requestText } from '../share/whatsapp.js';
@@ -25,6 +28,7 @@ const T = {
     preferred_date: 'التاريخ المفضّل', patient_file: 'الملف الطبي للمريض',
     track_log: 'سجل المتابعة', client_correspondence: 'المراسلات مع العميل',
     delete: 'حذف', confirm_delete: 'حذف هذا الطلب نهائيًا مع جميع زياراته ومرفقاته ومراسلاته؟',
+    search_ph: 'بحث بالرقم أو العميل أو الجوال أو الخدمة', all_statuses: 'كل المراحل',
   },
   en: {
     title: 'Service Requests', no_requests: 'No requests.',
@@ -33,6 +37,7 @@ const T = {
     preferred_date: 'Preferred date', patient_file: 'Patient medical file',
     track_log: 'Tracking log', client_correspondence: 'Correspondence with client',
     delete: 'Delete', confirm_delete: 'Permanently delete this request with all its visits, attachments and messages?',
+    search_ph: 'Search ref, client, mobile or service', all_statuses: 'All stages',
   },
 };
 
@@ -43,6 +48,9 @@ export default function ServiceRequestsManager() {
   const [list, setList] = useState([]);
   const [active, setActive] = useState(null);
   const [params, setParams] = useSearchParams();
+  const L = useColLabels();
+  const [q, setQ] = useState('');
+  const [fStatus, setFStatus] = useState('');
 
   const load = () => AdminAPI.requests().then(setList);
   useEffect(() => { load(); }, []);
@@ -50,6 +58,30 @@ export default function ServiceRequestsManager() {
   const open = async (id) => setActive(await AdminAPI.request(id));
   const remove = async (e, id) => { e.stopPropagation(); if (confirm(tt.confirm_delete)) { await AdminAPI.deleteRequest(id); load(); } };
   const canDelete = can('requests', 'delete');
+
+  const shown = useMemo(() => {
+    const nq = q.trim().toLowerCase();
+    return list.filter((r) => (!fStatus || r.status === fStatus)
+      && (!nq || [r.ref, r.user_name, r.user_email, r.patient_name, r.phone, r.city, r.service_title].join(' ').toLowerCase().includes(nq)));
+  }, [list, q, fStatus]);
+  const money = (v) => (v != null && v !== '' ? `${Number(v).toLocaleString('en-US')} ${tt.sar}` : '—');
+  const columns = [
+    { key: 'ref', label: tt.ref, required: true, dir: 'ltr', nowrap: true, render: (r) => <b className="dt-ref">{r.ref}</b> },
+    { key: 'created_at', label: L.created, nowrap: true, render: (r) => <span dir="ltr">{fmtDate(r.created_at)}</span> },
+    { key: 'client', wide: true, label: tt.client, required: true, value: (r) => r.user_name, render: (r) => <>{r.user_name}<br /><small className="muted" dir="ltr">{r.phone || r.user_email}</small></> },
+    { key: 'email', label: L.email, default: false, dir: 'ltr', value: (r) => r.user_email, render: (r) => r.user_email || '—' },
+    { key: 'patient', label: tt.patient, default: false, value: (r) => r.patient_name, render: (r) => r.patient_name || '—' },
+    { key: 'phone', label: tt.mobile, default: false, dir: 'ltr', nowrap: true, render: (r) => (r.phone ? phonesIn(r.phone).map((m) => <div key={m}>{m}</div>) : '—') },
+    { key: 'city', label: tt.city, default: false, render: (r) => r.city || '—' },
+    { key: 'service', wide: true, label: tt.service, value: (r) => r.service_title, render: (r) => r.service_title || '—' },
+    { key: 'price', label: tt.price, value: (r) => Number(r.price) || 0, render: (r) => money(r.price) },
+    { key: 'promo', label: L.promo, default: false, value: (r) => r.promo_code, render: (r) => (r.promo_code ? <span dir="ltr">{r.promo_code}{r.discount ? ` (−${Number(r.discount).toLocaleString('en-US')})` : ''}</span> : '—') },
+    { key: 'preferred', label: tt.preferred_date, default: false, value: (r) => r.preferred_date, render: (r) => <span dir="ltr">{r.preferred_date ? fmtDate(r.preferred_date) : '—'}</span> },
+    { key: 'visits', label: L.visits, value: (r) => r.next_visit || '', render: (r) => (Number(r.visits_count) ? <span className="dt-visits"><b>{r.visits_count}</b>{r.next_visit && <small dir="ltr">{L.next}: {fmtDate(r.next_visit)} {String(r.next_visit).slice(11, 16)}</small>}</span> : '—') },
+    { key: 'notes', wide: true, label: L.notes, default: false, value: (r) => r.notes, render: (r) => (r.notes ? <span className="dt-clip" dir="auto" title={r.notes}>{r.notes}</span> : '—') },
+    { key: 'updated_at', label: L.updated, default: false, nowrap: true, render: (r) => <span dir="ltr">{fmtDate(r.updated_at)}</span> },
+    { key: 'status', label: tt.status, required: true, value: (r) => REQUEST_STATUSES.indexOf(r.status), render: (r) => <StatusPill status={r.status} /> },
+  ];
 
   // auto-open a specific request when arriving from a notification (?open=ID)
   const openId = params.get('open');
@@ -61,27 +93,30 @@ export default function ServiceRequestsManager() {
     <div>
       <h1 className="page-title">{tt.title}</h1>
       <div className="panel">
-        {list.length === 0 ? <p className="empty">{tt.no_requests}</p> : (
-          <table className="admin-table">
-            <thead><tr><th>{tt.ref}</th><th>{tt.client}</th><th>{tt.service}</th><th>{tt.price}</th><th>{tt.status}</th><th></th></tr></thead>
-            <tbody>
-              {list.map((r) => (
-                <tr key={r.id}>
-                  <td dir="ltr">{r.ref}</td>
-                  <td>{r.user_name}<br /><small className="muted" dir="ltr">{r.phone || r.user_email}</small></td>
-                  <td>{r.service_title || '—'}</td>
-                  <td>{r.price ? `${Number(r.price).toLocaleString('en-US')} ${tt.sar}` : '—'}</td>
-                  <td><StatusPill status={r.status} /></td>
-                  <td className="row-actions">
-                    <button className="icon-act" onClick={() => open(r.id)}><Eye size={16} /></button>
-                    <ShareButtons compact text={() => AdminAPI.request(r.id).then((d) => requestText(d, lang))} />
-                    {canDelete && <button className="icon-act danger" title={tt.delete} onClick={(e) => remove(e, r.id)}><Trash2 size={16} /></button>}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
+        <DataTable
+          id="requests"
+          columns={columns}
+          rows={shown}
+          onRowClick={(r) => open(r.id)}
+          empty={<p className="empty">{tt.no_requests}</p>}
+          toolbar={(
+            <div className="case-filters">
+              <div className="cf-search"><Search size={16} /><input value={q} onChange={(e) => setQ(e.target.value)} placeholder={tt.search_ph} /></div>
+              <select value={fStatus} onChange={(e) => setFStatus(e.target.value)} className={fStatus ? 'on' : ''}>
+                <option value="">{tt.all_statuses}</option>
+                {REQUEST_STATUSES.map((st) => <option key={st} value={st}>{statusLabel(st, lang)}</option>)}
+              </select>
+              <span className="cf-count">{shown.length} / {list.length}</span>
+            </div>
+          )}
+          actions={(r) => (
+            <>
+              <button className="icon-act" onClick={() => open(r.id)}><Eye size={16} /></button>
+              <ShareButtons compact text={() => AdminAPI.request(r.id).then((d) => requestText(d, lang))} />
+              {canDelete && <button className="icon-act danger" title={tt.delete} onClick={(e) => remove(e, r.id)}><Trash2 size={16} /></button>}
+            </>
+          )}
+        />
       </div>
       {active && <RequestDrawer data={active} onClose={() => setActive(null)} onSaved={(d) => { setActive(d); load(); }} />}
     </div>

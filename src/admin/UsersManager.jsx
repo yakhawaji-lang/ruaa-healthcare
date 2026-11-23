@@ -6,6 +6,9 @@ import { Plus, X, Trash2, Power, KeyRound, Pencil, ShieldCheck,
 import { AdminAPI } from '../storage/api.js';
 import { useAdminAuth } from './AdminApp.jsx';
 import { useLang } from '../i18n.jsx';
+import DataTable from '../components/DataTable.jsx';
+import { useColLabels } from '../components/colLabels.js';
+import { fmtDate } from '../account/status.js';
 
 // Permission matrix — grouped to mirror the admin sidebar so every
 // controllable page is represented. The `actions` for each page match the
@@ -83,6 +86,15 @@ export default function UsersManager() {
   const { lang } = useLang();
   const { admin } = useAdminAuth();
   const tt = T[lang];
+  const L = useColLabels();
+  const userCols = [
+    { key: 'name', label: tt.th_name, required: true, render: (u) => <>{u.name}{u.id === admin.id ? ` (${tt.you})` : ''}</> },
+    { key: 'email', label: tt.th_email, dir: 'ltr' },
+    { key: 'role', label: tt.th_role, value: (u) => (u.is_super ? 0 : 1), render: (u) => (u.is_super ? <span className="badge ok"><ShieldCheck size={12} /> {tt.super}</span> : <span className="badge">{tt.staff}</span>) },
+    { key: 'perms', label: L.perms, default: false, value: (u) => (u.is_super ? 999 : Object.values(u.permissions?.pages || {}).filter((x) => x?.view).length), render: (u) => (u.is_super ? L.all_pages : L.pages_n(Object.values(u.permissions?.pages || {}).filter((x) => x?.view).length)) },
+    { key: 'created_at', label: L.created, default: false, render: (u) => <span dir="ltr">{fmtDate(u.created_at)}</span> },
+    { key: 'status', label: tt.th_status, value: (u) => (u.is_active ? 0 : 1), render: (u) => (u.is_active ? <span className="badge ok">{tt.active}</span> : <span className="badge off">{tt.suspended}</span>) },
+  ];
   const [list, setList] = useState([]);
   const [modal, setModal] = useState(null); // {mode:'create'|'edit', user}
   const [pwUser, setPwUser] = useState(null);
@@ -105,25 +117,19 @@ export default function UsersManager() {
 
       <div className="panel">
         {list.length === 0 ? <p className="empty">{tt.empty}</p> : (
-          <table className="admin-table">
-            <thead><tr><th>{tt.th_name}</th><th>{tt.th_email}</th><th>{tt.th_role}</th><th>{tt.th_status}</th><th>{tt.th_actions}</th></tr></thead>
-            <tbody>
-              {list.map((u) => (
-                <tr key={u.id}>
-                  <td>{u.name}{u.id === admin.id ? ` (${tt.you})` : ''}</td>
-                  <td dir="ltr">{u.email}</td>
-                  <td>{u.is_super ? <span className="badge ok"><ShieldCheck size={12} /> {tt.super}</span> : <span className="badge">{tt.staff}</span>}</td>
-                  <td>{u.is_active ? <span className="badge ok">{tt.active}</span> : <span className="badge off">{tt.suspended}</span>}</td>
-                  <td className="row-actions">
-                    <button onClick={() => setModal({ mode: 'edit', user: u })} title={tt.edit}><Pencil size={16} /></button>
-                    <button onClick={() => setPwUser(u)} title={tt.reset_password}><KeyRound size={16} /></button>
-                    {u.id !== admin.id && <button onClick={() => toggle(u)} title={tt.toggle}><Power size={16} /></button>}
-                    {u.id !== admin.id && <button onClick={() => remove(u)} className="danger" title={tt.delete}><Trash2 size={16} /></button>}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <DataTable
+            id="admins"
+            columns={userCols}
+            rows={list}
+            actions={(u) => (
+              <>
+                <button onClick={() => setModal({ mode: 'edit', user: u })} title={tt.edit}><Pencil size={16} /></button>
+                <button onClick={() => setPwUser(u)} title={tt.reset_password}><KeyRound size={16} /></button>
+                {u.id !== admin.id && <button onClick={() => toggle(u)} title={tt.toggle}><Power size={16} /></button>}
+                {u.id !== admin.id && <button onClick={() => remove(u)} className="danger" title={tt.delete}><Trash2 size={16} /></button>}
+              </>
+            )}
+          />
         )}
       </div>
 

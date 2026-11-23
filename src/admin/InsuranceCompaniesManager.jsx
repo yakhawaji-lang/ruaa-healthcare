@@ -2,6 +2,9 @@ import { useEffect, useState } from 'react';
 import { Plus, X, Trash2, Power, KeyRound, Pencil, Check, Users2, UserPlus } from 'lucide-react';
 import { AdminAPI } from '../storage/api.js';
 import { useLang } from '../i18n.jsx';
+import DataTable from '../components/DataTable.jsx';
+import { useColLabels } from '../components/colLabels.js';
+import { fmtDate } from '../account/status.js';
 import { isSaudiMobile, digits10 } from '../validation.js';
 
 const T = {
@@ -98,6 +101,19 @@ const T = {
 export default function InsuranceCompaniesManager() {
   const { lang } = useLang();
   const tt = T[lang];
+  const L = useColLabels();
+  const insurerCols = [
+    { key: 'company', label: tt.th_company, required: true, value: (u) => u.company_name || u.name, render: (u) => u.company_name || u.name },
+    { key: 'contact', label: L.contact_name, default: false, value: (u) => u.name, render: (u) => (u.company_name ? u.name : '—') },
+    { key: 'email', label: tt.th_email, dir: 'ltr' },
+    { key: 'phone', label: tt.th_phone, dir: 'ltr', render: (u) => u.phone || '—' },
+    { key: 'cases', label: L.cases, value: (u) => Number(u.cases_count) || 0, render: (u) => (Number(u.cases_count) ? <a href={`/admin/cases?insurer=${u.id}`} onClick={(e) => e.stopPropagation()}>{u.cases_count}</a> : '—') },
+    { key: 'open_cases', label: L.open_cases, value: (u) => Number(u.open_cases) || 0, render: (u) => Number(u.open_cases) || '—' },
+    { key: 'last_case', label: L.last_case, default: false, value: (u) => u.last_case_at, render: (u) => <span dir="ltr">{u.last_case_at ? fmtDate(u.last_case_at) : '—'}</span> },
+    { key: 'members', label: L.members, default: false, value: (u) => Number(u.members_count) || 0, render: (u) => Number(u.members_count) || '—' },
+    { key: 'created_at', label: L.created, default: false, render: (u) => <span dir="ltr">{fmtDate(u.created_at)}</span> },
+    { key: 'status', label: tt.th_status, value: (u) => (u.is_active ? 0 : 1), render: (u) => (u.is_active ? <span className="badge ok">{tt.active}</span> : <span className="badge off">{tt.suspended}</span>) },
+  ];
   const [list, setList] = useState([]);
   const [open, setOpen] = useState(false);
   const [pwUser, setPwUser] = useState(null);
@@ -122,26 +138,20 @@ export default function InsuranceCompaniesManager() {
 
       <div className="panel">
         {list.length === 0 ? <p className="empty">{tt.empty}</p> : (
-          <table className="admin-table">
-            <thead><tr><th>{tt.th_company}</th><th>{tt.th_email}</th><th>{tt.th_phone}</th><th>{tt.th_status}</th><th>{tt.th_actions}</th></tr></thead>
-            <tbody>
-              {list.map((u) => (
-                <tr key={u.id}>
-                  <td>{u.company_name || u.name}</td>
-                  <td dir="ltr">{u.email}</td>
-                  <td dir="ltr">{u.phone || '—'}</td>
-                  <td>{u.is_active ? <span className="badge ok">{tt.active}</span> : <span className="badge off">{tt.suspended}</span>}</td>
-                  <td className="row-actions">
-                    <button onClick={() => setMembersUser(u)} title={tt.members}><Users2 size={16} /></button>
-                    <button onClick={() => setEditUser(u)} title={tt.edit}><Pencil size={16} /></button>
-                    <button onClick={() => setPwUser(u)} title={tt.reset_password}><KeyRound size={16} /></button>
-                    <button onClick={() => toggle(u)} title={tt.toggle}><Power size={16} /></button>
-                    <button onClick={() => remove(u.id)} className="danger" title={tt.delete}><Trash2 size={16} /></button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <DataTable
+            id="insurers"
+            columns={insurerCols}
+            rows={list}
+            actions={(u) => (
+              <>
+                <button onClick={() => setMembersUser(u)} title={tt.members}><Users2 size={16} /></button>
+                <button onClick={() => setEditUser(u)} title={tt.edit}><Pencil size={16} /></button>
+                <button onClick={() => setPwUser(u)} title={tt.reset_password}><KeyRound size={16} /></button>
+                <button onClick={() => toggle(u)} title={tt.toggle}><Power size={16} /></button>
+                <button onClick={() => remove(u.id)} className="danger" title={tt.delete}><Trash2 size={16} /></button>
+              </>
+            )}
+          />
         )}
       </div>
 

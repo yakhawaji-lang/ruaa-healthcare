@@ -15,6 +15,9 @@ import StaffManager from './StaffManager.jsx';
 import VideoRoom from '../telemed/VideoRoom.jsx';
 import { CONS_FLOW, CONS_STATUSES, consLabel, modeLabel, doctorName, doctorSpecialty, fmtAt, fmtTime12, splitAt, canJoinNow, isClosed } from '../telemed/status.js';
 import '../telemed/telemed.css';
+import DataTable from '../components/DataTable.jsx';
+import { useColLabels } from '../components/colLabels.js';
+import { fmtDate } from '../account/status.js';
 
 const T = {
   ar: {
@@ -119,6 +122,22 @@ function ConsultationsTab({ tt, lang }) {
   const confirmBooking = async (id) => { if (!confirm(tt.confirm_q)) return; try { await AdminAPI.confirmConsultation(id, 'confirm'); } catch (e) { alert(e?.response?.data?.error === 'slot_taken' ? tt.slot_gone : tt.failed); } load(); };
   const rejectBooking = async (id) => { const note = prompt(tt.reject_q, ''); if (note === null) return; await AdminAPI.confirmConsultation(id, 'reject', note); load(); };
   const unconfirmedCount = (data.items || []).filter((c) => c.status === 'unconfirmed').length;
+  const L = useColLabels();
+  const consColumns = [
+    { key: 'ref', label: tt.th_ref, required: true, dir: 'ltr', nowrap: true, render: (c) => <b className="dt-ref">{c.ref}</b> },
+    { key: 'patient', wide: true, label: tt.th_patient, required: true, value: (c) => c.patient_name || c.user_name, render: (c) => <>{c.patient_name || c.user_name}<br /><small dir="ltr">{c.phone || c.user_phone || ''}</small></> },
+    { key: 'phone', label: L.phone, default: false, dir: 'ltr', render: (c) => c.phone || c.user_phone || '—' },
+    { key: 'doctor', wide: true, label: tt.th_doctor, value: (c) => c.doctor_name, render: (c) => (c.doctor_name ? doctorName(c, lang) : <span className="muted">{tt.tbd}</span>) },
+    { key: 'specialty', label: L.specialty, default: false, value: (c) => doctorSpecialty(c, lang), render: (c) => doctorSpecialty(c, lang) || '—' },
+    { key: 'when', label: tt.th_when, value: (c) => c.scheduled_at || '', render: (c) => <span dir="ltr">{c.scheduled_at ? fmtAt(c.scheduled_at, lang) : <span className="muted">{tt.tbd}</span>}</span> },
+    { key: 'duration', label: L.duration, default: false, value: (c) => Number(c.duration_min) || 0, render: (c) => c.duration_min || '—' },
+    { key: 'mode', label: tt.th_mode, value: (c) => c.mode, render: (c) => <>{c.mode === 'audio' ? <Phone size={15} /> : <Video size={15} />} {modeLabel(c.mode, lang)}</> },
+    { key: 'complaint', wide: true, label: L.complaint, default: false, value: (c) => c.complaint, render: (c) => (c.complaint ? <span className="dt-clip" dir="auto" title={c.complaint}>{c.complaint}</span> : '—') },
+    { key: 'price', label: L.price, default: false, value: (c) => Number(c.price) || 0, render: (c) => (c.price != null ? `${Number(c.price).toLocaleString('en-US')} ${L.sar}` : '—') },
+    { key: 'source', label: L.source, default: false, render: (c) => c.source || '—' },
+    { key: 'created_at', label: L.created, default: false, nowrap: true, render: (c) => <span dir="ltr">{fmtDate(c.created_at)}</span> },
+    { key: 'status', label: tt.th_status, required: true, value: (c) => CONS_STATUSES.indexOf(c.status), render: (c) => <ConsPill status={c.status} /> },
+  ];
 
   return (
     <>
@@ -133,33 +152,26 @@ function ConsultationsTab({ tt, lang }) {
         {can('telemed', 'create') && <button className="btn btn-primary" onClick={() => setCreating(true)}><Plus size={18} /> {tt.new_cons}</button>}
       </div>
       <div className="panel">
-        {items.length === 0 ? <p className="empty">{tt.empty}</p> : (
-          <table className="admin-table">
-            <thead><tr><th>{tt.th_ref}</th><th>{tt.th_patient}</th><th>{tt.th_doctor}</th><th>{tt.th_when}</th><th>{tt.th_mode}</th><th>{tt.th_status}</th><th>{tt.th_actions}</th></tr></thead>
-            <tbody>
-              {items.map((c) => (
-                <tr key={c.id} className={canJoinNow(c) ? 'tm-row-live' : ''}>
-                  <td dir="ltr">{c.ref}</td>
-                  <td>{c.patient_name || c.user_name}<br /><small dir="ltr">{c.phone || c.user_phone || ''}</small></td>
-                  <td>{c.doctor_name ? doctorName(c, lang) : <span className="muted">{tt.tbd}</span>}</td>
-                  <td dir="ltr">{c.scheduled_at ? fmtAt(c.scheduled_at, lang) : <span className="muted">{tt.tbd}</span>}</td>
-                  <td>{c.mode === 'audio' ? <Phone size={15} /> : <Video size={15} />} {modeLabel(c.mode, lang)}</td>
-                  <td><ConsPill status={c.status} /></td>
-                  <td className="row-actions">
-                    {c.status === 'unconfirmed' && can('telemed', 'confirm') && (
-                      <>
-                        <button onClick={() => confirmBooking(c.id)} className="ok" title={tt.confirm}><CheckCircle2 size={16} /></button>
-                        <button onClick={() => rejectBooking(c.id)} className="danger" title={tt.reject}><XCircle size={16} /></button>
-                      </>
-                    )}
-                    <button onClick={() => setOpenId(c.id)} title={tt.open}><Pencil size={16} /></button>
-                    {can('telemed', 'delete') && <button onClick={() => remove(c.id)} className="danger" title={tt.delete}><Trash2 size={16} /></button>}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
+        <DataTable
+          id="telemed"
+          columns={consColumns}
+          rows={items}
+          rowClass={(c) => (canJoinNow(c) ? 'tm-row-live' : '')}
+          onRowClick={(c) => setOpenId(c.id)}
+          empty={<p className="empty">{tt.empty}</p>}
+          actions={(c) => (
+            <>
+              {c.status === 'unconfirmed' && can('telemed', 'confirm') && (
+                <>
+                  <button onClick={() => confirmBooking(c.id)} className="ok" title={tt.confirm}><CheckCircle2 size={16} /></button>
+                  <button onClick={() => rejectBooking(c.id)} className="danger" title={tt.reject}><XCircle size={16} /></button>
+                </>
+              )}
+              <button onClick={() => setOpenId(c.id)} title={tt.open}><Pencil size={16} /></button>
+              {can('telemed', 'delete') && <button onClick={() => remove(c.id)} className="danger" title={tt.delete}><Trash2 size={16} /></button>}
+            </>
+          )}
+        />
       </div>
       {openId && <ConsultationModal id={openId} tt={tt} lang={lang} onClose={close} />}
       {creating && <NewConsultationModal tt={tt} lang={lang} onClose={() => setCreating(false)} onDone={(id) => { setCreating(false); load(); setOpenId(id); }} />}

@@ -8,6 +8,8 @@ import { Plus, X, Pencil, Power, Trash2, Search, UserRound, ShieldCheck, Briefca
 import { AdminAPI } from '../storage/api.js';
 import { useAdminAuth } from './AdminApp.jsx';
 import { useLang } from '../i18n.jsx';
+import DataTable from '../components/DataTable.jsx';
+import { useColLabels } from '../components/colLabels.js';
 import { isSaudiMobile, digits10, phoneInputProps } from '../validation.js';
 import { CLINICIAN_ROLES_BI, normBiList, biLabel } from '../account/status.js';
 import ImageUpload from './ImageUpload.jsx';
@@ -88,6 +90,44 @@ export default function StaffManager({ embedded = false, filter: initialFilter =
   const { lang } = useLang();
   const { can, admin } = useAdminAuth();
   const tt = T[lang];
+  const L = useColLabels();
+  const nm = (s) => doctorName({ name: lang === 'en' ? (s.name_en || s.name_ar) : s.name_ar, title_ar: s.title_ar, title_en: s.title_en, profession_ar: s.profession_ar, profession_en: s.profession_en }, lang);
+  const spec = (s) => (lang === 'en' ? s.specialty_en || s.specialty_ar : s.specialty_ar || s.specialty_en);
+  const staffCols = [
+    { key: 'name', label: tt.th_name, required: true, value: (s) => s.name_ar, render: (s) => (
+      <div className="tm-doc-card">
+        <span className="tm-avatar">{s.photo ? <img src={s.photo} alt="" /> : <UserRound size={18} />}</span>
+        <div><strong>{nm(s)}</strong><small>{lang === 'en' ? s.name_ar : (s.name_en || '')}</small></div>
+      </div>
+    ) },
+    { key: 'profession', label: tt.th_prof, value: (s) => s.profession_ar, render: (s) => (
+      <>
+        <div className="st-chips">
+          {s.profession_ar && <span className="st-chip main">{roleLabel(s.profession_ar)}</span>}
+          {(s.roles || []).filter((r) => r !== s.profession_ar).map((r) => <span key={r} className="st-chip">{roleLabel(r)}</span>)}
+        </div>
+        {spec(s) && <small className="muted">{spec(s)}</small>}
+      </>
+    ) },
+    { key: 'type', label: tt.th_type, value: (s) => s.staff_type, render: (s) => (s.staff_type === 'visiting'
+      ? <span className="badge tm-badge-visiting" title={s.organization || ''}><Briefcase size={12} /> {tt.type_visiting}{s.contract_end ? <small dir="ltr"> · {s.contract_end}</small> : null}</span>
+      : <span className="badge ok"><ShieldCheck size={12} /> {tt.type_staff}</span>) },
+    { key: 'phone', label: L.phone, dir: 'ltr', render: (s) => s.phone || '—' },
+    { key: 'email', label: L.email, default: false, dir: 'ltr', render: (s) => s.email || '—' },
+    { key: 'organization', label: L.organization, default: false, render: (s) => s.organization || '—' },
+    { key: 'license', label: L.license, default: false, dir: 'ltr', value: (s) => s.license_no, render: (s) => s.license_no || '—' },
+    { key: 'contract', label: L.contract, default: false, value: (s) => s.contract_end || '', render: (s) => (s.contract_start || s.contract_end ? <span dir="ltr">{s.contract_start || '…'} → {s.contract_end || '…'}</span> : '—') },
+    { key: 'access', label: tt.th_access, value: (s) => (s.home_visits ? 1 : 0) + (s.has_telemed ? 1 : 0) + (s.has_admin ? 1 : 0), render: (s) => (
+      <div className="st-access">
+        <span className={`st-acc ${s.home_visits ? 'on' : ''}`} title={tt.acc_visits}><Home size={13} /> {tt.acc_visits}</span>
+        <span className={`st-acc ${s.has_telemed ? 'on' : ''}`} title={tt.acc_telemed}><Video size={13} /> {tt.acc_telemed}</span>
+        <span className={`st-acc ${s.has_admin ? 'on' : ''}`} title={tt.acc_admin}><LayoutDashboard size={13} /> {tt.acc_admin}</span>
+      </div>
+    ) },
+    { key: 'slot', label: L.slot, default: false, value: (s) => Number(s.slot_minutes) || 0, render: (s) => (s.has_telemed && s.slot_minutes ? `${s.slot_minutes} ${L.min}` : '—') },
+    { key: 'self_booking', label: L.self_booking, default: false, value: (s) => (s.has_telemed ? (s.is_published ? 1 : 0) : -1), render: (s) => (s.has_telemed ? (s.is_published ? L.yes : L.no) : '—') },
+    { key: 'status', label: tt.th_status, value: (s) => (s.is_active ? 0 : 1), render: (s) => (s.is_active ? <span className="badge ok">{tt.active}</span> : <span className="badge off">{tt.suspended}</span>) },
+  ];
   const page = embedded ? 'telemed' : 'staff';
   const [list, setList] = useState([]);
   const [roles, setRoles] = useState(CLINICIAN_ROLES_BI);
@@ -136,46 +176,20 @@ export default function StaffManager({ embedded = false, filter: initialFilter =
 
       <div className="panel">
         {shown.length === 0 ? <p className="empty">{tt.empty}</p> : (
-          <table className="admin-table st-table">
-            <thead><tr><th>{tt.th_name}</th><th>{tt.th_prof}</th><th>{tt.th_type}</th><th>{tt.th_contact}</th><th>{tt.th_access}</th><th>{tt.th_status}</th><th>{tt.th_actions}</th></tr></thead>
-            <tbody>
-              {shown.map((s) => (
-                <tr key={s.id} className={s.is_active ? '' : 'st-row-off'}>
-                  <td>
-                    <div className="tm-doc-card">
-                      <span className="tm-avatar">{s.photo ? <img src={s.photo} alt="" /> : <UserRound size={18} />}</span>
-                      <div><strong>{doctorName({ name: lang === 'en' ? (s.name_en || s.name_ar) : s.name_ar, title_ar: s.title_ar, title_en: s.title_en, profession_ar: s.profession_ar, profession_en: s.profession_en }, lang)}</strong>
-                        <small>{lang === 'en' ? s.name_ar : (s.name_en || '')}</small></div>
-                    </div>
-                  </td>
-                  <td>
-                    <div className="st-chips">
-                      {s.profession_ar && <span className="st-chip main">{roleLabel(s.profession_ar)}</span>}
-                      {(s.roles || []).filter((r) => r !== s.profession_ar).map((r) => <span key={r} className="st-chip">{roleLabel(r)}</span>)}
-                    </div>
-                    {(lang === 'en' ? s.specialty_en || s.specialty_ar : s.specialty_ar || s.specialty_en) && <small className="muted">{lang === 'en' ? s.specialty_en || s.specialty_ar : s.specialty_ar || s.specialty_en}</small>}
-                  </td>
-                  <td>{s.staff_type === 'visiting'
-                    ? <span className="badge tm-badge-visiting" title={s.organization || ''}><Briefcase size={12} /> {tt.type_visiting}{s.contract_end ? <small dir="ltr"> · {s.contract_end}</small> : null}</span>
-                    : <span className="badge ok"><ShieldCheck size={12} /> {tt.type_staff}</span>}</td>
-                  <td dir="ltr" className="st-contact">{s.phone && <div>{s.phone}</div>}{s.email && <div>{s.email}</div>}</td>
-                  <td>
-                    <div className="st-access">
-                      <span className={`st-acc ${s.home_visits ? 'on' : ''}`} title={tt.acc_visits}><Home size={13} /> {tt.acc_visits}</span>
-                      <span className={`st-acc ${s.has_telemed ? 'on' : ''}`} title={tt.acc_telemed}><Video size={13} /> {tt.acc_telemed}</span>
-                      <span className={`st-acc ${s.has_admin ? 'on' : ''}`} title={tt.acc_admin}><LayoutDashboard size={13} /> {tt.acc_admin}</span>
-                    </div>
-                  </td>
-                  <td>{s.is_active ? <span className="badge ok">{tt.active}</span> : <span className="badge off">{tt.suspended}</span>}</td>
-                  <td className="row-actions">
-                    {can(page, 'edit') && <button onClick={() => setModal({ id: s.id })} title={tt.edit}><Pencil size={16} /></button>}
-                    {can(page, 'edit') && <button onClick={() => toggle(s)} title={tt.toggle}><Power size={16} /></button>}
-                    {can(page, 'delete') && <button onClick={() => remove(s.id)} className="danger" title={tt.delete}><Trash2 size={16} /></button>}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <DataTable
+            id={`staff-${initialFilter || 'all'}`}
+            className="st-dt"
+            columns={staffCols}
+            rows={shown}
+            rowClass={(s) => (s.is_active ? '' : 'st-row-off')}
+            actions={(s) => (
+              <>
+                {can(page, 'edit') && <button onClick={() => setModal({ id: s.id })} title={tt.edit}><Pencil size={16} /></button>}
+                {can(page, 'edit') && <button onClick={() => toggle(s)} title={tt.toggle}><Power size={16} /></button>}
+                {can(page, 'delete') && <button onClick={() => remove(s.id)} className="danger" title={tt.delete}><Trash2 size={16} /></button>}
+              </>
+            )}
+          />
         )}
       </div>
 

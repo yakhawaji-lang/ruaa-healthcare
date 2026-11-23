@@ -11,7 +11,8 @@ import WorkflowPanel from './WorkflowPanel.jsx';
 import { CASE_FLOW, CASE_STATUSES, statusLabel, fmtDate } from '../account/status.js';
 import ShareButtons from '../components/ShareButtons.jsx';
 import ExcelImportModal from '../components/ExcelImportModal.jsx';
-import { caseText } from '../share/whatsapp.js';
+import DataTable from '../components/DataTable.jsx';
+import { caseText, phonesIn } from '../share/whatsapp.js';
 import { useLang } from '../i18n.jsx';
 import DobInput from '../components/DobInput.jsx';
 import ServicePickerModal from '../components/ServicePickerModal.jsx';
@@ -33,6 +34,8 @@ const T = {
     showing: (a, b) => `عرض ${a} من ${b}`, clear: 'مسح الفلتر', no_match: 'لا توجد حالات مطابقة للفلتر.',
     referred_by: 'المحوِّل', coordinator: 'المنسّق', coordinator_name: 'اسم المنسّق', coordinator_phone: 'جوال المنسّق', not_recorded: 'غير مسجّل',
     load_failed: 'تعذّر تحميل الحالات من الخادم.', retry: 'إعادة المحاولة',
+    col_visits: 'الزيارات', next: 'القادمة', col_atts: 'المرفقات', col_source: 'المصدر', col_updated: 'آخر تحديث',
+    src_form: 'نموذج', src_excel: 'Excel (الشركة)', src_admin_excel: 'Excel (الإدارة)',
     import_xl: 'استيراد من Excel', share: 'مشاركة واتساب', via_excel: 'Excel', created: 'تاريخ الإرسال',
   },
   en: {
@@ -51,6 +54,8 @@ const T = {
     showing: (a, b) => `Showing ${a} of ${b}`, clear: 'Clear filters', no_match: 'No cases match the filter.',
     referred_by: 'Referred by', coordinator: 'Coordinator', coordinator_name: 'Coordinator name', coordinator_phone: 'Coordinator mobile', not_recorded: 'Not recorded',
     load_failed: 'Could not load cases from the server.', retry: 'Retry',
+    col_visits: 'Visits', next: 'next', col_atts: 'Attachments', col_source: 'Source', col_updated: 'Last update',
+    src_form: 'Form', src_excel: 'Excel (insurer)', src_admin_excel: 'Excel (admin)',
     import_xl: 'Import from Excel', share: 'Share on WhatsApp', via_excel: 'Excel', created: 'Submitted',
   },
 };
@@ -115,6 +120,29 @@ export default function InsuranceCasesManager() {
   }, [list, fInsurer, fStatus, q]);
   const filtered = fInsurer || fStatus || q;
 
+  const srcLabel = (v) => (v ? tt['src_' + v] || v : '');
+  const dash = (v) => (v == null || v === '' ? '—' : v);
+  const columns = [
+    { key: 'ref', label: tt.ref, required: true, dir: 'ltr', nowrap: true, render: (c) => <b className="dt-ref">{c.ref}</b> },
+    { key: 'created_at', label: tt.created, nowrap: true, value: (c) => c.created_at, render: (c) => <span dir="ltr">{fmtDate(c.created_at)}</span> },
+    { key: 'insurer', wide: true, label: tt.insurer, value: (c) => c.company_name || c.user_name, render: (c) => c.company_name || c.user_name },
+    { key: 'submitted_by', label: tt.referred_by, value: (c) => c.submitted_by_name, render: (c) => (c.submitted_by_name ? <span className="dt-sub"><UserRound size={12} /> {c.submitted_by_name}</span> : <span className="muted">—</span>) },
+    { key: 'coordinator', label: tt.coordinator, default: false, value: (c) => c.coordinator_name, render: (c) => (c.coordinator_name || c.coordinator_phone ? <>{c.coordinator_name}{c.coordinator_phone && <><br /><small className="muted" dir="ltr">{c.coordinator_phone}</small></>}</> : '—') },
+    { key: 'hospital', label: tt.hospital, default: false, value: (c) => c.hospital_name, render: (c) => dash(c.hospital_name) },
+    { key: 'patient', wide: true, label: tt.patient, required: true, value: (c) => c.patient_name, render: (c) => <>{c.patient_name}<br /><small className="muted" dir="ltr">{c.national_id || ''}</small></> },
+    { key: 'national_id', label: tt.national_id, default: false, dir: 'ltr', render: (c) => dash(c.national_id) },
+    { key: 'mobile', label: tt.mobile, default: false, dir: 'ltr', nowrap: true, render: (c) => (c.mobile ? phonesIn(c.mobile).map((m) => <div key={m}>{m}</div>) : '—') },
+    { key: 'city', label: tt.city, default: false, render: (c) => dash(c.city) },
+    { key: 'dob', label: tt.dob, default: false, dir: 'ltr', render: (c) => dash(c.dob) },
+    { key: 'service', wide: true, label: tt.service, value: (c) => c.requested_service, render: (c) => <span dir="auto">{c.requested_service || '—'}</span> },
+    { key: 'diagnosis', wide: true, label: tt.diagnosis, default: false, value: (c) => c.diagnosis, render: (c) => (c.diagnosis ? <span className="dt-clip" dir="auto" title={c.diagnosis}>{c.diagnosis}</span> : '—') },
+    { key: 'visits', label: tt.col_visits, value: (c) => c.next_visit || (c.visits_count ? '~' : ''), render: (c) => (Number(c.visits_count) ? <span className="dt-visits"><b>{c.visits_count}</b>{c.next_visit && <small dir="ltr">{tt.next}: {fmtDate(c.next_visit)} {String(c.next_visit).slice(11, 16)}</small>}</span> : '—') },
+    { key: 'attachments', label: tt.col_atts, default: false, value: (c) => Number(c.attachments_count) || 0, render: (c) => (Number(c.attachments_count) || '—') },
+    { key: 'source', label: tt.col_source, default: false, value: (c) => c.source, render: (c) => dash(srcLabel(c.source)) },
+    { key: 'updated_at', label: tt.col_updated, default: false, nowrap: true, value: (c) => c.updated_at, render: (c) => <span dir="ltr">{fmtDate(c.updated_at)}</span> },
+    { key: 'status', label: tt.status, required: true, value: (c) => CASE_STATUSES.indexOf(c.status), render: (c) => <StatusPill status={c.status} /> },
+  ];
+
   const openImport = async () => {
     setImporting(true);
     if (!insurers.length) AdminAPI.importInsurers().then(setInsurers).catch(() => setInsurers(insurerOpts.map((i) => ({ id: i.id, name: i.name }))));
@@ -128,46 +156,39 @@ export default function InsuranceCasesManager() {
       </div>
 
       <div className="panel">
-        <div className="case-filters">
-          <div className="cf-search">
-            <Search size={16} />
-            <input value={q} onChange={(e) => setParam('q', e.target.value)} placeholder={tt.search_ph} />
-          </div>
-          <select value={fInsurer} onChange={(e) => setParam('insurer', e.target.value)} className={fInsurer ? 'on' : ''}>
-            <option value="">{tt.all_insurers} ({list.length})</option>
-            {insurerOpts.map((i) => <option key={i.id} value={i.id}>{i.name} ({i.n})</option>)}
-          </select>
-          <select value={fStatus} onChange={(e) => setParam('status', e.target.value)} className={fStatus ? 'on' : ''}>
-            <option value="">{tt.all_statuses}</option>
-            {CASE_STATUSES.map((st) => <option key={st} value={st}>{statusLabel(st, lang)}</option>)}
-          </select>
-          {filtered && <button className="btn btn-ghost btn-sm" onClick={clearAll}><X size={14} /> {tt.clear}</button>}
-          <span className="cf-count">{tt.showing(shown.length, list.length)}</span>
-        </div>
-
-        {loadErr ? <div className="form-alert error">{tt.load_failed} <button className="btn btn-ghost btn-sm" onClick={load}>{tt.retry}</button></div> : list.length === 0 ? <p className="empty">{tt.no_cases}</p> : shown.length === 0 ? <p className="empty">{tt.no_match}</p> : (
-          <table className="admin-table cases-table">
-            <thead><tr><th>{tt.ref}</th><th>{tt.insurer}</th><th>{tt.patient}</th><th>{tt.service}</th><th>{tt.status}</th><th></th></tr></thead>
-            <tbody>
-              {shown.map((c) => (
-                <tr key={c.id} className="clickable" onClick={() => open(c.id)}>
-                  <td dir="ltr">{c.ref}<br /><small className="muted">{fmtDate(c.created_at)}</small></td>
-                  <td>
-                    {c.company_name || c.user_name}
-                    {c.submitted_by_name && <><br /><small className="muted" title={tt.referred_by}><UserRound size={11} /> {c.submitted_by_name}{c.source && c.source.includes('excel') ? ` · ${tt.via_excel}` : ''}</small></>}
-                  </td>
-                  <td>{c.patient_name}<br /><small className="muted" dir="ltr">{c.national_id || ''}</small></td>
-                  <td dir="auto">{c.requested_service || '—'}</td>
-                  <td><StatusPill status={c.status} /></td>
-                  <td className="row-actions" onClick={(e) => e.stopPropagation()}>
-                    <button className="icon-act" onClick={() => open(c.id)}><Eye size={16} /></button>
-                    <ShareButtons compact text={() => AdminAPI.case(c.id).then((d) => caseText(d, lang))} />
-                    {canDelete && <button className="icon-act danger" title={tt.delete} onClick={(e) => remove(e, c.id)}><Trash2 size={16} /></button>}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        {loadErr ? <div className="form-alert error">{tt.load_failed} <button className="btn btn-ghost btn-sm" onClick={load}>{tt.retry}</button></div> : (
+          <DataTable
+            id="cases"
+            columns={columns}
+            rows={shown}
+            onRowClick={(c) => open(c.id)}
+            empty={<p className="empty">{list.length === 0 ? tt.no_cases : tt.no_match}</p>}
+            toolbar={(
+              <div className="case-filters">
+                <div className="cf-search">
+                  <Search size={16} />
+                  <input value={q} onChange={(e) => setParam('q', e.target.value)} placeholder={tt.search_ph} />
+                </div>
+                <select value={fInsurer} onChange={(e) => setParam('insurer', e.target.value)} className={fInsurer ? 'on' : ''}>
+                  <option value="">{tt.all_insurers} ({list.length})</option>
+                  {insurerOpts.map((i) => <option key={i.id} value={i.id}>{i.name} ({i.n})</option>)}
+                </select>
+                <select value={fStatus} onChange={(e) => setParam('status', e.target.value)} className={fStatus ? 'on' : ''}>
+                  <option value="">{tt.all_statuses}</option>
+                  {CASE_STATUSES.map((st) => <option key={st} value={st}>{statusLabel(st, lang)}</option>)}
+                </select>
+                {filtered && <button className="btn btn-ghost btn-sm" onClick={clearAll}><X size={14} /> {tt.clear}</button>}
+                <span className="cf-count">{tt.showing(shown.length, list.length)}</span>
+              </div>
+            )}
+            actions={(c) => (
+              <>
+                <button className="icon-act" onClick={() => open(c.id)}><Eye size={16} /></button>
+                <ShareButtons compact text={() => AdminAPI.case(c.id).then((d) => caseText(d, lang))} />
+                {canDelete && <button className="icon-act danger" title={tt.delete} onClick={(e) => remove(e, c.id)}><Trash2 size={16} /></button>}
+              </>
+            )}
+          />
         )}
       </div>
       {active && <CaseDrawer data={active} onClose={() => setActive(null)} onSaved={(d) => { setActive(d); load(); }} />}

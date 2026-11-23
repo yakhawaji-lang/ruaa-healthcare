@@ -2,6 +2,9 @@ import { useEffect, useState } from 'react';
 import { Plus, X, Trash2, Power, Pencil, Ticket, CalendarRange, Check } from 'lucide-react';
 import { AdminAPI } from '../storage/api.js';
 import { useLang } from '../i18n.jsx';
+import DataTable from '../components/DataTable.jsx';
+import { useColLabels } from '../components/colLabels.js';
+import { fmtDate } from '../account/status.js';
 import DateRangeCalendar from './DateRangeCalendar.jsx';
 
 const T = {
@@ -39,6 +42,16 @@ const fmt = (d) => (d ? String(d).slice(0, 10) : '');
 export default function PromoCodesManager() {
   const { lang } = useLang();
   const tt = T[lang];
+  const L = useColLabels();
+  const promoCols = [
+    { key: 'code', label: tt.th_code, required: true, render: (p) => <span className="promo-code"><Ticket size={13} /> {p.code}</span> },
+    { key: 'discount', label: tt.th_discount, value: (p) => Number(p.discount_value) || 0, render: (p) => discountText(p) },
+    { key: 'period', label: tt.th_period, value: (p) => p.starts_at || '', render: (p) => <span dir="ltr">{periodText(p)}</span> },
+    { key: 'services', label: tt.th_services, value: (p) => (p.all_services ? -1 : parseIds(p.service_ids).length), render: (p) => (p.all_services ? tt.all_services : `${tt.selected} (${parseIds(p.service_ids).length})`) },
+    { key: 'uses', label: L.uses, value: (p) => Number(p.uses) || 0, render: (p) => Number(p.uses) || '—' },
+    { key: 'created_at', label: L.created, default: false, render: (p) => <span dir="ltr">{fmtDate(p.created_at)}</span> },
+    { key: 'status', label: tt.th_status, value: (p) => (p.is_active ? 0 : 1), render: (p) => (p.is_active ? <span className="badge ok">{tt.active}</span> : <span className="badge off">{tt.inactive}</span>) },
+  ];
   const [list, setList] = useState([]);
   const [modal, setModal] = useState(null); // {mode, promo}
 
@@ -63,25 +76,18 @@ export default function PromoCodesManager() {
 
       <div className="panel">
         {list.length === 0 ? <p className="empty">{tt.empty}</p> : (
-          <table className="admin-table">
-            <thead><tr><th>{tt.th_code}</th><th>{tt.th_discount}</th><th>{tt.th_period}</th><th>{tt.th_services}</th><th>{tt.th_status}</th><th>{tt.th_actions}</th></tr></thead>
-            <tbody>
-              {list.map((p) => (
-                <tr key={p.id}>
-                  <td><span className="promo-code"><Ticket size={13} /> {p.code}</span></td>
-                  <td>{discountText(p)}</td>
-                  <td dir="ltr">{periodText(p)}</td>
-                  <td>{p.all_services ? tt.all_services : `${tt.selected} (${parseIds(p.service_ids).length})`}</td>
-                  <td>{p.is_active ? <span className="badge ok">{tt.active}</span> : <span className="badge off">{tt.inactive}</span>}</td>
-                  <td className="row-actions">
-                    <button onClick={() => setModal({ mode: 'edit', promo: p })} title={tt.edit}><Pencil size={16} /></button>
-                    <button onClick={() => toggle(p)} title={tt.toggle}><Power size={16} /></button>
-                    <button onClick={() => remove(p)} className="danger" title={tt.delete}><Trash2 size={16} /></button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <DataTable
+            id="promos"
+            columns={promoCols}
+            rows={list}
+            actions={(p) => (
+              <>
+                <button onClick={() => setModal({ mode: 'edit', promo: p })} title={tt.edit}><Pencil size={16} /></button>
+                <button onClick={() => toggle(p)} title={tt.toggle}><Power size={16} /></button>
+                <button onClick={() => remove(p)} className="danger" title={tt.delete}><Trash2 size={16} /></button>
+              </>
+            )}
+          />
         )}
       </div>
 
