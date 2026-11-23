@@ -9,6 +9,8 @@ import VisitScheduler from './VisitScheduler.jsx';
 import WorkflowPanel from './WorkflowPanel.jsx';
 import { REQUEST_FLOW } from '../account/status.js';
 import { useLang } from '../i18n.jsx';
+import ShareButtons from '../components/ShareButtons.jsx';
+import { requestText } from '../share/whatsapp.js';
 
 const PROFILE_LABELS = {
   ar: { gender: 'الجنس', dob: 'الميلاد', blood_type: 'فصيلة الدم', address: 'العنوان', chronic_conditions: 'أمراض مزمنة', allergies: 'حساسية', medications: 'أدوية', emergency_name: 'طوارئ', emergency_phone: 'هاتف طوارئ' },
@@ -72,6 +74,7 @@ export default function ServiceRequestsManager() {
                   <td><StatusPill status={r.status} /></td>
                   <td className="row-actions">
                     <button className="icon-act" onClick={() => open(r.id)}><Eye size={16} /></button>
+                    <ShareButtons compact text={() => AdminAPI.request(r.id).then((d) => requestText(d, lang))} />
                     {canDelete && <button className="icon-act danger" title={tt.delete} onClick={(e) => remove(e, r.id)}><Trash2 size={16} /></button>}
                   </td>
                 </tr>
@@ -97,7 +100,10 @@ function RequestDrawer({ data, onClose, onSaved }) {
       <div className="modal wide-modal" onClick={(e) => e.stopPropagation()}>
         <div className="modal-head">
           <h2>{tt.request} {data.ref}</h2>
-          <button onClick={onClose}><X size={20} /></button>
+          <div className="modal-head-actions">
+            <ShareButtons text={requestText(data, lang)} />
+            <button onClick={onClose}><X size={20} /></button>
+          </div>
         </div>
         <div className="modal-body">
           <div className="detail-meta">

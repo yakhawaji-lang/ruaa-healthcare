@@ -569,3 +569,67 @@
   .perm-table .perm-page svg { display: none; } /* reclaim width on tiny screens */
   .perm-table input[type="checkbox"] { width: 19px; height: 19px; } /* easier tap targets */
 }
+
+/* ---- Cases: filters, share, Excel import ---- */
+.case-filters { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-bottom: 16px; }
+.case-filters select { padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; background: #fff; font-family: inherit; font-size: 0.92rem; color: var(--navy); min-width: 170px; }
+.case-filters select.on { border-color: var(--teal); background: var(--teal-light); font-weight: 700; }
+.cf-search { flex: 1 1 260px; display: flex; align-items: center; gap: 8px; border: 1px solid var(--line); border-radius: 10px; padding: 0 12px; background: #fff; color: var(--muted); }
+.cf-search:focus-within { border-color: var(--teal); }
+.cf-search input { flex: 1; border: none; outline: none; padding: 10px 0; font-family: inherit; font-size: 0.92rem; background: transparent; min-width: 0; }
+.cf-count { margin-inline-start: auto; color: var(--muted); font-size: 0.85rem; white-space: nowrap; }
+.cases-table tr.clickable { cursor: pointer; }
+.cases-table tr.clickable:hover td { background: #f8fbfb; }
+.cases-table small svg { vertical-align: -1px; }
+.modal-head-actions { display: flex; align-items: center; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
+.share-btns { display: inline-flex; gap: 6px; flex-wrap: wrap; }
+.wa-btn { background: #25d366; color: #fff; border: 1px solid #25d366; }
+.wa-btn:hover { background: #1ebe5b; border-color: #1ebe5b; color: #fff; }
+.icon-act.wa-act, .row-actions button.wa-act { color: #1faa55; }
+.icon-act.wa-act:hover, .row-actions button.wa-act:hover { background: #e7f9ee; border-color: #25d366; color: #128c43; }
+.notif-row { position: relative; }
+.notif-row .notif-share { position: absolute; inset-inline-end: 12px; bottom: 10px; width: 30px; height: 30px; border-radius: 8px; border: 1px solid var(--line); background: #fff; cursor: pointer; display: grid; place-items: center; }
+.portal-head-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.coord-box { border: 1px dashed var(--line); border-radius: 12px; padding: 10px 14px 4px; margin: 6px 0 12px; }
+.coord-box legend { padding: 0 6px; font-weight: 700; color: var(--navy); font-size: 0.92rem; }
+.coord-box p.small { font-size: 0.82rem; margin: 0 0 8px; }
+
+.xl-import { max-width: 980px; }
+.xl-setup { display: grid; grid-template-columns: 1fr; gap: 4px; margin-bottom: 8px; }
+.xl-status { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; }
+.xl-status-opt { display: flex; gap: 10px; align-items: flex-start; border: 1px solid var(--line); border-radius: 12px; padding: 12px; cursor: pointer; }
+.xl-status-opt.on { border-color: var(--teal); background: var(--teal-light); }
+.xl-status-opt input { width: auto !important; flex: none; margin: 4px 0 0; padding: 0; accent-color: var(--navy); }
+.xl-status-opt span { display: flex; flex-direction: column; gap: 3px; }
+.xl-status-opt small { color: var(--muted); font-size: 0.8rem; line-height: 1.5; }
+.xl-step { display: flex; gap: 14px; align-items: flex-start; padding: 14px 0; border-top: 1px solid var(--line); }
+.xl-step p { margin: 4px 0 10px; font-size: 0.88rem; }
+.xl-num { flex: none; width: 28px; height: 28px; border-radius: 50%; background: var(--navy); color: #fff; display: grid; place-items: center; font-weight: 700; font-size: 0.9rem; }
+.xl-drop { margin-top: 10px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; padding: 26px 16px; border: 2px dashed var(--teal); border-radius: 14px; background: #f8fbfb; color: var(--teal-dark); font-weight: 700; cursor: pointer; text-align: center; }
+.xl-drop.drag { background: var(--teal-light); }
+.xl-drop.disabled { opacity: 0.5; cursor: not-allowed; }
+.xl-summary { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 12px; }
+.xl-file { display: inline-flex; align-items: center; gap: 6px; font-weight: 700; color: var(--navy); margin-inline-end: 6px; }
+.xl-chip { display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px; border-radius: 999px; font-size: 0.8rem; font-weight: 700; background: #eef2f4; color: var(--navy); }
+.xl-chip.ok { background: #e4f8ee; color: #138a5b; }
+.xl-chip.warn { background: #fff4e0; color: #b26a00; }
+.xl-chip.bad { background: #fdeaea; color: #c0392b; }
+.xl-table-wrap { max-height: 52vh; overflow: auto; border: 1px solid var(--line); border-radius: 12px; }
+.xl-table { margin: 0; font-size: 0.86rem; }
+.xl-table th { position: sticky; top: 0; background: #fff; z-index: 1; }
+.xl-table tr.xl-bad td { background: #fff6f6; color: #8a2d22; }
+.xl-table tr.xl-warn td { background: #fffbf2; }
+.xl-note { display: inline-block; margin: 2px 3px; padding: 2px 8px; border-radius: 999px; font-size: 0.75rem; font-weight: 700; }
+.xl-note.warn { background: #fff0d6; color: #9a5b00; }
+.xl-note.bad { background: #fbdcdc; color: #b3261e; }
+.xl-refs { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; margin: 10px 0 16px; }
+.xl-refs span { padding: 3px 9px; border-radius: 8px; background: var(--teal-light); color: var(--teal-dark); font-size: 0.8rem; font-weight: 700; }
+@media (max-width: 640px) {
+  .case-filters select { flex: 1 1 140px; min-width: 0; }
+  .cf-count { margin-inline-start: 0; width: 100%; }
+  .modal-head { gap: 10px; flex-wrap: wrap; }
+  .xl-table-wrap { max-height: 46vh; }
+}
+.modal-head .wa-btn, .modal-head .wa-btn:hover { background: #25d366; color: #fff; border: 1px solid #25d366; }
+.modal-head .wa-btn:hover { background: #1ebe5b; }
+.modal-head .share-btns .btn-outline { border: 1px solid var(--line); color: var(--navy); }

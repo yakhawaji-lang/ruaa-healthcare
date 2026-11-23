@@ -6,6 +6,8 @@ import { SOUNDS, NOTIF_TYPES, getPrefs, setPrefs, getTypePrefs, setTypePref, get
 import { getPushStatus, enablePush, disablePush } from './push.js';
 import { fmtDateTime } from '../account/status.js';
 import { useLang } from '../i18n.jsx';
+import ShareButtons from '../components/ShareButtons.jsx';
+import { caseText, requestText } from '../share/whatsapp.js';
 
 const TYPE_ICON = { request: ClipboardList, case: ShieldPlus, message: MessagesSquare, status: RefreshCw, visit: CalendarDays };
 
@@ -123,8 +125,14 @@ export default function NotificationBell({ kind = 'admin' }) {
             {shown.length === 0 && <p className="notif-empty">{tt.no_notifications}</p>}
             {shown.map((n) => {
               const Icon = TYPE_ICON[n.type] || Bell;
+              // admin: a new case/request can be shared to the team's WhatsApp straight from the bell
+              const caseId = kind === 'admin' && /^\/admin\/cases\?open=(\d+)/.exec(n.link || '')?.[1];
+              const reqId = kind === 'admin' && /^\/admin\/requests\?open=(\d+)/.exec(n.link || '')?.[1];
+              const share = caseId ? () => AdminAPI.case(caseId).then((d) => caseText(d, lang))
+                : reqId ? () => AdminAPI.request(reqId).then((d) => requestText(d, lang)) : null;
               return (
-                <button key={n.id} className={`notif-item ${n.is_read ? '' : 'unread'}`} onClick={() => openItem(n)}>
+                <div key={n.id} className="notif-row">
+                <button className={`notif-item ${n.is_read ? '' : 'unread'}`} onClick={() => openItem(n)}>
                   <span className="notif-ico"><Icon size={16} /></span>
                   <span className="notif-body">
                     <strong>{n.title}</strong>
@@ -133,6 +141,8 @@ export default function NotificationBell({ kind = 'admin' }) {
                   </span>
                   {!n.is_read && <span className="notif-dot" />}
                 </button>
+                {share && <ShareButtons compact text={share} className="notif-share" />}
+                </div>
               );
             })}
           </div>

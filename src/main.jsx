@@ -5,6 +5,25 @@ import App from './App.jsx';
 import { LangProvider } from './i18n.jsx';
 import './styles.css';
 
+// --- Guard against browser extensions (page translators, grammar tools) that move
+// or wrap React-owned DOM nodes. Without this React throws
+// "Failed to execute 'removeChild' on 'Node'" and the whole screen falls over.
+if (typeof Node === 'function' && Node.prototype) {
+  const origRemove = Node.prototype.removeChild;
+  Node.prototype.removeChild = function (child) {
+    if (child && child.parentNode !== this) {
+      if (child.parentNode) return origRemove.call(child.parentNode, child);
+      return child;
+    }
+    return origRemove.call(this, child);
+  };
+  const origInsert = Node.prototype.insertBefore;
+  Node.prototype.insertBefore = function (newNode, ref) {
+    if (ref && ref.parentNode !== this) return origInsert.call(this, newNode, null);
+    return origInsert.call(this, newNode, ref);
+  };
+}
+
 // --- Latin numeral enforcement (mirrors PlayTix 2.0) ---
 // Some Arabic keyboards/inputs emit Arabic-Indic digits (٠-٩). We normalize all
 // numeric input fields to Latin digits (0-9) via a DOM observer.

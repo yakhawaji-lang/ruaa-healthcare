@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Eye, X, Save, Pencil, LayoutGrid, Trash2, Building2 } from 'lucide-react';
+import { Eye, X, Save, Pencil, LayoutGrid, Trash2, Building2, Search, FileSpreadsheet, UserRound } from 'lucide-react';
 import { AdminAPI } from '../storage/api.js';
 import { useAdminAuth } from './AdminApp.jsx';
 import Tracking, { StatusPill } from '../account/Tracking.jsx';
@@ -8,7 +8,10 @@ import Thread from '../account/Thread.jsx';
 import { AttachmentList } from '../account/Attachments.jsx';
 import VisitScheduler from './VisitScheduler.jsx';
 import WorkflowPanel from './WorkflowPanel.jsx';
-import { CASE_FLOW } from '../account/status.js';
+import { CASE_FLOW, CASE_STATUSES, statusLabel, fmtDate } from '../account/status.js';
+import ShareButtons from '../components/ShareButtons.jsx';
+import ExcelImportModal from '../components/ExcelImportModal.jsx';
+import { caseText } from '../share/whatsapp.js';
 import { useLang } from '../i18n.jsx';
 import DobInput from '../components/DobInput.jsx';
 import ServicePickerModal from '../components/ServicePickerModal.jsx';
@@ -26,6 +29,10 @@ const T = {
     edit: 'تعديل', edit_case_title: 'تعديل بيانات الحالة', save_changes: 'حفظ التعديلات',
     saving: 'جارٍ الحفظ...', cancel: 'إلغاء', save_failed: 'تعذّر حفظ التعديلات',
     delete: 'حذف', confirm_delete: 'حذف هذه الحالة نهائيًا مع زياراتها ومرفقاتها ومراسلاتها؟ (لن يُحذف حساب العميل)',
+    all_insurers: 'كل شركات التأمين', all_statuses: 'كل المراحل', search_ph: 'بحث بالاسم أو الهوية أو الجوال أو رقم الحالة',
+    showing: (a, b) => `عرض ${a} من ${b}`, clear: 'مسح الفلتر', no_match: 'لا توجد حالات مطابقة للفلتر.',
+    referred_by: 'المحوِّل', coordinator: 'المنسّق', coordinator_name: 'اسم المنسّق', coordinator_phone: 'جوال المنسّق', not_recorded: 'غير مسجّل',
+    import_xl: 'استيراد من Excel', share: 'مشاركة واتساب', via_excel: 'Excel', created: 'تاريخ الإرسال',
   },
   en: {
     title: 'Insurance Cases', no_cases: 'No cases.',
@@ -39,8 +46,16 @@ const T = {
     edit: 'Edit', edit_case_title: 'Edit case details', save_changes: 'Save changes',
     saving: 'Saving...', cancel: 'Cancel', save_failed: 'Could not save changes',
     delete: 'Delete', confirm_delete: 'Permanently delete this case with its visits, attachments and messages? (The client account will be kept)',
+    all_insurers: 'All insurance companies', all_statuses: 'All stages', search_ph: 'Search name, ID, mobile or case number',
+    showing: (a, b) => `Showing ${a} of ${b}`, clear: 'Clear filters', no_match: 'No cases match the filter.',
+    referred_by: 'Referred by', coordinator: 'Coordinator', coordinator_name: 'Coordinator name', coordinator_phone: 'Coordinator mobile', not_recorded: 'Not recorded',
+    import_xl: 'Import from Excel', share: 'Share on WhatsApp', via_excel: 'Excel', created: 'Submitted',
   },
 };
+
+const AR = '٠١٢٣٤٥٦٧٨٩';
+const norm = (v) => String(v ?? '').toLowerCase().replace(/[٠-٩]/g, (d) => String(AR.indexOf(d))).replace(/\s+/g, ' ').trim();
+const digitsOnly = (v) => norm(v).replace(/\D/g, '');
 
 export default function InsuranceCasesManager() {
   const { lang } = useLang();
@@ -48,6 +63,8 @@ export default function InsuranceCasesManager() {
   const tt = T[lang];
   const [list, setList] = useState([]);
   const [active, setActive] = useState(null);
+  const [importing, setImporting] = useState(false);
+  const [insurers, setInsurers] = useState([]);
   const [params, setParams] = useSearchParams();
 
   const load = () => AdminAPI.cases().then(setList);
@@ -55,6 +72,7 @@ export default function InsuranceCasesManager() {
   const open = async (id) => setActive(await AdminAPI.case(id));
   const remove = async (e, id) => { e.stopPropagation(); if (confirm(tt.confirm_delete)) { await AdminAPI.deleteCase(id); load(); } };
   const canDelete = can('cases', 'delete');
+  const canCreate = can('cases', 'create');
 
   // auto-open a specific case when arriving from a notification (?open=ID)
   const openId = params.get('open');
@@ -62,23 +80,85 @@ export default function InsuranceCasesManager() {
     if (openId) { open(openId); params.delete('open'); setParams(params, { replace: true }); }
   }, [openId]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // filters live in the URL so they survive opening a case and can be shared
+  const fInsurer = params.get('insurer') || '';
+  const fStatus = params.get('status') || '';
+  const q = params.get('q') || '';
+  const setParam = (k, v) => { const p = new URLSearchParams(params); if (v) p.set(k, v); else p.delete(k); setParams(p, { replace: true }); };
+  const clearAll = () => setParams(new URLSearchParams(), { replace: true });
+
+  const insurerOpts = useMemo(() => {
+    const m = new Map();
+    for (const c of list) {
+      const id = String(c.user_id);
+      const cur = m.get(id) || { id, name: c.company_name || c.user_name || `#${id}`, n: 0 };
+      cur.n++; m.set(id, cur);
+    }
+    return [...m.values()].sort((a, b) => a.name.localeCompare(b.name));
+  }, [list]);
+
+  const shown = useMemo(() => {
+    const nq = norm(q), dq = digitsOnly(q);
+    return list.filter((c) => {
+      if (fInsurer && String(c.user_id) !== fInsurer) return false;
+      if (fStatus && c.status !== fStatus) return false;
+      if (nq) {
+        const text = norm([c.ref, c.patient_name, c.hospital_name, c.requested_service, c.submitted_by_name, c.coordinator_name].join(' '));
+        const nums = digitsOnly([c.national_id, c.mobile, c.coordinator_phone, c.ref].join(' '));
+        if (!text.includes(nq) && !(dq.length >= 3 && nums.includes(dq))) return false;
+      }
+      return true;
+    });
+  }, [list, fInsurer, fStatus, q]);
+  const filtered = fInsurer || fStatus || q;
+
+  const openImport = async () => {
+    setImporting(true);
+    if (!insurers.length) AdminAPI.importInsurers().then(setInsurers).catch(() => setInsurers(insurerOpts.map((i) => ({ id: i.id, name: i.name }))));
+  };
+
   return (
     <div>
-      <h1 className="page-title">{tt.title}</h1>
+      <div className="page-head">
+        <h1 className="page-title">{tt.title}</h1>
+        {canCreate && <button className="btn btn-outline" onClick={openImport}><FileSpreadsheet size={17} /> {tt.import_xl}</button>}
+      </div>
+
       <div className="panel">
-        {list.length === 0 ? <p className="empty">{tt.no_cases}</p> : (
-          <table className="admin-table">
+        <div className="case-filters">
+          <div className="cf-search">
+            <Search size={16} />
+            <input value={q} onChange={(e) => setParam('q', e.target.value)} placeholder={tt.search_ph} />
+          </div>
+          <select value={fInsurer} onChange={(e) => setParam('insurer', e.target.value)} className={fInsurer ? 'on' : ''}>
+            <option value="">{tt.all_insurers} ({list.length})</option>
+            {insurerOpts.map((i) => <option key={i.id} value={i.id}>{i.name} ({i.n})</option>)}
+          </select>
+          <select value={fStatus} onChange={(e) => setParam('status', e.target.value)} className={fStatus ? 'on' : ''}>
+            <option value="">{tt.all_statuses}</option>
+            {CASE_STATUSES.map((st) => <option key={st} value={st}>{statusLabel(st, lang)}</option>)}
+          </select>
+          {filtered && <button className="btn btn-ghost btn-sm" onClick={clearAll}><X size={14} /> {tt.clear}</button>}
+          <span className="cf-count">{tt.showing(shown.length, list.length)}</span>
+        </div>
+
+        {list.length === 0 ? <p className="empty">{tt.no_cases}</p> : shown.length === 0 ? <p className="empty">{tt.no_match}</p> : (
+          <table className="admin-table cases-table">
             <thead><tr><th>{tt.ref}</th><th>{tt.insurer}</th><th>{tt.patient}</th><th>{tt.service}</th><th>{tt.status}</th><th></th></tr></thead>
             <tbody>
-              {list.map((c) => (
-                <tr key={c.id}>
-                  <td dir="ltr">{c.ref}</td>
-                  <td>{c.company_name || c.user_name}</td>
+              {shown.map((c) => (
+                <tr key={c.id} className="clickable" onClick={() => open(c.id)}>
+                  <td dir="ltr">{c.ref}<br /><small className="muted">{fmtDate(c.created_at)}</small></td>
+                  <td>
+                    {c.company_name || c.user_name}
+                    {c.submitted_by_name && <><br /><small className="muted" title={tt.referred_by}><UserRound size={11} /> {c.submitted_by_name}{c.source && c.source.includes('excel') ? ` · ${tt.via_excel}` : ''}</small></>}
+                  </td>
                   <td>{c.patient_name}<br /><small className="muted" dir="ltr">{c.national_id || ''}</small></td>
-                  <td dir="ltr">{c.requested_service || '—'}</td>
+                  <td dir="auto">{c.requested_service || '—'}</td>
                   <td><StatusPill status={c.status} /></td>
-                  <td className="row-actions">
+                  <td className="row-actions" onClick={(e) => e.stopPropagation()}>
                     <button className="icon-act" onClick={() => open(c.id)}><Eye size={16} /></button>
+                    <ShareButtons compact text={() => AdminAPI.case(c.id).then((d) => caseText(d, lang))} />
                     {canDelete && <button className="icon-act danger" title={tt.delete} onClick={(e) => remove(e, c.id)}><Trash2 size={16} /></button>}
                   </td>
                 </tr>
@@ -88,6 +168,16 @@ export default function InsuranceCasesManager() {
         )}
       </div>
       {active && <CaseDrawer data={active} onClose={() => setActive(null)} onSaved={(d) => { setActive(d); load(); }} />}
+      {importing && (
+        <ExcelImportModal
+          mode="admin"
+          insurers={insurers}
+          defaultInsurer={fInsurer}
+          api={{ template: AdminAPI.casesTemplate, preview: AdminAPI.casesImportPreview, run: AdminAPI.casesImport }}
+          onClose={() => setImporting(false)}
+          onDone={() => load()}
+        />
+      )}
     </div>
   );
 }
@@ -99,8 +189,9 @@ function CaseDrawer({ data, onClose, onSaved }) {
   const reload = async () => { const fresh = await AdminAPI.case(data.id); onSaved(fresh); };
 
   const insurerName = data.company_name || data.user_name;
+  const coordinator = [data.coordinator_name, data.coordinator_phone].filter(Boolean).join(' — ');
   const rows = [
-    [tt.insurer, insurerName], [tt.hospital, data.hospital_name], [tt.patient, data.patient_name], [tt.national_id, data.national_id],
+    [tt.insurer, insurerName], [tt.referred_by, data.submitted_by_name || tt.not_recorded], [tt.coordinator, coordinator], [tt.hospital, data.hospital_name], [tt.patient, data.patient_name], [tt.national_id, data.national_id],
     [tt.mobile, data.mobile], [tt.city, data.city], [tt.dob, data.dob], [tt.requested_service, data.requested_service],
   ];
 
@@ -112,7 +203,8 @@ function CaseDrawer({ data, onClose, onSaved }) {
             <h2>{tt.case} {data.ref}</h2>
             {insurerName && <span className="case-insurer-chip" title={tt.insurer}><Building2 size={14} /> {insurerName}</span>}
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <div className="modal-head-actions">
+            <ShareButtons text={caseText(data, lang)} />
             <button className="btn btn-outline btn-sm" onClick={() => setEditing(true)}><Pencil size={14} /> {tt.edit}</button>
             <button onClick={onClose}><X size={20} /></button>
           </div>
@@ -151,6 +243,7 @@ function CaseAdminEditModal({ data, onClose, onSaved }) {
   const [f, setF] = useState({
     hospital_name: data.hospital_name || '', patient_name: data.patient_name || '', national_id: data.national_id || '',
     mobile: data.mobile || '', city: data.city || '', dob: data.dob || '', diagnosis: data.diagnosis || '', requested_service: data.requested_service || '',
+    coordinator_name: data.coordinator_name || '', coordinator_phone: data.coordinator_phone || '',
   });
   const [services, setServices] = useState([]);
   const [pickSvc, setPickSvc] = useState(false);
@@ -192,6 +285,10 @@ function CaseAdminEditModal({ data, onClose, onSaved }) {
             </div>
           </div>
           <div className="field"><label>{tt.diagnosis}</label><textarea rows={3} value={f.diagnosis} onChange={set('diagnosis')} /></div>
+          <div className="field-row">
+            <div className="field"><label>{tt.coordinator_name}</label><input value={f.coordinator_name} onChange={set('coordinator_name')} /></div>
+            <div className="field"><label>{tt.coordinator_phone}</label><input dir="ltr" inputMode="tel" value={f.coordinator_phone} onChange={set('coordinator_phone')} /></div>
+          </div>
         </div>
         <div className="modal-foot">
           <button className="btn btn-ghost" onClick={onClose}>{tt.cancel}</button>

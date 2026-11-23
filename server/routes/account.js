@@ -7,6 +7,7 @@ import { query } from '../db/pool.js';
 import { Users, Services, ServiceRequests, InsuranceCases, RequestEvents, Patients, Visits, Threads, Attachments, Notifications, InsurerServices, PromoCodes } from '../db/queries.js';
 import { signUserToken, requireUser, requireRole } from '../auth.js';
 import { saveDataUrl } from '../upload.js';
+import { createCase, buildTemplate, servicesFor, previewImport, runImport } from '../cases.js';
 
 const router = Router();
 const limiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 50 });
@@ -191,22 +192,47 @@ router.post('/requests/:id/messages', requireUser, requireRole('visitor'), async
 /* ---------------- Insurance: patient cases ---------------- */
 router.post('/cases', requireUser, requireRole('insurance'), async (req, res) => {
   const b = req.body || {};
-  if (!b.patient_name) return res.status(400).json({ error: 'patient_name_required' });
-  const r = await InsuranceCases.create({
-    ref: 'TMP-' + Date.now() + Math.floor(Math.random() * 1000),
-    user_id: await companyId(req),
-    hospital_name: b.hospital_name, patient_name: b.patient_name, national_id: b.national_id,
-    mobile: b.mobile, city: b.city, dob: b.dob, diagnosis: b.diagnosis,
-    requested_service: b.requested_service, status: 'submitted',
+  if (!b.patient_name?.trim()) return res.status(400).json({ error: 'patient_name_required' });
+  const cid = await companyId(req);
+  const [me, co] = await Promise.all([Users.byId(req.user.uid), Users.byId(cid)]);
+  const { id, ref } = await createCase({
+    companyId: cid,
+    submitter: { user_id: req.user.uid, name: me?.name || me?.company_name || null },
+    fields: {
+      hospital_name: b.hospital_name, patient_name: b.patient_name.trim(), national_id: b.national_id,
+      mobile: b.mobile, city: b.city, dob: b.dob, diagnosis: b.diagnosis, requested_service: b.requested_service,
+      coordinator_name: b.coordinator_name?.trim(), coordinator_phone: b.coordinator_phone?.trim(),
+    },
+    attachments: b.attachments, source: 'form',
   });
-  const ref = refCode('INS', r.insertId);
-  await query('UPDATE insurance_cases SET ref=? WHERE id=?', [ref, r.insertId]);
-  if (Array.isArray(b.attachments) && b.attachments.length) await Attachments.addMany('insurance_case', r.insertId, b.attachments);
-  await RequestEvents.add({ ref_type: 'insurance_case', ref_id: r.insertId, status: 'submitted', title_ar: 'تم استلام الحالة', note: `تم استلام بيانات المريض${Array.isArray(b.attachments) && b.attachments.length ? ' مع ' + b.attachments.length + ' مرفق' : ''} وستُحوَّل للمراجعة الطبية.`, actor: 'النظام' });
-  const co = await Users.byId(await companyId(req));
   const coName = co?.company_name || co?.name || '';
-  await Notifications.notifyAdmin('case', `حالة تأمين جديدة${coName ? ' من ' + coName : ''}`, `${b.patient_name}${b.requested_service ? ' — ' + b.requested_service : ''}${coName ? ' · ' + coName : ''}`, `/admin/cases?open=${r.insertId}`);
-  res.status(201).json({ id: r.insertId, ref });
+  await Notifications.notifyAdmin('case', `حالة تأمين جديدة${coName ? ' من ' + coName : ''}`, `${b.patient_name}${b.requested_service ? ' — ' + b.requested_service : ''}${me?.name ? ' · أرسلها ' + me.name : ''}`, `/admin/cases?open=${id}`);
+  res.status(201).json({ id, ref });
+});
+
+/* ---- Excel import (insurance company uploads a batch of cases) ---- */
+router.get('/cases-import/template', requireUser, requireRole('insurance'), async (req, res) => {
+  const cid = await companyId(req);
+  const co = await Users.byId(cid);
+  const buf = await buildTemplate({ services: await servicesFor(cid), companyName: co?.company_name || co?.name || '' });
+  res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+  res.setHeader('Content-Disposition', 'attachment; filename="RU-MD-cases-template.xlsx"');
+  res.send(Buffer.from(buf));
+});
+router.post('/cases-import/preview', requireUser, requireRole('insurance'), async (req, res) => {
+  try { res.json(await previewImport(await companyId(req), req.body?.file)); }
+  catch (e) { res.status(400).json({ error: e.code || 'bad_file', max: e.max }); }
+});
+router.post('/cases-import', requireUser, requireRole('insurance'), async (req, res) => {
+  const cid = await companyId(req);
+  const [me, co] = await Promise.all([Users.byId(req.user.uid), Users.byId(cid)]);
+  const r = await runImport({ companyId: cid, submitter: { user_id: req.user.uid, name: me?.name || me?.company_name || null }, rows: req.body?.rows, status: 'submitted' });
+  if (r.created.length) {
+    const coName = co?.company_name || co?.name || '';
+    await Notifications.notifyAdmin('case', `${r.created.length} حالة تأمين جديدة${coName ? ' من ' + coName : ''} (ملف Excel)`,
+      `${r.created.slice(0, 3).map((c) => c.patient_name).join('، ')}${r.created.length > 3 ? ' …' : ''}${me?.name ? ' · رفعها ' + me.name : ''}`, `/admin/cases?insurer=${cid}`);
+  }
+  res.status(201).json(r);
 });
 
 router.get('/cases', requireUser, requireRole('insurance'), async (req, res) => {
@@ -242,6 +268,7 @@ router.put('/cases/:id', requireUser, requireRole('insurance'), async (req, res)
   await InsuranceCases.updateFields(c.id, {
     hospital_name: b.hospital_name, patient_name: b.patient_name, national_id: b.national_id,
     mobile: b.mobile, city: b.city, dob: b.dob, diagnosis: b.diagnosis, requested_service: b.requested_service,
+    coordinator_name: b.coordinator_name, coordinator_phone: b.coordinator_phone,
   });
   const u = await Users.byId(req.user.uid);
   await RequestEvents.add({ ref_type: 'insurance_case', ref_id: c.id, status: null, title_ar: 'تم تعديل بيانات الحالة', note: null, actor: u?.company_name || u?.name || 'الإدارة' });

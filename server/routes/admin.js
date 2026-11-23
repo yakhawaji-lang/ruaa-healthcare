@@ -7,6 +7,7 @@ import { fileURLToPath } from 'url';
 import bcrypt from 'bcryptjs';
 import { Settings, Pages, Services, Messages, HeroSlides, Partners, Users, ServiceRequests, InsuranceCases, RequestEvents, Patients, Visits, Threads, Attachments, Analytics, Notifications, Audit, InsurerServices, Admins, PushSubs, PromoCodes, isSuperAdmin, parsePerms } from '../db/queries.js';
 import { saveDataUrl } from '../upload.js';
+import { buildTemplate, servicesFor, previewImport, runImport } from '../cases.js';
 import { publicKey as vapidPublicKey } from '../push.js';
 import { adminRouter as telemedAdminRoutes } from './telemed.js';
 import staffRoutes from './staff.js';
@@ -277,6 +278,42 @@ router.delete('/requests/:id', async (req, res) => {
 
 /* ---- Insurance cases ---- */
 router.get('/cases', async (req, res) => res.json(await InsuranceCases.listAll()));
+
+/* ---- Excel import of cases on behalf of an insurance company ---- */
+const insurerOr400 = async (id, res) => {
+  const co = id ? await Users.byId(id) : null;
+  if (!co || co.role !== 'insurance' || co.parent_user_id) { res.status(400).json({ error: 'insurer_required' }); return null; }
+  return co;
+};
+// insurance companies to import for (cases permission is enough — no need for the insurers page)
+router.get('/cases-import/insurers', async (req, res) => {
+  const list = await Users.listByRole('insurance');
+  res.json(list.map((u) => ({ id: u.id, name: u.company_name || u.name })));
+});
+router.get('/cases-import/template', async (req, res) => {
+  const co = req.query.insurer_id ? await Users.byId(req.query.insurer_id) : null;
+  const cid = co && co.role === 'insurance' ? co.id : null;
+  const buf = await buildTemplate({ services: await servicesFor(cid), companyName: co?.company_name || co?.name || '' });
+  res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+  res.setHeader('Content-Disposition', 'attachment; filename="RU-MD-cases-template.xlsx"');
+  res.send(Buffer.from(buf));
+});
+router.post('/cases-import/preview', async (req, res) => {
+  const co = await insurerOr400(req.body?.insurer_id, res); if (!co) return;
+  try { res.json(await previewImport(co.id, req.body?.file)); }
+  catch (e) { res.status(400).json({ error: e.code || 'bad_file', max: e.max }); }
+});
+router.post('/cases-import', async (req, res) => {
+  const co = await insurerOr400(req.body?.insurer_id, res); if (!co) return;
+  const status = req.body?.status === 'approved' ? 'approved' : 'submitted';
+  const who = req.adminFull?.name || 'الإدارة';
+  const r = await runImport({ companyId: co.id, submitter: { user_id: null, name: `${who} (إدارة رؤى)` }, rows: req.body?.rows, status, source: 'admin_excel' });
+  if (r.created.length) {
+    await Notifications.notifyUser(co.id, 'case', `أضافت إدارة رؤى ${r.created.length} حالة لحسابكم`, r.created.slice(0, 3).map((c) => c.patient_name).join('، ') + (r.created.length > 3 ? ' …' : ''), '/portal');
+  }
+  await Audit.log(req.admin.id, 'create', 'insurance_case_import', co.id);
+  res.status(201).json(r);
+});
 router.get('/cases/:id', async (req, res) => {
   const c = await InsuranceCases.byIdWithInsurer(req.params.id);
   if (!c) return res.status(404).json({ error: 'not_found' });
@@ -423,6 +460,7 @@ router.put('/cases/:id/details', async (req, res) => {
   await InsuranceCases.updateFields(cur.id, {
     hospital_name: b.hospital_name, patient_name: b.patient_name, national_id: b.national_id,
     mobile: b.mobile, city: b.city, dob: b.dob, diagnosis: b.diagnosis, requested_service: b.requested_service,
+    coordinator_name: b.coordinator_name, coordinator_phone: b.coordinator_phone,
   });
   await RequestEvents.add({ ref_type: 'insurance_case', ref_id: cur.id, status: null, title_ar: 'تم تعديل بيانات الحالة', note: null, actor: 'الإدارة' });
   await Audit.log(req.admin.id, 'update', 'insurance_case_details', cur.id);

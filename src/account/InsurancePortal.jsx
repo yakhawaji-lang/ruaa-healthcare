@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
-import { Plus, X, ArrowRight, ArrowLeft, FilePlus2, CheckCircle2, Building2, CalendarDays, LayoutGrid, Pencil } from 'lucide-react';
+import { Plus, X, ArrowRight, ArrowLeft, FilePlus2, CheckCircle2, Building2, CalendarDays, LayoutGrid, Pencil, FileSpreadsheet } from 'lucide-react';
+import ExcelImportModal from '../components/ExcelImportModal.jsx';
 import { AccountAPI } from '../storage/api.js';
 import { useSite } from '../App.jsx';
 import ServiceIcon from '../components/ServiceIcon.jsx';
@@ -16,7 +17,7 @@ import DobInput from '../components/DobInput.jsx';
 import ServicePickerModal from '../components/ServicePickerModal.jsx';
 import MiniVisitsCalendar from './MiniVisitsCalendar.jsx';
 
-const blank = { hospital_name: '', patient_name: '', national_id: '', mobile: '', city: '', dob: '', diagnosis: '', requested_service: '' };
+const blank = { hospital_name: '', patient_name: '', national_id: '', mobile: '', city: '', dob: '', diagnosis: '', requested_service: '', coordinator_name: '', coordinator_phone: '' };
 
 const T = {
   ar: {
@@ -73,6 +74,9 @@ const T = {
     case_followup_title: 'متابعة الحالة',
     visits: 'الزيارات',
     thread_title: 'المراسلات مع إدارة رؤى',
+    coordinator_title: 'منسّق الحالة (اختياري)', coordinator_hint: 'الشخص الذي يتواصل معه فريق رؤى بخصوص هذه الحالة، إن لم يكن صاحب الحساب.',
+    coordinator_name: 'اسم المنسّق', coordinator_phone: 'جوال المنسّق', ph_coord_name: 'مثال: سارة العتيبي', row_coordinator: 'المنسّق', row_sent_by: 'أرسلها',
+    import_xl: 'استيراد من Excel',
   },
   en: {
     cases_noun: 'cases',
@@ -128,6 +132,9 @@ const T = {
     case_followup_title: 'Case tracking',
     visits: 'Visits',
     thread_title: 'Messages with RU-MD administration',
+    coordinator_title: 'Case coordinator (optional)', coordinator_hint: 'The person the RU-MD team should contact about this case, if not the account holder.',
+    coordinator_name: 'Coordinator name', coordinator_phone: 'Coordinator mobile', ph_coord_name: 'e.g. Sarah Al-Otaibi', row_coordinator: 'Coordinator', row_sent_by: 'Sent by',
+    import_xl: 'Import from Excel',
   },
 };
 
@@ -137,6 +144,7 @@ export default function InsurancePortal() {
   const [cases, setCases] = useState([]);
   const [feed, setFeed] = useState([]);
   const [open, setOpen] = useState(false);
+  const [importing, setImporting] = useState(false);
   const load = () => {
     AccountAPI.myCases().then(setCases).catch(() => {});
     AccountAPI.allMessages().then(setFeed).catch(() => {});
@@ -156,7 +164,10 @@ export default function InsurancePortal() {
         <section className="cases-col">
           <div className="portal-section-head">
             <h2 className="portal-h2"><Building2 size={20} /> {tt.patient_cases}</h2>
-            <button className="btn btn-primary" onClick={() => setOpen(true)}><FilePlus2 size={18} /> {tt.new_case}</button>
+            <div className="portal-head-actions">
+              <button className="btn btn-outline" onClick={() => setImporting(true)}><FileSpreadsheet size={17} /> {tt.import_xl}</button>
+              <button className="btn btn-primary" onClick={() => setOpen(true)}><FilePlus2 size={18} /> {tt.new_case}</button>
+            </div>
           </div>
           {cases.length === 0 ? (
             <div className="panel empty">{tt.no_cases}</div>
@@ -166,7 +177,7 @@ export default function InsurancePortal() {
                 <Link key={c.id} to={`/portal/cases/${c.id}`} className="req-row">
                   <div>
                     <strong>{c.patient_name}</strong>
-                    <small>{c.ref} · {c.requested_service || tt.none} · {new Date(c.created_at).toLocaleDateString(lang === 'ar' ? 'ar-SA' : 'en-GB')}</small>
+                    <small>{c.ref} · {c.requested_service || tt.none} · {new Date(c.created_at).toLocaleDateString(lang === 'ar' ? 'ar-SA' : 'en-GB')}{c.submitted_by_name ? ` · ${c.submitted_by_name}` : ''}</small>
                   </div>
                   <div className="req-row-end">
                     <StatusPill status={c.status} audience="client" />
@@ -180,6 +191,14 @@ export default function InsurancePortal() {
       </div>
 
       {open && <CaseModal onClose={() => setOpen(false)} onDone={() => { setOpen(false); load(); }} />}
+      {importing && (
+        <ExcelImportModal
+          mode="insurer"
+          api={{ template: AccountAPI.casesTemplate, preview: AccountAPI.casesImportPreview, run: AccountAPI.casesImport }}
+          onClose={() => setImporting(false)}
+          onDone={() => load()}
+        />
+      )}
     </div>
   );
 }
@@ -239,6 +258,14 @@ function CaseModal({ onClose, onDone }) {
                 </div>
               </div>
               <div className="field"><label>{tt.diagnosis_label}</label><textarea rows={3} value={f.diagnosis} onChange={set('diagnosis')} placeholder={tt.ph_diagnosis} /></div>
+              <fieldset className="coord-box">
+                <legend>{tt.coordinator_title}</legend>
+                <p className="muted small">{tt.coordinator_hint}</p>
+                <div className="field-row">
+                  <div className="field"><label>{tt.coordinator_name}</label><input value={f.coordinator_name} onChange={set('coordinator_name')} placeholder={tt.ph_coord_name} /></div>
+                  <div className="field"><label>{tt.coordinator_phone}</label><input dir="ltr" inputMode="tel" maxLength={14} value={f.coordinator_phone} onChange={set('coordinator_phone')} placeholder="05XXXXXXXX" /></div>
+                </div>
+              </fieldset>
               <MultiFileUpload items={files} onChange={setFiles} uploadFn={AccountAPI.uploadFile} />
             </div>
             <div className="modal-foot">
@@ -279,6 +306,7 @@ export function CaseDetail() {
   const rows = [
     [tt.row_hospital, c.hospital_name], [tt.row_patient, c.patient_name], [tt.row_id, c.national_id],
     [tt.row_mobile, c.mobile], [tt.row_city, c.city], [tt.row_dob, c.dob], [tt.row_service, c.requested_service],
+    [tt.row_coordinator, [c.coordinator_name, c.coordinator_phone].filter(Boolean).join(' — ')], [tt.row_sent_by, c.submitted_by_name],
   ];
 
   return (
@@ -331,6 +359,7 @@ function CaseEditModal({ c, onClose, onSaved }) {
   const [f, setF] = useState({
     hospital_name: c.hospital_name || '', patient_name: c.patient_name || '', national_id: c.national_id || '',
     mobile: c.mobile || '', city: c.city || '', dob: c.dob || '', diagnosis: c.diagnosis || '', requested_service: c.requested_service || '',
+    coordinator_name: c.coordinator_name || '', coordinator_phone: c.coordinator_phone || '',
   });
   const [pickSvc, setPickSvc] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -368,6 +397,14 @@ function CaseEditModal({ c, onClose, onSaved }) {
               </div>
             </div>
             <div className="field"><label>{tt.diagnosis_label}</label><textarea rows={3} value={f.diagnosis} onChange={set('diagnosis')} placeholder={tt.ph_diagnosis} /></div>
+            <fieldset className="coord-box">
+              <legend>{tt.coordinator_title}</legend>
+              <p className="muted small">{tt.coordinator_hint}</p>
+              <div className="field-row">
+                <div className="field"><label>{tt.coordinator_name}</label><input value={f.coordinator_name} onChange={set('coordinator_name')} placeholder={tt.ph_coord_name} /></div>
+                <div className="field"><label>{tt.coordinator_phone}</label><input dir="ltr" inputMode="tel" maxLength={14} value={f.coordinator_phone} onChange={set('coordinator_phone')} placeholder="05XXXXXXXX" /></div>
+              </div>
+            </fieldset>
           </div>
           <div className="modal-foot">
             <button type="button" className="btn btn-ghost" onClick={onClose}>{tt.cancel}</button>

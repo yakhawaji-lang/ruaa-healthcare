@@ -2,6 +2,8 @@ import { useEffect, useMemo, useState } from 'react';
 import { ChevronLeft, ChevronRight, CalendarDays, Clock, UserRound, Stethoscope, FileText, X } from 'lucide-react';
 import { AdminAPI } from '../storage/api.js';
 import { useLang } from '../i18n.jsx';
+import ShareButtons from '../components/ShareButtons.jsx';
+import { visitText } from '../share/whatsapp.js';
 import {
   visitStatusColor, visitStatusLabel,
   VISIT_TYPES_BI, CLINICIAN_ROLES_BI, normBiList, normStaffList, biLabel,
@@ -217,7 +219,13 @@ function VisitDetail({ v, tt, typeLabel, roleLabel, nameLabel, lang, onClose }) 
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal" onClick={(e) => e.stopPropagation()}>
-        <div className="modal-head"><h2>{v.visit_date?.slice(0, 10)}</h2><button onClick={onClose}><X size={20} /></button></div>
+        <div className="modal-head">
+          <h2>{v.visit_date?.slice(0, 10)}</h2>
+          <div className="modal-head-actions">
+            <ShareButtons text={visitText(v, lang, { typeLabel, clinician: v.clinician_name ? `${nameLabel(v.clinician_name)}${v.clinician_role ? ' — ' + roleLabel(v.clinician_role) : ''}` : '' })} />
+            <button onClick={onClose}><X size={20} /></button>
+          </div>
+        </div>
         <div className="modal-body">
           <div style={{ marginBottom: 12 }}>
             <span className="status-pill" style={{ color: visitStatusColor(v.status), background: visitStatusColor(v.status) + '1e' }}>{visitStatusLabel(v.status, lang)}</span>

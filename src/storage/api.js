@@ -60,6 +60,10 @@ export const AccountAPI = {
   clearNotifs: () => api.post('/account/notifications/clear', {}).then((r) => r.data),
   // correspondence
   sendCaseMessage: (id, payload) => api.post(`/account/cases/${id}/messages`, payload).then((r) => r.data),
+  // Excel import of cases
+  casesTemplate: () => api.get('/account/cases-import/template', { responseType: 'blob' }).then((r) => r.data),
+  casesImportPreview: (file) => api.post('/account/cases-import/preview', { file }).then((r) => r.data),
+  casesImport: (rows) => api.post('/account/cases-import', { rows }).then((r) => r.data),
   sendRequestMessage: (id, payload) => api.post(`/account/requests/${id}/messages`, payload).then((r) => r.data),
   uploadFile: (data, filename) => api.post('/account/upload', { data, filename }).then((r) => r.data),
   // telemedicine (patient)
@@ -140,6 +144,11 @@ export const AdminAPI = {
   case: (id) => api.get(`/admin/cases/${id}`).then((r) => r.data),
   updateCaseDetails: (id, data) => api.put(`/admin/cases/${id}/details`, data).then((r) => r.data),
   deleteCase: (id) => api.delete(`/admin/cases/${id}`).then((r) => r.data),
+  // Excel import of cases (on behalf of an insurer)
+  importInsurers: () => api.get('/admin/cases-import/insurers').then((r) => r.data),
+  casesTemplate: (insurerId) => api.get('/admin/cases-import/template', { params: { insurer_id: insurerId || undefined }, responseType: 'blob' }).then((r) => r.data),
+  casesImportPreview: (insurerId, file) => api.post('/admin/cases-import/preview', { insurer_id: insurerId, file }).then((r) => r.data),
+  casesImport: (insurerId, rows, status) => api.post('/admin/cases-import', { insurer_id: insurerId, rows, status }).then((r) => r.data),
   allVisits: () => api.get('/admin/visits').then((r) => r.data),
   clients: () => api.get('/admin/clients').then((r) => r.data),
   createClient: (data) => api.post('/admin/clients', data).then((r) => r.data),
