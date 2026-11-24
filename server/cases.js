@@ -23,7 +23,7 @@ export const MAX_IMPORT_ROWS = 500;
 //         requested_service, coordinator_name, coordinator_phone
 export async function createCase({ companyId, submitter = {}, fields, attachments, source = 'form', status = 'submitted', receivedNote }) {
   const f = fields || {};
-  const tmpRef = 'TMP-' + Date.now() + Math.floor(Math.random() * 100000);
+  const tmpRef = 'T' + Date.now() + String(Math.floor(Math.random() * 1e5)).padStart(5, '0'); // 19 chars; ref is VARCHAR(20)
   const r = !caseReferrerReady()
     ? await query(
       'INSERT INTO insurance_cases (ref, user_id, hospital_name, patient_name, national_id, mobile, city, dob, diagnosis, requested_service, status) VALUES (?,?,?,?,?,?,?,?,?,?,?)',

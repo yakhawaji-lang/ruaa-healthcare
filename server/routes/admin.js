@@ -6,7 +6,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import bcrypt from 'bcryptjs';
 import { Settings, Pages, Services, Messages, HeroSlides, Partners, Users, ServiceRequests, InsuranceCases, RequestEvents, Patients, Visits, Threads, Attachments, Analytics, Notifications, Audit, InsurerServices, Admins, PushSubs, PromoCodes, isSuperAdmin, parsePerms } from '../db/queries.js';
-import { saveDataUrl } from '../upload.js';
+import { saveDataUrl, uploadsRoot } from '../upload.js';
 import { buildTemplate, servicesFor, previewImport, runImport } from '../cases.js';
 import { publicKey as vapidPublicKey } from '../push.js';
 import { adminRouter as telemedAdminRoutes } from './telemed.js';
@@ -59,7 +59,6 @@ router.use(async (req, res, next) => {
   }
 });
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const uploadsDir = path.join(__dirname, '..', 'uploads');
 const parseJSON = (v, fb) => { try { return v ? JSON.parse(v) : fb; } catch { return fb; } };
 const STATUS_LABELS = {
   pending: 'تم الاستلام', reviewing: 'قيد المراجعة', approved: 'تم التواصل',
@@ -95,7 +94,7 @@ router.post('/upload', (req, res) => {
   if (buf.length > 8 * 1024 * 1024) return res.status(413).json({ error: 'too_large' });
   const safe = String(filename || 'img').replace(/[^a-z0-9_-]/gi, '').slice(0, 40) || 'img';
   const name = `${Date.now()}-${safe}.${ext}`;
-  const dir = path.join(uploadsDir, 'services');
+  const dir = path.join(uploadsRoot(), 'services');
   fs.mkdirSync(dir, { recursive: true });
   fs.writeFileSync(path.join(dir, name), buf);
   const url = `/uploads/services/${name}`;

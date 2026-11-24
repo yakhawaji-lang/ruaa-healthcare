@@ -16,6 +16,7 @@ import { ensureHeroSlides } from './hero.js';
 import { setHeroHasCta } from './db/queries.js';
 import { ensureCaseColumns } from './caseColumns.js';
 import { runMigrations } from './db/migrate.js';
+import { uploadsRoot, migrateLegacyUploads } from './upload.js';
 
 dotenv.config();
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -25,7 +26,8 @@ app.set('trust proxy', 1); // trust first proxy (Hostinger reverse proxy)
 app.use(express.json({ limit: '12mb' })); // allow base64 image uploads
 
 // Runtime-uploaded images (admin), persisted outside the build output.
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+app.use('/uploads', express.static(uploadsRoot()));                       // persistent folder (outside the app)
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));     // legacy folder, for files saved before the move
 // Downloadable app file (APK) — kept outside dist so rebuilds don't remove it.
 app.use('/downloads', express.static(path.join(__dirname, 'downloads')));
 
@@ -55,6 +57,7 @@ const PORT = process.env.PORT || 4000;
 // Apply pending DB migrations automatically on every start (each file runs once),
 // then import legacy lists into the staff directory (first run only), then listen.
 (async () => {
+  try { const n = migrateLegacyUploads(); console.log(`[uploads] using ${uploadsRoot()}${n ? ` — copied ${n} file(s) from server/uploads` : ''}`); } catch (e) { console.warn('[uploads] copy skipped:', e.message); }
   try { await runMigrations(); } catch (e) { console.error('[migrate] failed:', e.message); }
   try { await ensureStaffImported(); } catch (e) { console.warn('[staff] import skipped:', e.message); }
   try { await ensureCaseColumns(); } catch (e) { console.warn('[cases] setup skipped:', e.message); }

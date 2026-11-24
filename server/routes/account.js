@@ -191,6 +191,7 @@ router.post('/requests/:id/messages', requireUser, requireRole('visitor'), async
 
 /* ---------------- Insurance: patient cases ---------------- */
 router.post('/cases', requireUser, requireRole('insurance'), async (req, res) => {
+  try {
   const b = req.body || {};
   if (!b.patient_name?.trim()) return res.status(400).json({ error: 'patient_name_required' });
   const cid = await companyId(req);
@@ -208,6 +209,7 @@ router.post('/cases', requireUser, requireRole('insurance'), async (req, res) =>
   const coName = co?.company_name || co?.name || '';
   await Notifications.notifyAdmin('case', `حالة تأمين جديدة${coName ? ' من ' + coName : ''}`, `${b.patient_name}${b.requested_service ? ' — ' + b.requested_service : ''}${me?.name ? ' · أرسلها ' + me.name : ''}`, `/admin/cases?open=${id}`);
   res.status(201).json({ id, ref });
+  } catch (e) { console.error('[cases] create failed:', e.sqlMessage || e.message); res.status(500).json({ error: 'failed' }); }
 });
 
 /* ---- Excel import (insurance company uploads a batch of cases) ---- */
